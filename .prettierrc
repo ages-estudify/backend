@@ -1,0 +1,19 @@
+{
+  "singleQuote": true,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "semi": true,
+  "endOfLine": "auto",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "importOrder": [
+    "^(nestjs|nestjs/common|nestjs/core|nestjs/platform-express)$",
+    "<THIRD_PARTY_MODULES>",
+    "^@/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "importOrderCaseInsensitive": true
+}
