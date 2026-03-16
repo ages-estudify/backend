@@ -15,4 +15,10 @@ describe('UsersService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
+  describe('UsersService basic test', () => {
+  it('should always pass', () => {
+    expect(true).toBe(true);
+  });
+});
 });

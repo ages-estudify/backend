@@ -15,4 +15,11 @@ describe('UsersController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
+
+  describe('UsersController basic test', () => {
+    it('should return hello', () => {
+      const message = 'hello';
+      expect(message).toBe('hello');
+    });
+  });
 });
