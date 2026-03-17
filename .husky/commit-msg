@@ -4,7 +4,7 @@
 commit_msg=$(cat "$1")
 
 # Regex: tipo(id_clickup): mensagem
-regex="^(feature|fix|hotfix|chore|refactor)\([a-zA-Z0-9]+\):\s.{5,}$"
+regex="^(feature|fix|hotfix|chore|refactor|arch|docs|test)\([a-zA-Z0-9]+\):\s.{5,}$"
 
 if [[ ! $commit_msg =~ $regex ]]; then
   echo -e "\n\033[1;31m[ERRO DE PADRONIZAÇÃO]\033[0m"

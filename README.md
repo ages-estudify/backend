@@ -10,6 +10,10 @@ Este projeto é uma API backend desenvolvida com **NestJS**, utilizando **Postgr
 - PostgreSQL
 - Docker / Docker Compose (apenas para o Postgres)
 - Swagger (documentação da API)
+- Husky (Git hooks)
+- lint-staged (linting em arquivos staged)
+- Prettier (formatação de código)
+- ESLint (linting de código)
 
 ---
 
@@ -43,6 +47,61 @@ backend/
 
 ---
 
+## Git Hooks e Convenções
+
+O projeto utiliza **Husky** para configurar Git hooks que garantem a qualidade do código e padronização dos commits.
+
+### Hooks configurados
+
+- **pre-commit:** Executa `lint-staged` para rodar ESLint e Prettier nos arquivos modificados antes de cada commit.
+- **commit-msg:** Valida o formato da mensagem de commit.
+- **pre-push:** Verifica se o nome da branch segue o padrão definido antes de fazer push.
+
+### Convenção de mensagens de commit
+
+As mensagens de commit devem seguir o formato:
+
+```
+tipo(id_clickup): descrição da mudança
+```
+
+**Exemplos válidos:**
+
+- `feature(86ag34u4q): add suporte a dark mode`
+- `fix(abc123): corrige erro de validação`
+- `chore(123def): atualiza dependências`
+
+**Tipos permitidos:** `feature`, `fix`, `hotfix`, `chore`, `refactor`, `arch`, `docs`, `test`
+
+**Regras:**
+
+- O ID do ClickUp deve estar entre parênteses e ser alfanumérico.
+- Deve haver um espaço após os dois pontos.
+- A descrição deve ter pelo menos 5 caracteres.
+
+### Convenção de nomes de branch
+
+Os nomes de branches devem seguir o padrão:
+
+```
+tipo(id_clickup)/nome-da-branch
+```
+
+**Exemplos válidos:**
+
+- `feature(86ag34u4q)/add-dark-mode`
+- `fix(abc123)/fix-validation-error`
+- `chore(123def)/update-dependencies`
+
+Branches principais: `develop`, `main`
+
+**Regras:**
+
+- O nome deve ser em minúsculas, com hífens separando palavras.
+- Deve começar com o tipo e ID entre parênteses, seguido de barra e nome descritivo.
+
+---
+
 ## API – prefixo e versionamento
 
 - **Prefixo global:** `/api`
@@ -67,6 +126,7 @@ A documentação interativa da API está em:
 O projeto utiliza **Prisma** como ORM. Aqui estão os principais comandos:
 
 ### Gerar o cliente Prisma
+
 Gera o cliente TypeScript baseado no schema definido em `prisma/schema.prisma`:
 
 ```bash
@@ -74,6 +134,7 @@ npx prisma generate
 ```
 
 ### Executar migrações (Desenvolvimento)
+
 Aplica mudanças no schema do banco de dados e gera uma nova migração:
 
 ```bash
@@ -81,11 +142,13 @@ npx prisma migrate dev --name <nome-da-migracao>
 ```
 
 Exemplo:
+
 ```bash
 npx prisma migrate dev --name add-user-table
 ```
 
 ### Visualizar dados no Prisma Studio
+
 Abre uma interface gráfica para visualizar e editar dados do banco:
 
 ```bash
@@ -95,6 +158,7 @@ npx prisma studio
 O Studio estará disponível em **http://localhost:5555**
 
 ### Resetar banco de dados (Desenvolvimento)
+
 Remove todas as migrações e dados, recriando o banco do zero:
 
 ```bash
@@ -102,6 +166,7 @@ npx prisma migrate reset
 ```
 
 ### Verificar status das migrações
+
 Verifica se há migrações pendentes ou diferenças entre o schema e o banco:
 
 ```bash
@@ -109,6 +174,7 @@ npx prisma migrate status
 ```
 
 ### Seed do banco (Opcional)
+
 Se houver um arquivo de seed configurado, execute:
 
 ```bash
@@ -116,6 +182,7 @@ npx prisma db seed
 ```
 
 **Nota:** Para configurar o seed, adicione no `package.json`:
+
 ```json
 {
   "prisma": {
