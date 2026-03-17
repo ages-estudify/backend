@@ -6,7 +6,7 @@ Este projeto é uma API backend desenvolvida com **NestJS**, utilizando **Postgr
 
 - Node.js
 - NestJS
-- TypeORM
+- Prisma ORM
 - PostgreSQL
 - Docker / Docker Compose (apenas para o Postgres)
 - Swagger (documentação da API)
@@ -17,9 +17,13 @@ Este projeto é uma API backend desenvolvida com **NestJS**, utilizando **Postgr
 
 ```
 backend/
+├── prisma/
+│   ├── schema.prisma         # Schema do banco de dados
+│   └── migrations/           # Migrações do banco
 ├── src/
 │   ├── main.ts              # Bootstrap da aplicação, CORS, prefixo, versionamento, Swagger
 │   ├── app.module.ts         # Módulo raiz
+│   ├── prisma.service.ts     # Serviço do Prisma
 │   └── users/
 │       ├── users.module.ts
 │       ├── users.controller.ts
@@ -58,6 +62,70 @@ A documentação interativa da API está em:
 
 ---
 
+## Comandos do Prisma
+
+O projeto utiliza **Prisma** como ORM. Aqui estão os principais comandos:
+
+### Gerar o cliente Prisma
+Gera o cliente TypeScript baseado no schema definido em `prisma/schema.prisma`:
+
+```bash
+npx prisma generate
+```
+
+### Executar migrações (Desenvolvimento)
+Aplica mudanças no schema do banco de dados e gera uma nova migração:
+
+```bash
+npx prisma migrate dev --name <nome-da-migracao>
+```
+
+Exemplo:
+```bash
+npx prisma migrate dev --name add-user-table
+```
+
+### Visualizar dados no Prisma Studio
+Abre uma interface gráfica para visualizar e editar dados do banco:
+
+```bash
+npx prisma studio
+```
+
+O Studio estará disponível em **http://localhost:5555**
+
+### Resetar banco de dados (Desenvolvimento)
+Remove todas as migrações e dados, recriando o banco do zero:
+
+```bash
+npx prisma migrate reset
+```
+
+### Verificar status das migrações
+Verifica se há migrações pendentes ou diferenças entre o schema e o banco:
+
+```bash
+npx prisma migrate status
+```
+
+### Seed do banco (Opcional)
+Se houver um arquivo de seed configurado, execute:
+
+```bash
+npx prisma db seed
+```
+
+**Nota:** Para configurar o seed, adicione no `package.json`:
+```json
+{
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}
+```
+
+---
+
 ## Pré-requisitos
 
 - Node.js
@@ -80,12 +148,10 @@ docker-compose --version
 O projeto utiliza variáveis de ambiente definidas em um arquivo `.env`. Use o `.env.example` como base:
 
 ```env
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_DATABASE=backend
-DB_HOST=localhost
-DB_PORT=5432
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/backend?schema=public"
 ```
+
+**Nota:** O Prisma utiliza uma única string de conexão `DATABASE_URL` ao invés de múltiplas variáveis como no TypeORM.
 
 ---
 
@@ -97,10 +163,27 @@ DB_PORT=5432
 docker-compose up -d postgres
 ```
 
-**2. Instalar dependências e rodar o Nest em modo desenvolvimento:**
+**2. Instalar dependências:**
 
 ```bash
 npm install
+```
+
+**3. Gerar o cliente Prisma:**
+
+```bash
+npx prisma generate
+```
+
+**4. Executar migrações do banco:**
+
+```bash
+npx prisma migrate dev --name init
+```
+
+**5. Rodar o Nest em modo desenvolvimento:**
+
+```bash
 npm run start:dev
 ```
 
