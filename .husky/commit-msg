@@ -1,4 +1,19 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/bash
 
-npx --no -- commitlint --edit ${1}
+# Pega a mensagem digitada
+commit_msg=$(cat "$1")
+
+# Regex: tipo(id_clickup): mensagem
+regex="^(feature|fix|hotfix|chore|refactor)\([a-zA-Z0-9]+\):\s.{5,}$"
+
+if [[ ! $commit_msg =~ $regex ]]; then
+  echo -e "\n\033[1;31m[ERRO DE PADRONIZAÇÃO]\033[0m"
+  echo -e "Sua mensagem de commit não segue as regras do projeto."
+  echo -e "--------------------------------------------------------"
+  echo -e "Correto: \033[1;32mfeature(86ag34u4q): add suporte a dark mode\033[0m"
+  echo -e "Seu commit: \033[1;31m$commit_msg\033[0m"
+  echo -e "--------------------------------------------------------"
+  echo -e "Tipos: feature, fix, hotfix, chore, refactor"
+  echo -e "ID ClickUp deve estar entre parênteses e ter um espaço após os dois pontos.\n"
+  exit 1
+fi
