@@ -121,75 +121,65 @@ A documentação interativa da API está em:
 
 ---
 
-## Comandos do Prisma
+## Prisma e comandos
 
-O projeto utiliza **Prisma** como ORM. Aqui estão os principais comandos:
+O projeto utiliza **Prisma** como ORM. A configuração fica em `prisma.config.ts` (schema, migrações e seed). O seed é executado via comando em `prisma.config.ts` (`npx ts-node --transpile-only prisma/seed.ts`), o que funciona em qualquer máquina sem depender de permissões no ficheiro.
 
 ### Gerar o cliente Prisma
 
-Gera o cliente TypeScript baseado no schema definido em `prisma/schema.prisma`:
+Gera o cliente TypeScript a partir de `prisma/schema.prisma`. Roda automaticamente no `postinstall`:
 
 ```bash
 npx prisma generate
 ```
 
-### Executar migrações (Desenvolvimento)
+### Migrações
 
-Aplica mudanças no schema do banco de dados e gera uma nova migração:
+Aplicar mudanças no schema e criar uma nova migração:
 
 ```bash
 npx prisma migrate dev --name <nome-da-migracao>
 ```
 
-Exemplo:
+Exemplo: `npx prisma migrate dev --name add-user-table`
 
-```bash
-npx prisma migrate dev --name add-user-table
-```
-
-### Visualizar dados no Prisma Studio
-
-Abre uma interface gráfica para visualizar e editar dados do banco:
-
-```bash
-npx prisma studio
-```
-
-O Studio estará disponível em **http://localhost:5555**
-
-### Resetar banco de dados (Desenvolvimento)
-
-Remove todas as migrações e dados, recriando o banco do zero:
-
-```bash
-npx prisma migrate reset
-```
-
-### Verificar status das migrações
-
-Verifica se há migrações pendentes ou diferenças entre o schema e o banco:
+Verificar estado das migrações:
 
 ```bash
 npx prisma migrate status
 ```
 
-### Seed do banco (Opcional)
+Resetar o banco (apaga dados e reaplica migrações):
 
-Se houver um arquivo de seed configurado, execute:
+```bash
+npx prisma migrate reset
+```
+
+### Seed do banco
+
+Popular o banco com dados iniciais (limpa a tabela `User` e insere dados de exemplo):
+
+```bash
+npm run db:seed
+```
+
+ou:
 
 ```bash
 npx prisma db seed
 ```
 
-**Nota:** Para configurar o seed, adicione no `package.json`:
+O script de seed está em `prisma/seed.ts`.
 
-```json
-{
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
-  }
-}
+### Prisma Studio
+
+Interface gráfica para ver e editar dados:
+
+```bash
+npx prisma studio
 ```
+
+Disponível em **http://localhost:5555**
 
 ---
 
@@ -197,7 +187,7 @@ npx prisma db seed
 
 - Node.js
 - npm
-- Docker e Docker Compose (para subir apenas o Postgres)
+- Docker e Docker Compose (apenas para o Postgres)
 
 Verifique as instalações:
 
@@ -210,51 +200,51 @@ docker-compose --version
 
 ---
 
-## Configuração do projeto
+## Configuração (setup)
 
-O projeto utiliza variáveis de ambiente definidas em um arquivo `.env`. Use o `.env.example` como base:
+**1. Variáveis de ambiente**
+
+Crie um ficheiro `.env` na raiz do projeto (use `.env.example` como base). O Prisma usa uma única string de conexão:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/backend?schema=public"
 ```
 
-**Nota:** O Prisma utiliza uma única string de conexão `DATABASE_URL` ao invés de múltiplas variáveis como no TypeORM.
-
----
-
-## Rodando a aplicação
-
-**1. Subir apenas o Postgres (ignorar o backend no compose):**
-
-```bash
-docker-compose up -d postgres
-```
-
-**2. Instalar dependências:**
+**2. Instalar dependências**
 
 ```bash
 npm install
 ```
 
-**3. Gerar o cliente Prisma:**
+O `postinstall` roda automaticamente `prisma generate`, por isso o cliente Prisma fica gerado após o install.
+
+**3. Base de dados e migrações**
+
+Suba o Postgres (sem o backend no compose):
 
 ```bash
-npx prisma generate
+docker-compose up -d postgres
 ```
 
-**4. Executar migrações do banco:**
+Aplique as migrações (na primeira vez ou após alterações no schema):
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-**5. Rodar o Nest em modo desenvolvimento:**
+(O nome `init` é só um exemplo; use um nome descritivo para cada migração.)
+
+**4. Rodar a aplicação**
+
+Em desenvolvimento:
 
 ```bash
 npm run start:dev
 ```
 
-A API estará disponível em **http://localhost:3000** (porta 3000).
+O script `start:dev` sobe o Postgres (se ainda não estiver a correr) e inicia o Nest em modo watch.
+
+A API fica disponível em **http://localhost:3000** (porta 3000).
 
 ---
 
