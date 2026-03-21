@@ -43,13 +43,14 @@ model User {
   streak          Int?
   coins           Int?
   createdAt       DateTime           @default(now())
-  enable          Boolean            @default(true)
-  schedule_init   DateTime?
+  enable          Boolean            @default(true)        
   desired_course  String?
   desired_exam    String?
+  last_active     DateTime?
   Study_day       StudyDay[]
   answers         Answer[]
   attempts        Attempt[]
+  StudyLog        StudyLog[]
 
 }
 
@@ -60,6 +61,19 @@ model StudyDay{
   hour            Int
   user_id         String                              @db.Uuid
   user            User   @relation(fields: [user_id], references: [id])
+
+}
+
+model StudyLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  date      DateTime
+  done      Boolean  @default(false)
+
+  user_id   String   @db.Uuid
+  user      User     @relation(fields: [user_id], references: [id])
+
+  topic_id  String   @db.Uuid
+  topic     Topic    @relation(fields: [topic_id], references: [id])
 
 }
 
@@ -79,6 +93,7 @@ model Topic{
   subject_id  String @db.Uuid
   subject     Subject          @relation(fields: [subject_id], references: [id])
   questions               Question[]
+  StudyLog        StudyLog[]
 
 }
 
@@ -116,7 +131,7 @@ model Question{
   origin                  Origin
   year                    Int
   feedback                String
-  day                     Int
+  day                     Int?
   number                  Int?
   language                Language?
   image_url               String?
