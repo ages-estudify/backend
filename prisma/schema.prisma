@@ -37,7 +37,7 @@ model User {
   full_name       String
   email           String    @unique
   password        String
-  phone_number    String
+  phone_number    String    @unique
   role            Role
   plan_end_date   DateTime?
   streak          Int?
@@ -72,8 +72,10 @@ model StudyLog {
   user_id   String   @db.Uuid
   user      User     @relation(fields: [user_id], references: [id])
 
-  topic_id  String   @db.Uuid
-  topic     Topic    @relation(fields: [topic_id], references: [id])
+  Path_id  String   @db.Uuid
+  Path     Path    @relation(fields: [Path_id], references: [id])
+
+  @@unique([user_id, Path_id, date])
 
 }
 
@@ -81,19 +83,22 @@ model Subject{
   
   id      String    @id      @default(uuid()) @db.Uuid
   name    String
-  topics  Topic[]
+  paths  Path[]
 
 }
 
-model Topic{
+model Path{
   
   id        String    @id      @default(uuid()) @db.Uuid
   name      String
+  text      String
   position  Int
   subject_id  String @db.Uuid
   subject     Subject          @relation(fields: [subject_id], references: [id])
   questions               Question[]
   StudyLog        StudyLog[]
+
+  @@unique([subject_id, position])
 
 }
 
@@ -135,8 +140,8 @@ model Question{
   number                  Int?
   language                Language?
   image_url               String?
-  topic_id                String   @db.Uuid
-  topic                   Topic    @relation(fields: [topic_id], references: [id])
+  Path_id                String   @db.Uuid
+  Path                   Path    @relation(fields: [Path_id], references: [id])
   exam_id                 String?   @db.Uuid
   exam                    Exam?    @relation(fields: [exam_id], references: [id])
   alternatives            Alternative[]
