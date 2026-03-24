@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { WeekDay } from '@prisma/client';
+import { text } from 'stream/consumers';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
@@ -17,7 +18,7 @@ async function main() {
   await prisma.attempt.deleteMany();
   await prisma.exam.deleteMany();
   await prisma.studyLog.deleteMany();
-  await prisma.topic.deleteMany();
+  await prisma.path.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.studyDay.deleteMany();
   await prisma.user.deleteMany();
@@ -40,7 +41,7 @@ async function main() {
       full_name: 'Ana Souza',
       email: 'ana@email.com',
       password: '123456',
-      phone_number: '51911111111',
+      phone_number: '51911111114',
       desired_course: 'Medicina',
       desired_exam: 'Pucrs',
       role: Role.USER,
@@ -90,52 +91,118 @@ async function main() {
   const literatura = await prisma.subject.create({ data: { name: 'Literatura' } });
   const linguas = await prisma.subject.create({ data: { name: 'Línguas Estrangeiras' } });
 
-    // =========================
-    // TOPICS 
-    // =========================
-    const historiaTopico = await prisma.topic.create({
-      data: { name: 'Antiguidade', position: 1, subject_id: historia.id },
-    });
+  // =========================
+  // pathS
+  // =========================
+  const historiapatho = await prisma.path.create({
+    data: {
+      name: 'Antiguidade',
+      schedule_position: 1,
+      trail_position: 1,
+      subject_id: historia.id,
+      text: 'Estude a história da antiguidade, incluindo as civilizações egípcia, grega e romana.',
+    },
+  });
 
-    const matematicaBasica = await prisma.topic.create({
-      data: { name: 'Matemática Básica', position: 2, subject_id: matematica.id },
-    });
+  const matematicaBasica = await prisma.path.create({
+    data: {
+      name: 'Matemática Básica',
+      schedule_position: 2,
+      trail_position: 1,
+      subject_id: matematica.id,
+      text: 'Estude os conceitos básicos de matemática.',
+    },
+  });
 
-    const interpretacao = await prisma.topic.create({
-      data: { name: 'Interpretação de Texto', position: 3, subject_id: portugues.id },
-    });
+  const interpretacao = await prisma.path.create({
+    data: {
+      name: 'Interpretação de Texto',
+      schedule_position: 3,
+      trail_position: 1,
+      subject_id: portugues.id,
+      text: 'Estude como interpretar textos literários.',
+    },
+  });
 
-    const cartografia = await prisma.topic.create({
-      data: { name: 'Cartografia', position: 4, subject_id: geografia.id },
-    });
+  const cartografia = await prisma.path.create({
+    data: {
+      name: 'Cartografia',
+      schedule_position: 4,
+      trail_position: 1,
+      subject_id: geografia.id,
+      text: 'Estude os princípios da cartografia.',
+    },
+  });
 
-    const mecanica = await prisma.topic.create({
-      data: { name: 'Mecânica', position: 5, subject_id: fisica.id },
-    });
+  const mecanica = await prisma.path.create({
+    data: {
+      name: 'Mecânica',
+      schedule_position: 5,
+      trail_position: 1,
+      subject_id: fisica.id,
+      text: 'Estude os princípios da mecânica.',
+    },
+  });
 
-    const modelosAtomicos = await prisma.topic.create({
-      data: { name: 'Modelos Atômicos', position: 6, subject_id: quimica.id },
-    });
+  const modelosAtomicos = await prisma.path.create({
+    data: {
+      name: 'Modelos Atômicos',
+      schedule_position: 6,
+      trail_position: 1,
+      subject_id: quimica.id,
+      text: 'Estude os modelos atômicos.',
+    },
+  });
 
-    const bioquimica = await prisma.topic.create({
-      data: { name: 'Bioquímica', position: 7, subject_id: biologia.id },
-    });
+  const bioquimica = await prisma.path.create({
+    data: {
+      name: 'Bioquímica',
+      schedule_position: 7,
+      trail_position: 1,
+      subject_id: biologia.id,
+      text: 'Estude os princípios da bioquímica.',
+    },
+  });
 
-    const filosofiaAntiga = await prisma.topic.create({
-      data: { name: 'Filosofia Antiga', position: 8, subject_id: filosofia.id },
-    });
+  const filosofiaAntiga = await prisma.path.create({
+    data: {
+      name: 'Filosofia Antiga',
+      schedule_position: 8,
+      trail_position: 1,
+      subject_id: filosofia.id,
+      text: 'Estude os princípios da filosofia antiga.',
+    },
+  });
 
-    const cultura = await prisma.topic.create({
-      data: { name: 'Cultura', position: 9, subject_id: sociologia.id },
-    });
+  const cultura = await prisma.path.create({
+    data: {
+      name: 'Cultura',
+      schedule_position: 9,
+      trail_position: 1,
+      subject_id: sociologia.id,
+      text: 'Estude os princípios da cultura.',
+    },
+  });
 
-    const escolasLiterarias = await prisma.topic.create({
-      data: { name: 'Escolas Literárias', position: 10, subject_id: literatura.id },
-    });
+  const escolasLiterarias = await prisma.path.create({
+    data: {
+      name: 'Escolas Literárias',
+      schedule_position: 10,
+      trail_position: 1,
+      subject_id: literatura.id,
+      text: 'Estude as diferentes escolas literárias.',
+    },
+  });
 
-    const linguasTopico = await prisma.topic.create({
-      data: { name: 'Gramática Básica', position: 11, subject_id: linguas.id },
-    });
+  const linguaspatho = await prisma.path.create({
+    data: {
+      name: 'Gramática Básica',
+      schedule_position: 11,
+      trail_position: 1,
+      subject_id: linguas.id,
+      text: 'Estude os princípios da gramática.',
+    },
+  });
 
   // =========================
   // QUESTIONS
@@ -147,7 +214,7 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      topic_id: matematicaBasica.id,
+      path_id: matematicaBasica.id,
       alternatives: {
         create: [
           { text: '1', letter: 'A', is_correct: false },
@@ -166,7 +233,7 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      topic_id: cartografia.id,
+      path_id: cartografia.id,
       alternatives: {
         create: [
           { text: 'São Paulo', letter: 'A', is_correct: false },
@@ -185,7 +252,7 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      topic_id: interpretacao.id,
+      path_id: interpretacao.id,
       alternatives: {
         create: [
           { text: 'Machado de Assis', letter: 'A', is_correct: true },
@@ -204,9 +271,9 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      day : 1,
-      number :1,
-      topic_id: modelosAtomicos.id,
+      day: 1,
+      number: 1,
+      path_id: modelosAtomicos.id,
       alternatives: {
         create: [
           { text: 'CO2', letter: 'A', is_correct: false },
@@ -225,9 +292,9 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      day:2,
-      number:2,
-      topic_id: cartografia.id,
+      day: 2,
+      number: 2,
+      path_id: cartografia.id,
       alternatives: {
         create: [
           { text: 'Terra', letter: 'A', is_correct: false },
@@ -240,89 +307,84 @@ async function main() {
     },
   });
 
-  
   const q1 = await prisma.question.findFirst({
-  where: { text: 'Qual é o resultado de 2 + 2?' },
-  include: { alternatives: true },
+    where: { text: 'Qual é o resultado de 2 + 2?' },
+    include: { alternatives: true },
   });
 
-   await prisma.answer.create({
-  data: {
-    user_id: user2.id,
-    question_id: q1!.id,
-    alternative_id: q1!.alternatives.find(a => a.is_correct)!.id,
-  }
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: q1!.id,
+      alternative_id: q1!.alternatives.find((a) => a.is_correct)!.id,
+    },
   });
 
   const q2 = await prisma.question.findFirst({
-  where: { text: 'Qual é a capital do Brasil?'},
-  include: { alternatives: true },
+    where: { text: 'Qual é a capital do Brasil?' },
+    include: { alternatives: true },
   });
 
-   await prisma.answer.create({
-  data: {
-    user_id: user3.id,
-    question_id: q2!.id,
-    alternative_id: q2!.alternatives.find(a => a.text === 'São Paulo')!.id,
-  }
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: q2!.id,
+      alternative_id: q2!.alternatives.find((a) => a.text === 'São Paulo')!.id,
+    },
   });
-
 
   const exam1 = await prisma.exam.create({
-  data: {
-    name: 'Simulado Geral 1',
-    estimated_time_minutes: 60,
-    origin: 'ORIGINAL',
-    questions: {
-      connect: [
-        { id: q3!.id },
-        { id: q4!.id },
-      ],
+    data: {
+      name: 'Simulado Geral 1',
+      origin: 'ORIGINAL',
+      image_url: 'https://example.com/exam1.png',
+      questions: {
+        connect: [{ id: q3!.id }, { id: q4!.id }],
+      },
     },
-  },
-});
+  });
 
-      const attempt1 = await prisma.attempt.create({
-        data: {
-          time_spent_minutes: 0, 
-          current_question: 2,
-          language: 'ENGLISH',
-          init_time: new Date(),
-          exam_id: exam1.id,
-          user_id: user2.id,
-        },
-      });
+  const attempt1 = await prisma.attempt.create({
+    data: {
+      time_spent_minutes: 0,
+      current_question: 2,
+      language: 'ENGLISH',
+      init_time: new Date(),
+      exam_id: exam1.id,
+      user_id: user2.id,
+    },
+  });
 
   const q = await prisma.question.findFirst({
-  where: { text: 'Qual é a fórmula da água?'},
-  include: { alternatives: true },
+    where: { text: 'Qual é a fórmula da água?' },
+    include: { alternatives: true },
   });
 
-    await prisma.answer.create({
+  await prisma.answer.create({
     data: {
-    user_id: user2.id,
-    question_id: q!.id,
-    alternative_id: q!.alternatives.find(a => a.text === 'CO2')!.id,
-    attempt_id: attempt1.id,
-  }
-});
+      user_id: user2.id,
+      question_id: q!.id,
+      alternative_id: q!.alternatives.find((a) => a.text === 'CO2')!.id,
+      attempt_id: attempt1.id,
+    },
+  });
 
   await prisma.studyLog.create({
     data: {
-     user_id: user2.id,
-      topic_id:cartografia.id,
+      user_id: user2.id,
+      path_id: cartografia.id,
       date: new Date('2026-03-27T10:00:00'),
-      done : false
-    }
+      done: false,
+    },
   });
 
   await prisma.studyLog.create({
     data: {
-     user_id: user2.id,
-      topic_id:matematicaBasica.id,
+      user_id: user2.id,
+      path_id: matematicaBasica.id,
       date: new Date('2026-03-27T11:00:00'),
-      done : false
-    }
+      done: false,
+    },
   });
 
   console.log('Seed completed');
