@@ -177,8 +177,8 @@ model Answer {
   user           User        @relation(fields: [user_id], references: [id])
   question_id    String      @db.Uuid
   question       Question    @relation(fields: [question_id], references: [id])
-  alternative_id String      @db.Uuid
-  alternative    Alternative @relation(fields: [alternative_id], references: [id])
+  alternative_id String?      @db.Uuid
+  alternative    Alternative? @relation(fields: [alternative_id], references: [id])
   attempt_id     String?     @db.Uuid
   attempt        Attempt?    @relation(fields: [attempt_id], references: [id])
 
