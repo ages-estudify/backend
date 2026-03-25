@@ -317,6 +317,7 @@ async function main() {
       user_id: user2.id,
       question_id: q1!.id,
       alternative_id: q1!.alternatives.find((a) => a.is_correct)!.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
     },
   });
 
@@ -330,6 +331,7 @@ async function main() {
       user_id: user3.id,
       question_id: q2!.id,
       alternative_id: q2!.alternatives.find((a) => a.text === 'São Paulo')!.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
     },
   });
 
@@ -366,6 +368,7 @@ async function main() {
       question_id: q!.id,
       alternative_id: q!.alternatives.find((a) => a.text === 'CO2')!.id,
       attempt_id: attempt1.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
     },
   });
 
