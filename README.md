@@ -229,10 +229,8 @@ docker-compose up -d postgres
 Aplique as migrações (na primeira vez ou após alterações no schema):
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
-
-(O nome `init` é só um exemplo; use um nome descritivo para cada migração.)
 
 **4. Rodar a aplicação**
 

@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,13 +21,20 @@ async function bootstrap() {
     prefix: 'v',
   });
 
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   const config = new DocumentBuilder()
     .setTitle('Estudify API')
     .setDescription('Documentação da API da plataforma Estudify')
     .setVersion('1.0')
     .build();
+
+  const options: SwaggerCustomOptions = {
+    useGlobalPrefix: true,
+  };
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/docs', app, document);
+  SwaggerModule.setup('v1/docs', app, document, options);
 
   app.useGlobalPipes(
     new ValidationPipe({
