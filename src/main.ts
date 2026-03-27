@@ -27,6 +27,10 @@ async function bootstrap() {
     .setTitle('Estudify API')
     .setDescription('Documentação da API da plataforma Estudify')
     .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
+      'JWT-auth',
+    )
     .build();
 
   const options: SwaggerCustomOptions = {
