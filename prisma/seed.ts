@@ -5,11 +5,24 @@ import { PrismaClient } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { WeekDay } from '@prisma/client';
 import { text } from 'stream/consumers';
+import * as bcrypt from 'bcrypt';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
+
+function resolveBcryptRounds(envValue?: string): number {
+
+  const parsed = Number.parseInt(envValue ?? '', 10);
+
+  if (Number.isFinite(parsed) && parsed >= 4 && parsed <= 15) {
+    return parsed;
+  }
+
+  return 10;
+}
+
 async function main() {
   // LIMPA BANCO
   await prisma.answer.deleteMany();
@@ -26,11 +39,18 @@ async function main() {
   // =========================
   // USERS
   // =========================
+
+      const bcryptRounds = resolveBcryptRounds(process.env.BCRYPT_ROUNDS);
+      
+      const password1Hash = await bcrypt.hash('Admin123', bcryptRounds);
+      const password2Hash = await bcrypt.hash('User321', bcryptRounds);
+      const password3Hash = await bcrypt.hash('User123', bcryptRounds);
+
   const user1 = await prisma.user.create({
     data: {
       full_name: 'Aurelio Fagundes',
       email: 'Fagund_Au@email.com',
-      password: '1029384',
+      password: password1Hash,
       phone_number: '51911111111',
       role: Role.ADM,
       birth_date: new Date('1985-03-20'),
@@ -41,7 +61,7 @@ async function main() {
     data: {
       full_name: 'Ana Souza',
       email: 'ana@email.com',
-      password: '123456',
+      password: password2Hash,
       phone_number: '51911111114',
       birth_date: new Date('2002-07-12'),
       desired_course: 'Medicina',
@@ -62,7 +82,7 @@ async function main() {
     data: {
       full_name: 'Lucas Pereira',
       email: 'lucas@email.com',
-      password: '123456',
+      password: password3Hash,
       phone_number: '51922222222',
       birth_date: new Date('2001-11-05'),
       desired_course: 'Engenharia Civil',
