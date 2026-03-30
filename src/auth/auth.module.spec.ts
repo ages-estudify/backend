@@ -1,16 +1,15 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { PrismaService } from '../prisma.service';
+import { UsersRepository } from '../users/users.repository';
 import { AuthModule } from './auth.module';
 import { AuthService } from './auth.service';
 
 describe('AuthModule', () => {
   it('compiles and exposes AuthService', async () => {
-    const prismaStub = {
-      user: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-      },
+    const usersRepoStub = {
+      findByEmail: jest.fn(),
+      findByPhone: jest.fn(),
+      create: jest.fn(),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -22,8 +21,8 @@ describe('AuthModule', () => {
         AuthModule,
       ],
     })
-      .overrideProvider(PrismaService)
-      .useValue(prismaStub)
+      .overrideProvider(UsersRepository)
+      .useValue(usersRepoStub)
       .compile();
 
     expect(moduleRef.get(AuthService)).toBeDefined();

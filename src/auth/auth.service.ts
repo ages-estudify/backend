@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { UsersRepository } from '../users/users.repository';
 import { RegisterRequestDto } from './dto/register-request.dto';
-import { AuthUserRepository } from './repositories/auth-user.repository';
 import { JwtUserClaims } from './security/jwt-claims';
 
 export type RegisterResult = {
@@ -15,11 +16,10 @@ export type RegisterResult = {
 
 @Injectable()
 export class AuthService {
-  private static readonly BCRYPT_ROUNDS = 10;
-
   constructor(
-    private readonly users: AuthUserRepository,
+    private readonly users: UsersRepository,
     private readonly jwt: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
   async register(dto: RegisterRequestDto): Promise<RegisterResult> {
@@ -27,13 +27,14 @@ export class AuthService {
     const phone = dto.phone.trim();
 
     if (await this.users.findByEmail(email)) {
-      throw new BadRequestException('Email is already registered');
+      throw new ConflictException('Email is already registered');
     }
     if (await this.users.findByPhone(phone)) {
-      throw new BadRequestException('Phone number is already registered');
+      throw new ConflictException('Phone number is already registered');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, AuthService.BCRYPT_ROUNDS);
+    const bcryptRounds = this.resolveBcryptRounds();
+    const passwordHash = await bcrypt.hash(dto.password, bcryptRounds);
     const birthDate = new Date(`${dto.birthDate}T00:00:00.000Z`);
 
     const user = await this.users.create({
@@ -65,5 +66,13 @@ export class AuthService {
   private formatPlanDate(date: Date | null): string | null {
     if (!date) return null;
     return date.toISOString().slice(0, 10);
+  }
+
+  private resolveBcryptRounds(): number {
+    const parsed = Number.parseInt(this.config.get<string>('BCRYPT_ROUNDS') ?? '', 10);
+    if (Number.isFinite(parsed) && parsed >= 4 && parsed <= 15) {
+      return parsed;
+    }
+    return 10;
   }
 }

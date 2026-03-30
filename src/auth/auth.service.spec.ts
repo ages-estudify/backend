@@ -1,10 +1,11 @@
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { UsersRepository } from '../users/users.repository';
 import { AuthService } from './auth.service';
 import { RegisterRequestDto } from './dto/register-request.dto';
-import { AuthUserRepository } from './repositories/auth-user.repository';
 
 jest.mock('bcrypt');
 
@@ -12,8 +13,9 @@ const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('AuthService', () => {
   let service: AuthService;
-  let users: jest.Mocked<Pick<AuthUserRepository, 'findByEmail' | 'findByPhone' | 'create'>>;
+  let users: jest.Mocked<Pick<UsersRepository, 'findByEmail' | 'findByPhone' | 'create'>>;
   let jwtSign: jest.Mock;
+  let configGet: jest.Mock;
 
   const dto: RegisterRequestDto = {
     fullName: ' Maria ',
@@ -49,13 +51,15 @@ describe('AuthService', () => {
       create: jest.fn(),
     };
     jwtSign = jest.fn().mockReturnValue('jwt-token');
+    configGet = jest.fn().mockReturnValue(undefined);
     mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: AuthUserRepository, useValue: users },
+        { provide: UsersRepository, useValue: users },
         { provide: JwtService, useValue: { sign: jwtSign } },
+        { provide: ConfigService, useValue: { get: configGet } },
       ],
     }).compile();
 
@@ -110,6 +114,17 @@ describe('AuthService', () => {
       response: expect.objectContaining({ message: 'Phone number is already registered' }),
     });
     expect(mockedBcrypt.hash).not.toHaveBeenCalled();
+  });
+
+  it('uses BCRYPT_ROUNDS from config when valid', async () => {
+    configGet.mockImplementation((key: string) => (key === 'BCRYPT_ROUNDS' ? '12' : undefined));
+    users.findByEmail.mockResolvedValue(null);
+    users.findByPhone.mockResolvedValue(null);
+    users.create.mockResolvedValue(fullUser);
+
+    await service.register({ ...dto });
+
+    expect(mockedBcrypt.hash).toHaveBeenCalledWith('password1', 12);
   });
 
   it('includes planExpirationDate in JWT when plan_end_date is set', async () => {

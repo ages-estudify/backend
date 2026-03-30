@@ -1,8 +1,8 @@
 import { Role } from '@prisma/client';
-import { PrismaService } from '../../prisma.service';
-import { AuthUserRepository } from './auth-user.repository';
+import { PrismaService } from '../prisma.service';
+import { UsersRepository } from './users.repository';
 
-describe('AuthUserRepository', () => {
+describe('UsersRepository', () => {
   const prisma = {
     user: {
       findUnique: jest.fn(),
@@ -10,11 +10,11 @@ describe('AuthUserRepository', () => {
     },
   };
 
-  let repo: AuthUserRepository;
+  let repo: UsersRepository;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    repo = new AuthUserRepository(prisma as unknown as PrismaService);
+    repo = new UsersRepository(prisma as unknown as PrismaService);
   });
 
   it('findByEmail delegates to prisma.user.findUnique', async () => {
