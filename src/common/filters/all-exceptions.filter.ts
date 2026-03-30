@@ -17,7 +17,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    let message: string | string[] = 'Internal server error';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -26,17 +26,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const responseObj = exceptionResponse as any;
-        message = responseObj.message || responseObj.error || 'Unknown error';
+        const responseObj = exceptionResponse as { message?: string | string[]; error?: string };
+        message = responseObj.message ?? responseObj.error ?? 'Unknown error';
       }
     } else {
       this.logger.error('Unhandled exception:', exception);
     }
 
+    const clientMessage = Array.isArray(message) ? message.join('; ') : message;
+
     response.status(status).json({
-      statusCode: status,
-      message: message,
-      timestamp: new Date().toISOString(),
+      success: false,
+      message: clientMessage,
     });
   }
 }

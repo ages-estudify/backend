@@ -47,6 +47,7 @@ model User {
   desired_course String?
   desired_exam   String?
   last_active    DateTime?
+  birth_date     DateTime?  @db.Date
   Study_day      StudyDay[]
   answers        Answer[]
   attempts       Attempt[]

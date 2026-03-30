@@ -33,6 +33,7 @@ async function main() {
       password: '1029384',
       phone_number: '51911111111',
       role: Role.ADM,
+      birth_date: new Date('1985-03-20'),
     },
   });
 
@@ -42,6 +43,7 @@ async function main() {
       email: 'ana@email.com',
       password: '123456',
       phone_number: '51911111114',
+      birth_date: new Date('2002-07-12'),
       desired_course: 'Medicina',
       desired_exam: 'Pucrs',
       role: Role.USER,
@@ -62,6 +64,7 @@ async function main() {
       email: 'lucas@email.com',
       password: '123456',
       phone_number: '51922222222',
+      birth_date: new Date('2001-11-05'),
       desired_course: 'Engenharia Civil',
       desired_exam: 'UFRGS',
       role: Role.USER,
