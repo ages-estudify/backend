@@ -52,7 +52,20 @@ model User {
   answers        Answer[]
   attempts       Attempt[]
   StudyLog       StudyLog[]
+  refresh_tokens RefreshToken[]
 
+}
+
+model RefreshToken {
+
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  user_id   String   @db.Uuid
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([user_id])
 }
 
 model StudyDay {

@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { RefreshTokenRepository } from '../users/refresh-token.repository';
 import { UsersRepository } from '../users/users.repository';
 import { AuthService } from './auth.service';
 import { RegisterRequestDto } from './dto/register-request.dto';
@@ -14,6 +15,9 @@ const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 describe('AuthService', () => {
   let service: AuthService;
   let users: jest.Mocked<Pick<UsersRepository, 'findByEmail' | 'findByPhone' | 'create'>>;
+  let refreshTokens: jest.Mocked<
+    Pick<RefreshTokenRepository, 'create' | 'findValidByHashWithUser' | 'deleteById'>
+  >;
   let jwtSign: jest.Mock;
   let configGet: jest.Mock;
 
@@ -50,6 +54,11 @@ describe('AuthService', () => {
       findByPhone: jest.fn(),
       create: jest.fn(),
     };
+    refreshTokens = {
+      create: jest.fn().mockResolvedValue({ id: 'rt' } as never),
+      findValidByHashWithUser: jest.fn(),
+      deleteById: jest.fn().mockResolvedValue(undefined),
+    };
     jwtSign = jest.fn().mockReturnValue('jwt-token');
     configGet = jest.fn().mockReturnValue(undefined);
     mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
@@ -58,6 +67,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersRepository, useValue: users },
+        { provide: RefreshTokenRepository, useValue: refreshTokens },
         { provide: JwtService, useValue: { sign: jwtSign } },
         { provide: ConfigService, useValue: { get: configGet } },
       ],
@@ -89,12 +99,18 @@ describe('AuthService', () => {
       role: Role.USER,
       planExpirationDate: null,
     });
-    expect(result).toEqual({
+    expect(refreshTokens.create).toHaveBeenCalledWith(
+      fullUser.id,
+      expect.any(String),
+      expect.any(Date),
+    );
+    expect(result).toMatchObject({
       userId: fullUser.id,
       token: 'jwt-token',
       role: Role.USER,
       planExpirationDate: null,
     });
+    expect(result.refreshToken.length).toBeGreaterThan(20);
   });
 
   it('rejects duplicate email', async () => {
@@ -139,6 +155,140 @@ describe('AuthService', () => {
       userId: fullUser.id,
       role: Role.USER,
       planExpirationDate: '2026-12-31',
+    });
+  });
+
+  describe('login', () => {
+    const loginDto = { email: 'maria@email.com', password: 'secret' };
+
+    beforeEach(() => {
+      mockedBcrypt.compare.mockReset();
+    });
+
+    it('returns token and signs JWT when credentials are valid', async () => {
+      users.findByEmail.mockResolvedValue(fullUser);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+
+      const result = await service.login(loginDto);
+
+      expect(users.findByEmail).toHaveBeenCalledWith('maria@email.com');
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith('secret', fullUser.password);
+      expect(jwtSign).toHaveBeenCalledWith({
+        userId: fullUser.id,
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+      expect(refreshTokens.create).toHaveBeenCalled();
+      expect(result).toMatchObject({
+        token: 'jwt-token',
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+      expect(result.refreshToken.length).toBeGreaterThan(20);
+    });
+
+    it('rejects when user does not exist', async () => {
+      users.findByEmail.mockResolvedValue(null);
+
+      await expect(service.login(loginDto)).rejects.toMatchObject({
+        response: expect.objectContaining({ message: 'Invalid credentials' }),
+      });
+      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
+      expect(jwtSign).not.toHaveBeenCalled();
+    });
+
+    it('rejects when password is incorrect', async () => {
+      users.findByEmail.mockResolvedValue(fullUser);
+      mockedBcrypt.compare.mockResolvedValue(false as never);
+
+      await expect(service.login(loginDto)).rejects.toMatchObject({
+        response: expect.objectContaining({ message: 'Invalid credentials' }),
+      });
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith('secret', fullUser.password);
+      expect(jwtSign).not.toHaveBeenCalled();
+    });
+
+    it('rejects when account is disabled', async () => {
+      users.findByEmail.mockResolvedValue({ ...fullUser, enable: false });
+
+      await expect(service.login(loginDto)).rejects.toMatchObject({
+        response: expect.objectContaining({ message: 'Invalid credentials' }),
+      });
+      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it('includes planExpirationDate in JWT when user has a plan end date', async () => {
+      const planEnd = new Date('2026-06-01T00:00:00.000Z');
+      users.findByEmail.mockResolvedValue({ ...fullUser, plan_end_date: planEnd });
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+
+      await service.login(loginDto);
+
+      expect(jwtSign).toHaveBeenCalledWith({
+        userId: fullUser.id,
+        role: Role.USER,
+        planExpirationDate: '2026-06-01',
+      });
+    });
+
+    it('normalizes email with trim and lowercase', async () => {
+      users.findByEmail.mockResolvedValue(fullUser);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+
+      await service.login({ email: '  MARIA@EMAIL.COM  ', password: 'secret' });
+
+      expect(users.findByEmail).toHaveBeenCalledWith('maria@email.com');
+    });
+  });
+
+  describe('refresh', () => {
+    const refreshRow = {
+      id: 'refresh-row-id',
+      tokenHash: 'hash',
+      user_id: fullUser.id,
+      expiresAt: new Date(Date.now() + 86400000),
+      createdAt: new Date(),
+      user: fullUser,
+    };
+
+    it('rotates refresh token and returns new access token', async () => {
+      refreshTokens.findValidByHashWithUser.mockResolvedValue(refreshRow as never);
+
+      const result = await service.refresh({ refreshToken: 'client-refresh-token' });
+
+      expect(refreshTokens.deleteById).toHaveBeenCalledWith('refresh-row-id');
+      expect(refreshTokens.create).toHaveBeenCalled();
+      expect(jwtSign).toHaveBeenCalledWith({
+        userId: fullUser.id,
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+      expect(result).toMatchObject({
+        token: 'jwt-token',
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+      expect(result.refreshToken.length).toBeGreaterThan(20);
+    });
+
+    it('rejects invalid refresh token', async () => {
+      refreshTokens.findValidByHashWithUser.mockResolvedValue(null);
+
+      await expect(service.refresh({ refreshToken: 'bad' })).rejects.toMatchObject({
+        response: expect.objectContaining({ message: 'Invalid refresh token' }),
+      });
+      expect(refreshTokens.deleteById).not.toHaveBeenCalled();
+    });
+
+    it('rejects when user is disabled', async () => {
+      refreshTokens.findValidByHashWithUser.mockResolvedValue({
+        ...refreshRow,
+        user: { ...fullUser, enable: false },
+      } as never);
+
+      await expect(service.refresh({ refreshToken: 'tok' })).rejects.toMatchObject({
+        response: expect.objectContaining({ message: 'Invalid refresh token' }),
+      });
     });
   });
 });
