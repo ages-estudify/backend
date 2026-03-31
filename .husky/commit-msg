@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Pega a mensagem digitada
-commit_msg=$(cat "$1")
+commit_msg=$(head -n1 "$1" | tr -d '\r')
 
 # Regex: tipo(id_clickup): mensagem
-regex="^(feature|fix|hotfix|chore|refactor|arch|docs|test)\([a-zA-Z0-9]+\):\s.{5,}$"
+regex='^(feature|fix|hotfix|chore|refactor|arch|docs|test)\([A-Za-z0-9]+\): .{5,}$'
 
 if [[ ! $commit_msg =~ $regex ]]; then
   echo -e "\n\033[1;31m[ERRO DE PADRONIZAÇÃO]\033[0m"
