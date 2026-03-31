@@ -220,16 +220,22 @@ O `postinstall` roda automaticamente `prisma generate`, por isso o cliente Prism
 
 **3. Base de dados e migrações**
 
-Suba o Postgres (sem o backend no compose):
+Suba o Postgres:
 
 ```bash
-docker-compose up -d postgres
+docker-compose up
 ```
 
 Aplique as migrações (na primeira vez ou após alterações no schema):
 
 ```bash
 npx prisma migrate deploy
+```
+
+Adicione os dados de teste no banco:
+
+```bash
+npm run db:seed
 ```
 
 **4. Rodar a aplicação**
