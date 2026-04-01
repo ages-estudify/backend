@@ -5,13 +5,13 @@ import * as jwt from 'jsonwebtoken';
 export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
+    const authHeader = request.headers.authorization as string | undefined;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException();
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const secret = process.env.JWT_SECRET || 'secret';
+    const secret = process.env.JWT_SECRET ?? 'secret';
 
     try {
       const payload = jwt.verify(token, secret) as jwt.JwtPayload;
