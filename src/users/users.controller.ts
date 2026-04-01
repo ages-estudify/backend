@@ -2,14 +2,17 @@ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { Roles, SelfOrAdmin } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -33,11 +36,10 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(RolesGuard)
-  @SelfOrAdmin('id')
   @ApiOperation({ summary: 'Get user by id (self or admin)' })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  @ApiNotFoundResponse({ description: 'User not found' })
+  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
+    return this.usersService.findOne(viewer, id);
   }
 }

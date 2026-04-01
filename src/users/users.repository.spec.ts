@@ -30,7 +30,7 @@ describe('UsersRepository', () => {
     expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phone_number: '51999999999' } });
   });
 
-  it('findUniqueByIdWithoutPassword uses omit password', async () => {
+  it('findUniqueById uses omit password', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     const id = '550e8400-e29b-41d4-a716-446655440000';
     await repo.findUniqueById(id);
