@@ -94,8 +94,6 @@ export class AuthService {
     await this.refreshTokens.deleteById(row.id);
     const session = await this.buildAuthSession(row.user);
 
-    this.logger.log(JSON.stringify({ event: 'refresh_token_rotated', userId: row.user.id }));
-
     return session;
   }
 

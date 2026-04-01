@@ -1,19 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { type UserPublic, userPublicSelect } from './user-public.select';
+import { UserResponse, UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly users: UsersRepository) {}
 
-  async findAll(): Promise<UserPublic[]> {
-    return this.prisma.user.findMany({ select: userPublicSelect });
+  async findAll(): Promise<UserResponse[]> {
+    return this.users.findMany();
   }
 
-  async findOne(id: string): Promise<UserPublic | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-      select: userPublicSelect,
-    });
+  async findOne(id: string): Promise<UserResponse | null> {
+    return this.users.findUniqueById(id);
   }
 }

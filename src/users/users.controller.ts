@@ -7,9 +7,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Roles, SelfOrAdmin } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OwnerOrAdminGuard } from '../auth/guards/owner-or-admin.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UsersService } from './users.service';
 
@@ -34,7 +33,8 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(OwnerOrAdminGuard)
+  @UseGuards(RolesGuard)
+  @SelfOrAdmin('id')
   @ApiOperation({ summary: 'Get user by id (self or admin)' })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
   findOne(@Param('id') id: string) {
