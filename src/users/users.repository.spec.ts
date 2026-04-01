@@ -6,6 +6,7 @@ describe('UsersRepository', () => {
   const prisma = {
     user: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
     },
   };
@@ -27,6 +28,16 @@ describe('UsersRepository', () => {
     prisma.user.findUnique.mockResolvedValue(null);
     await repo.findByPhone('51999999999');
     expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { phone_number: '51999999999' } });
+  });
+
+  it('findUniqueById uses omit password', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    const id = '550e8400-e29b-41d4-a716-446655440000';
+    await repo.findUniqueById(id);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id },
+      omit: { password: true },
+    });
   });
 
   it('create delegates to prisma.user.create', async () => {

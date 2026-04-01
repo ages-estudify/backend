@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
-export class RegisterResponseDataDto {
-  @ApiProperty({ format: 'uuid' })
-  userId!: string;
-
+export class LoginResponseDataDto {
   @ApiProperty({ description: 'JWT access token' })
   token!: string;
 
-  @ApiProperty({ description: 'Opaque refresh token for renewing the access token' })
+  @ApiProperty({
+    description:
+      'Opaque refresh token (store securely; use POST /auth/refresh to obtain new access token)',
+  })
   refreshToken!: string;
 
   @ApiProperty({ enum: Role, example: Role.USER })
@@ -22,10 +22,10 @@ export class RegisterResponseDataDto {
   planExpirationDate!: string | null;
 }
 
-export class RegisterSuccessResponseDto {
+export class LoginSuccessResponseDto {
   @ApiProperty({ example: true })
   success!: true;
 
-  @ApiProperty({ type: RegisterResponseDataDto })
-  data!: RegisterResponseDataDto;
+  @ApiProperty({ type: LoginResponseDataDto })
+  data!: LoginResponseDataDto;
 }
