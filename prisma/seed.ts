@@ -99,17 +99,82 @@ async function main() {
   // =========================
   // SUBJECTS
   // =========================
-  const historia = await prisma.subject.create({ data: { name: 'História' } });
-  const matematica = await prisma.subject.create({ data: { name: 'Matemática' } });
-  const portugues = await prisma.subject.create({ data: { name: 'Português' } });
-  const geografia = await prisma.subject.create({ data: { name: 'Geografia' } });
-  const fisica = await prisma.subject.create({ data: { name: 'Física' } });
-  const quimica = await prisma.subject.create({ data: { name: 'Química' } });
-  const biologia = await prisma.subject.create({ data: { name: 'Biologia' } });
-  const filosofia = await prisma.subject.create({ data: { name: 'Filosofia' } });
-  const sociologia = await prisma.subject.create({ data: { name: 'Sociologia' } });
-  const literatura = await prisma.subject.create({ data: { name: 'Literatura' } });
-  const linguas = await prisma.subject.create({ data: { name: 'Línguas Estrangeiras' } });
+const historia = await prisma.subject.create({
+  data: {
+    name: 'História',
+    icon_url: 'https://cdn.exemplo.com/icons/historia.png',
+  },
+});
+
+const matematica = await prisma.subject.create({
+  data: {
+    name: 'Matemática',
+    icon_url: 'https://cdn.exemplo.com/icons/matematica.png',
+  },
+});
+
+const portugues = await prisma.subject.create({
+  data: {
+    name: 'Português',
+    icon_url: 'https://cdn.exemplo.com/icons/portugues.png',
+  },
+});
+
+const geografia = await prisma.subject.create({
+  data: {
+    name: 'Geografia',
+    icon_url: 'https://cdn.exemplo.com/icons/geografia.png',
+  },
+});
+
+const fisica = await prisma.subject.create({
+  data: {
+    name: 'Física',
+    icon_url: 'https://cdn.exemplo.com/icons/fisica.png',
+  },
+});
+
+const quimica = await prisma.subject.create({
+  data: {
+    name: 'Química',
+    icon_url: 'https://cdn.exemplo.com/icons/quimica.png',
+  },
+});
+
+const biologia = await prisma.subject.create({
+  data: {
+    name: 'Biologia',
+    icon_url: 'https://cdn.exemplo.com/icons/biologia.png',
+  },
+});
+
+const filosofia = await prisma.subject.create({
+  data: {
+    name: 'Filosofia',
+    icon_url: 'https://cdn.exemplo.com/icons/filosofia.png',
+  },
+});
+
+const sociologia = await prisma.subject.create({
+  data: {
+    name: 'Sociologia',
+    icon_url: 'https://cdn.exemplo.com/icons/sociologia.png',
+  },
+});
+
+const literatura = await prisma.subject.create({
+  data: {
+    name: 'Literatura',
+    icon_url: 'https://cdn.exemplo.com/icons/literatura.png',
+  },
+});
+
+const linguas = await prisma.subject.create({
+  data: {
+    name: 'Línguas Estrangeiras',
+    icon_url: 'https://cdn.exemplo.com/icons/linguas.png',
+  },
+});
 
   // =========================
   // pathS
