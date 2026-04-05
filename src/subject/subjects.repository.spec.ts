@@ -114,10 +114,7 @@ describe('SubjectRepository', () => {
 
     prisma.$queryRaw.mockResolvedValue(mockData);
 
-    const result = await repository.findAllPathsBySubject(
-      'sub-1',
-      'user-1'
-    );
+    const result = await repository.findAllPathsBySubject('sub-1', 'user-1');
 
     expect(prisma.$queryRaw).toHaveBeenCalled();
     expect(result).toEqual(mockData);
@@ -127,11 +124,7 @@ describe('SubjectRepository', () => {
   it('should return count correctly', async () => {
     prisma.$queryRaw.mockResolvedValue([{ total: 10, answered: 4 }]);
 
-    const result = await repository.countByPathAndType(
-      'path-1',
-      'ORIGINAL',
-      'user-1'
-    );
+    const result = await repository.countByPathAndType('path-1', 'ORIGINAL', 'user-1');
 
     expect(result).toEqual({ total: 10, answered: 4 });
   });
@@ -139,11 +132,7 @@ describe('SubjectRepository', () => {
   it('should return zero when no data', async () => {
     prisma.$queryRaw.mockResolvedValue([]);
 
-    const result = await repository.countByPathAndType(
-      'path-1',
-      'ORIGINAL',
-      'user-1'
-    );
+    const result = await repository.countByPathAndType('path-1', 'ORIGINAL', 'user-1');
 
     expect(result).toEqual({ total: 0, answered: 0 });
   });

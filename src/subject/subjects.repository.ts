@@ -1,29 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
-
 @Injectable()
 export class SubjectRepository {
-  
   constructor(private prisma: PrismaService) {}
 
   async existsSubjectById(subjectId: string): Promise<boolean> {
-  const subject = await this.prisma.subject.findUnique({
-    where: { id: subjectId },
-    select: { id: true }
-  });
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: subjectId },
+      select: { id: true },
+    });
 
-  return !!subject;
-}
+    return !!subject;
+  }
 
-async existsPathById(pathId: string): Promise<boolean> {
-  const path = await this.prisma.path.findUnique({
-    where: { id: pathId },
-    select: { id: true }
-  });
+  async existsPathById(pathId: string): Promise<boolean> {
+    const path = await this.prisma.path.findUnique({
+      where: { id: pathId },
+      select: { id: true },
+    });
 
-  return !!path;
-}
+    return !!path;
+  }
 
   async findAllWithAnsweredByUser(userId: string) {
     const result = await this.prisma.$queryRaw<
@@ -81,7 +79,7 @@ async existsPathById(pathId: string): Promise<boolean> {
           EXTERNAL: number;
         };
       }[]
-            >`SELECT
+    >`SELECT
               p.id,
               p.name,
               p.text,
@@ -112,11 +110,8 @@ async existsPathById(pathId: string): Promise<boolean> {
     return result;
   }
 
-  async countByPathAndType(pathId: string, type: string,userId: string) {
-    
- const result = await this.prisma.$queryRaw<
-  { total: number; answered: number }[]
->`
+  async countByPathAndType(pathId: string, type: string, userId: string) {
+    const result = await this.prisma.$queryRaw<{ total: number; answered: number }[]>`
   SELECT 
     COUNT(q.id)::int AS total,
     COUNT(DISTINCT a."question_id")::int AS answered
@@ -129,6 +124,6 @@ async existsPathById(pathId: string): Promise<boolean> {
     AND q.origin = ${type};
 `;
 
-  return result[0] ?? { total: 0, answered: 0 };
-}
+    return result[0] ?? { total: 0, answered: 0 };
+  }
 }

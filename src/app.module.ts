@@ -15,7 +15,7 @@ import { PrismaService } from './prisma.service';
     UsersModule,
     HealthModule,
     AuthModule,
-    SubjectModule
+    SubjectModule,
   ],
   controllers: [],
   providers: [PrismaService],

@@ -58,7 +58,11 @@ describe('SubjectService', () => {
       ],
     });
 
-    expect(repository.findAllWithAnsweredByUser).toHaveBeenCalledWith('user1');
+    const spy = jest.spyOn(repository, 'findAllWithAnsweredByUser');
+
+    await service.findAllWithAnsweredByUser('user1');
+
+    expect(spy).toHaveBeenCalledWith('user1');
   });
 
   // PROGRESSO POR USUÁRIO
@@ -86,9 +90,9 @@ describe('SubjectService', () => {
   it('deve lançar erro se disciplina não existir', async () => {
     repository.existsSubjectById.mockResolvedValue(false);
 
-    await expect(
-      service.findAllPathsBySubject('invalid', 'user1'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findAllPathsBySubject('invalid', 'user1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // CONTAGEM POR TIPO
@@ -100,11 +104,7 @@ describe('SubjectService', () => {
       answered: 8,
     });
 
-    const result = await service.countByPathAndType(
-      'path1',
-      'ORIGINAL',
-      'user1',
-    );
+    const result = await service.countByPathAndType('path1', 'ORIGINAL', 'user1');
 
     expect(result).toEqual({
       total: 20,
@@ -116,9 +116,9 @@ describe('SubjectService', () => {
   it('deve lançar erro se tópico não existir', async () => {
     repository.existsPathById.mockResolvedValue(false);
 
-    await expect(
-      service.countByPathAndType('invalid', 'ORIGINAL', 'user1'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.countByPathAndType('invalid', 'ORIGINAL', 'user1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   // TIPO INVÁLIDO
@@ -126,7 +126,7 @@ describe('SubjectService', () => {
     repository.existsPathById.mockResolvedValue(true);
 
     await expect(
-      service.countByPathAndType('path1', 'INVALID' as any, 'user1'),
+      service.countByPathAndType('path1', 'INVALID' as unknown as 'ORIGINAL' | 'EXTERNAL', 'user1'),
     ).rejects.toThrow();
   });
 });
