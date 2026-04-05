@@ -117,6 +117,143 @@ async function main() {
     },
   });
 
+  const testeDeQuestoes = await prisma.path.create({
+    data: {
+      name: 'Teste de Questões',
+      schedule_position: 12,
+      trail_position: 1,
+      subject_id: matematica.id,
+      text: 'Caminho usado para testes automatizados de entrega de questões.',
+    },
+  });
+
+  const e2eOriginalSemImagem = await prisma.question.create({
+    data: {
+      text: 'E2E Questão ORIGINAL sem imagem',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Questão usada para testes de imagem nula.',
+      path_id: testeDeQuestoes.id,
+      alternatives: {
+        create: [
+          { text: 'A', letter: 'A', is_correct: false },
+          { text: 'B', letter: 'B', is_correct: true },
+          { text: 'C', letter: 'C', is_correct: false },
+          { text: 'D', letter: 'D', is_correct: false },
+          { text: 'E', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const e2eOriginalComImagem = await prisma.question.create({
+    data: {
+      text: 'E2E Questão ORIGINAL com imagem',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Questão usada para testes de imagem string.',
+      path_id: testeDeQuestoes.id,
+      image_url: 'https://example.com/e2e-question.png',
+      alternatives: {
+        create: [
+          { text: 'A', letter: 'A', is_correct: false },
+          { text: 'B', letter: 'B', is_correct: false },
+          { text: 'C', letter: 'C', is_correct: true },
+          { text: 'D', letter: 'D', is_correct: false },
+          { text: 'E', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const e2eOriginalRespondida = await prisma.question.create({
+    data: {
+      text: 'E2E Questão ORIGINAL respondida',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Questão respondida para excluir em excludeAnswered=true.',
+      path_id: testeDeQuestoes.id,
+      alternatives: {
+        create: [
+          { text: 'A', letter: 'A', is_correct: true },
+          { text: 'B', letter: 'B', is_correct: false },
+          { text: 'C', letter: 'C', is_correct: false },
+          { text: 'D', letter: 'D', is_correct: false },
+          { text: 'E', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+    include: { alternatives: true },
+  });
+
+  const e2eSimplifiedComImagem = await prisma.question.create({
+    data: {
+      text: 'E2E Questão SIMPLIFIED com imagem',
+      origin: 'EXTERNAL',
+      year: 2024,
+      feedback: 'Questão simplificada com imagem.',
+      path_id: testeDeQuestoes.id,
+      image_url: 'https://example.com/e2e-simplified.png',
+      alternatives: {
+        create: [
+          { text: 'A', letter: 'A', is_correct: false },
+          { text: 'B', letter: 'B', is_correct: false },
+          { text: 'C', letter: 'C', is_correct: true },
+          { text: 'D', letter: 'D', is_correct: false },
+          { text: 'E', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+    include: { alternatives: true },
+  });
+
+  const e2eSimplifiedRespondida = await prisma.question.create({
+    data: {
+      text: 'E2E Questão SIMPLIFIED respondida',
+      origin: 'EXTERNAL',
+      year: 2024,
+      feedback: 'Questão simplificada respondida.',
+      path_id: testeDeQuestoes.id,
+      alternatives: {
+        create: [
+          { text: 'A', letter: 'A', is_correct: true },
+          { text: 'B', letter: 'B', is_correct: false },
+          { text: 'C', letter: 'C', is_correct: false },
+          { text: 'D', letter: 'D', is_correct: false },
+          { text: 'E', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+    include: { alternatives: true },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: e2eOriginalRespondida.id,
+      alternative_id: e2eOriginalRespondida.alternatives.find((alt) => alt.is_correct)!.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: e2eSimplifiedComImagem.id,
+      alternative_id: e2eSimplifiedComImagem.alternatives.find((alt) => alt.is_correct)!.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: e2eSimplifiedRespondida.id,
+      alternative_id: e2eSimplifiedRespondida.alternatives.find((alt) => alt.is_correct)!.id,
+      answer_date: new Date('2026-03-27T10:00:00'),
+    },
+  });
+
   const interpretacao = await prisma.path.create({
     data: {
       name: 'Interpretação de Texto',

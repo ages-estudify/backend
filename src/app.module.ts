@@ -10,7 +10,8 @@ import { QuestionsModule } from './questions/questions.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: process.env.NODE_ENV === 'test',
+      envFilePath: `.env${process.env.NODE_ENV ? `.${process.env.NODE_ENV}` : ''}`,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
     UsersModule,
     HealthModule,
