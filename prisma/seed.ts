@@ -393,6 +393,85 @@ async function main() {
     },
   });
 
+  // =========================
+  // 20 QUESTIONS FOR MATH
+  // =========================
+  const mathQuestions = [
+    { text: 'Quanto é 5 + 3?', answer: '8' },
+    { text: 'Quanto é 10 - 4?', answer: '6' },
+    { text: 'Quanto é 6 × 7?', answer: '42' },
+    { text: 'Quanto é 48 ÷ 6?', answer: '8' },
+    { text: 'Quanto é 2³?', answer: '8' },
+    { text: 'Qual é a raiz quadrada de 16?', answer: '4' },
+    { text: 'Quanto é 15% de 200?', answer: '30' },
+    { text: 'Quanto é 3,5 + 2,8?', answer: '6,3' },
+    { text: 'Quanto é 9 × 9?', answer: '81' },
+    { text: 'Quanto é 100 - 37?', answer: '63' },
+    { text: 'Quanto é 4 × 25?', answer: '100' },
+    { text: 'Quanto é 144 ÷ 12?', answer: '12' },
+    { text: 'Quanto é 7²?', answer: '49' },
+    { text: 'Quanto é 20% de 150?', answer: '30' },
+    { text: 'Quanto é 8 + 15?', answer: '23' },
+    { text: 'Quanto é 50 - 28?', answer: '22' },
+    { text: 'Quanto é 6 × 8?', answer: '48' },
+    { text: 'Quanto é 81 ÷ 9?', answer: '9' },
+    { text: 'Quanto é 5³?', answer: '125' },
+    { text: 'Quanto é 25% de 80?', answer: '20' },
+  ];
+
+  for (const [index, mathQ] of mathQuestions.entries()) {
+    const qNum = index + 1;
+    const alternatives = [
+      { text: 'A', letter: 'A' },
+      { text: 'B', letter: 'B' },
+      { text: 'C', letter: 'C' },
+      { text: 'D', letter: 'D' },
+      { text: 'E', letter: 'E' },
+    ];
+
+    // Find the correct answer position and create alternatives
+    const correctIndex = Math.floor(Math.random() * 5);
+    const altsList = alternatives.map((alt, idx) => ({
+      ...alt,
+      is_correct: idx === correctIndex,
+    }));
+
+    // Insert correct answer first
+    altsList[correctIndex].text = mathQ.answer;
+
+    // Fill other alternatives with plausible wrong answers
+    let altIdx = 0;
+    for (let i = 0; i < 5; i++) {
+      if (i !== correctIndex) {
+        // Generate some wrong answers
+        if (qNum <= 5) {
+          altsList[i].text = String(
+            (parseInt(mathQ.answer) || 0) + (i === 0 ? -1 : i === 1 ? 1 : i === 2 ? 2 : -2),
+          );
+        } else {
+          altsList[i].text = String(
+            (parseInt(mathQ.answer) || 0) + (altIdx + 1) * (i === 0 ? -1 : 1),
+          );
+          altIdx++;
+        }
+      }
+    }
+
+    await prisma.question.create({
+      data: {
+        text: mathQ.text,
+        origin: 'ORIGINAL',
+        year: 2024,
+        feedback: `A resposta correta é ${mathQ.answer}.`,
+        path_id: matematicaBasica.id,
+        language: 'ENGLISH',
+        alternatives: {
+          create: altsList,
+        },
+      },
+    });
+  }
+
   console.log('Seed completed');
 }
 main()
