@@ -6,7 +6,6 @@ import {
   Param,
   Body,
   UseGuards,
-  Req,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
@@ -14,37 +13,36 @@ import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
-  ApiCreatedResponse,
+  ApiOkResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
-import { JwtAuthGuard } from './security/jwt-auth.guard';
-import { JwtUserClaims } from '../auth/security/jwt-claims';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Questions')
 @Controller('questions')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
+@ApiUnauthorizedResponse({
+  description: 'Unauthorized',
+  schema: { example: { success: false, message: 'Missing or invalid JWT' } },
+})
 export class QuestionsController {
   constructor(private questionsService: QuestionsService) {}
 
   @Post(':questionId/answer')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Answer a question and get feedback' })
-  @ApiCreatedResponse({ type: AnswerSuccessResponseDto })
+  @ApiOkResponse({ type: AnswerSuccessResponseDto })
   @ApiBadRequestResponse({
     description: 'Invalid selected answer',
     schema: {
       example: { success: false, message: 'Question has no correct answer defined' },
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-    schema: {
-      example: { success: false, message: 'Invalid token' },
     },
   })
   @ApiNotFoundResponse({
@@ -56,11 +54,11 @@ export class QuestionsController {
   async questionFeedback(
     @Param('questionId', new ParseUUIDPipe({ version: '4' })) questionId: string,
     @Body() body: AnswerQuestionDto,
-    @Req() req: { user: JwtUserClaims },
+    @CurrentUser() user: JwtAuthUser,
   ): Promise<AnswerSuccessResponseDto> {
     const result = await this.questionsService.questionFeedback(
       questionId,
-      req.user.userId,
+      user.userId,
       body.selectedAnswer,
     );
     return result;

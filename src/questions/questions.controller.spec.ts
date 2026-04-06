@@ -51,7 +51,7 @@ describe('QuestionsController', () => {
           planExpirationDate: null,
         },
       };
-      const response = await controller.questionFeedback(questionId, dto, req);
+      const response = await controller.questionFeedback(questionId, dto, req.user);
 
       expect(response).toEqual(result);
       expect(service.questionFeedback).toHaveBeenCalledWith(
@@ -77,7 +77,7 @@ describe('QuestionsController', () => {
           planExpirationDate: null,
         },
       };
-      const response = await controller.questionFeedback(questionId, dto, req);
+      const response = await controller.questionFeedback(questionId, dto, req.user);
 
       expect(response).toEqual(result);
       expect(service.questionFeedback).toHaveBeenCalledWith(
@@ -103,8 +103,8 @@ describe('QuestionsController', () => {
           planExpirationDate: null,
         },
       };
-      await controller.questionFeedback(questionId, dto, req);
-      await controller.questionFeedback(questionId, dto, req);
+      await controller.questionFeedback(questionId, dto, req.user);
+      await controller.questionFeedback(questionId, dto, req.user);
 
       expect(service.questionFeedback).toHaveBeenCalledTimes(2);
     });
@@ -125,7 +125,7 @@ describe('QuestionsController', () => {
         controller.questionFeedback(
           '026183d7-16b0-478a-a559-a087f6d3ba4e',
           { selectedAnswer: 'Z' as any },
-          req,
+          req.user,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -144,7 +144,7 @@ describe('QuestionsController', () => {
         controller.questionFeedback(
           '026183d7-16b0-478a-a559-a087f6d3ba4e',
           { selectedAnswer: SelectedAnswer.A },
-          req,
+          req.user,
         ),
       ).rejects.toThrow(NotFoundException);
     });

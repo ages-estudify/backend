@@ -1,35 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuestionsService } from './questions.service';
-import { PrismaService } from '../prisma.service';
+import { QuestionsRepository } from './questions.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { SelectedAnswer } from './dto/answer-question.dto';
 
 describe('QuestionsService', () => {
   let service: QuestionsService;
-  let prisma: any;
+  let repository: any;
 
   beforeEach(async () => {
-    const mockPrisma = {
-      question: {
-        findUnique: jest.fn(),
-      },
-      answer: {
-        create: jest.fn(),
-      },
+    const mockRepository = {
+      findQuestionById: jest.fn(),
+      createAnswer: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
         {
-          provide: PrismaService,
-          useValue: mockPrisma,
+          provide: QuestionsRepository,
+          useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<QuestionsService>(QuestionsService);
-    prisma = mockPrisma;
+    repository = mockRepository;
   });
 
   it('should be defined', () => {
@@ -46,8 +42,8 @@ describe('QuestionsService', () => {
           { id: 'a2', letter: 'B', is_correct: false },
         ],
       };
-      prisma.question.findUnique.mockResolvedValue(question as any);
-      prisma.answer.create.mockResolvedValue({} as any);
+      repository.findQuestionById.mockResolvedValue(question as any);
+      repository.createAnswer.mockResolvedValue({} as any);
 
       const result = await service.questionFeedback('q1', 'u1', SelectedAnswer.A);
 
@@ -59,13 +55,11 @@ describe('QuestionsService', () => {
           explanation: 'Explanation',
         },
       });
-      expect(prisma.answer.create).toHaveBeenCalledWith({
-        data: {
-          user_id: 'u1',
-          question_id: 'q1',
-          alternative_id: 'a1',
-          answer_date: expect.any(Date),
-        },
+      expect(repository.createAnswer).toHaveBeenCalledWith({
+        user_id: 'u1',
+        question_id: 'q1',
+        alternative_id: 'a1',
+        answer_date: expect.any(Date),
       });
     });
 
@@ -78,8 +72,8 @@ describe('QuestionsService', () => {
           { id: 'a2', letter: 'B', is_correct: false },
         ],
       };
-      prisma.question.findUnique.mockResolvedValue(question as any);
-      prisma.answer.create.mockResolvedValue({} as any);
+      repository.findQuestionById.mockResolvedValue(question as any);
+      repository.createAnswer.mockResolvedValue({} as any);
 
       const result = await service.questionFeedback('q1', 'u1', SelectedAnswer.B);
 
@@ -94,7 +88,7 @@ describe('QuestionsService', () => {
     });
 
     it('should throw NotFoundException for non-existent question', async () => {
-      prisma.question.findUnique.mockResolvedValue(null);
+      repository.findQuestionById.mockResolvedValue(null);
 
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
         NotFoundException,
@@ -107,7 +101,7 @@ describe('QuestionsService', () => {
         feedback: 'Explanation',
         alternatives: [{ id: 'a1', letter: 'A', is_correct: true }],
       };
-      prisma.question.findUnique.mockResolvedValue(question as any);
+      repository.findQuestionById.mockResolvedValue(question as any);
 
       await expect(service.questionFeedback('q1', 'u1', 'Z')).rejects.toThrow(BadRequestException);
     });
@@ -121,7 +115,7 @@ describe('QuestionsService', () => {
           { id: 'a2', letter: 'B', is_correct: false },
         ],
       };
-      prisma.question.findUnique.mockResolvedValue(question as any);
+      repository.findQuestionById.mockResolvedValue(question as any);
 
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
         BadRequestException,
