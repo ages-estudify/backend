@@ -7,13 +7,7 @@ import { WeekDay } from '@prisma/client';
 import { text } from 'stream/consumers';
 import * as bcrypt from 'bcrypt';
 
-<<<<<<< HEAD
 function resolveBcryptRounds(envValue?: string): number {
-=======
-
-function resolveBcryptRounds(envValue?: string): number {
-
->>>>>>> 4007b2e (feature(86ag41737):subject_select final)
   const parsed = Number.parseInt(envValue ?? '', 10);
 
   if (Number.isFinite(parsed) && parsed >= 4 && parsed <= 15) {
@@ -22,10 +16,6 @@ function resolveBcryptRounds(envValue?: string): number {
 
   return 10;
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 4007b2e (feature(86ag41737):subject_select final)
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
@@ -48,17 +38,10 @@ async function main() {
   // USERS
   // =========================
   const bcryptRounds = resolveBcryptRounds(process.env.BCRYPT_ROUNDS);
-<<<<<<< HEAD
 
   const password1Hash = await bcrypt.hash('Admin123', bcryptRounds);
   const password2Hash = await bcrypt.hash('User321', bcryptRounds);
   const password3Hash = await bcrypt.hash('User123', bcryptRounds);
-=======
-      
-      const password1Hash = await bcrypt.hash('Admin123', bcryptRounds);
-      const password2Hash = await bcrypt.hash('User321', bcryptRounds);
-      const password3Hash = await bcrypt.hash('User123', bcryptRounds);
->>>>>>> 4007b2e (feature(86ag41737):subject_select final)
 
   const user1 = await prisma.user.create({
     data: {
