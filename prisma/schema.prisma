@@ -98,6 +98,7 @@ model Subject {
 
   id    String @id @default(uuid()) @db.Uuid
   name  String
+  icon_url String 
   paths Path[]
 
 }
@@ -107,6 +108,7 @@ model Path {
   id                String     @id @default(uuid()) @db.Uuid
   name              String
   text              String
+  icon_url String 
   schedule_position Int        @unique
   trail_position    Int
 
