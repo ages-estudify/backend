@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiQuery,
@@ -16,6 +17,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Controller('subjects')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-Auth')
 export class SubjectController {
   constructor(private readonly subjectService: SubjectService) {}
 
