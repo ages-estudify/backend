@@ -5,19 +5,19 @@ export class AnswerResponseDto {
     description: 'Whether the answer is correct',
     example: true,
   })
-  isCorrect: boolean;
+  isCorrect!: boolean;
 
   @ApiProperty({
     description: 'The correct answer letter',
     example: 'A',
   })
-  correctAnswer: string;
+  correctAnswer!: string;
 
   @ApiProperty({
     description: 'Explanation for the correct answer',
     example: 'This is the explanation for why A is correct.',
   })
-  explanation: string;
+  explanation!: string;
 }
 
 export class AnswerSuccessResponseDto {

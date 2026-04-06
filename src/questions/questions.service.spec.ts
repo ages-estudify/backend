@@ -4,6 +4,22 @@ import { QuestionsRepository } from './questions.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { SelectedAnswer } from './dto/answer-question.dto';
 
+const createAlternative = (id: string, letter: string, is_correct: boolean) => ({
+  id,
+  letter,
+  is_correct,
+});
+
+const createQuestion = (
+  id: string = 'q1',
+  feedback: string = 'Explanation',
+  alternatives: any[] = [createAlternative('a1', 'A', true), createAlternative('a2', 'B', false)],
+) => ({
+  id,
+  feedback,
+  alternatives,
+});
+
 describe('QuestionsService', () => {
   let service: QuestionsService;
   let repository: any;
@@ -34,14 +50,7 @@ describe('QuestionsService', () => {
 
   describe('questionFeedback', () => {
     it('should return correct answer for valid question and correct selection', async () => {
-      const question = {
-        id: 'q1',
-        feedback: 'Explanation',
-        alternatives: [
-          { id: 'a1', letter: 'A', is_correct: true },
-          { id: 'a2', letter: 'B', is_correct: false },
-        ],
-      };
+      const question = createQuestion();
       repository.findQuestionById.mockResolvedValue(question as any);
       repository.createAnswer.mockResolvedValue({} as any);
 
@@ -64,14 +73,7 @@ describe('QuestionsService', () => {
     });
 
     it('should return incorrect for wrong selection', async () => {
-      const question = {
-        id: 'q1',
-        feedback: 'Explanation',
-        alternatives: [
-          { id: 'a1', letter: 'A', is_correct: true },
-          { id: 'a2', letter: 'B', is_correct: false },
-        ],
-      };
+      const question = createQuestion();
       repository.findQuestionById.mockResolvedValue(question as any);
       repository.createAnswer.mockResolvedValue({} as any);
 
@@ -96,25 +98,17 @@ describe('QuestionsService', () => {
     });
 
     it('should throw BadRequestException for invalid selected answer', async () => {
-      const question = {
-        id: 'q1',
-        feedback: 'Explanation',
-        alternatives: [{ id: 'a1', letter: 'A', is_correct: true }],
-      };
+      const question = createQuestion('q1', 'Explanation', [createAlternative('a1', 'A', true)]);
       repository.findQuestionById.mockResolvedValue(question as any);
 
       await expect(service.questionFeedback('q1', 'u1', 'Z')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for question with no correct answer', async () => {
-      const question = {
-        id: 'q1',
-        feedback: 'Explanation',
-        alternatives: [
-          { id: 'a1', letter: 'A', is_correct: false },
-          { id: 'a2', letter: 'B', is_correct: false },
-        ],
-      };
+      const question = createQuestion('q1', 'Explanation', [
+        createAlternative('a1', 'A', false),
+        createAlternative('a2', 'B', false),
+      ]);
       repository.findQuestionById.mockResolvedValue(question as any);
 
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
