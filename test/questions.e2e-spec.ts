@@ -15,6 +15,12 @@ describe('QuestionsController (e2e)', () => {
   let pathId: string;
 
   beforeAll(async () => {
+    // DATABASE_URL from .env.test is read here before ConfigModule ignores env files
+    if (!process.env.DATABASE_URL) {
+      process.env.DATABASE_URL =
+        'postgresql://postgres:postgres@localhost:5433/backend?schema=public';
+    }
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -254,6 +260,27 @@ describe('QuestionsController (e2e)', () => {
 
     expect(response.body.data.questions).toHaveLength(2);
     expect(response.body.data.sessionProgress).toEqual({ current: 2, total: 4 });
+
+    // Verify question structure
+    response.body.data.questions.forEach((question: any) => {
+      expect(question).toHaveProperty('id');
+      expect(question).toHaveProperty('text');
+      expect(question).toHaveProperty('imageUrl');
+      expect(question).toHaveProperty('origin');
+      expect(question).toHaveProperty('subjectName');
+      expect(question).toHaveProperty('topicName');
+      expect(question).toHaveProperty('alternatives');
+
+      // Verify origin field
+      expect(['ORIGINAL', 'EXTERNAL']).toContain(question.origin);
+
+      // Verify alternatives structure
+      question.alternatives.forEach((alt: any) => {
+        expect(alt).toHaveProperty('label');
+        expect(alt).toHaveProperty('text');
+      });
+    });
+
     expect(
       response.body.data.questions.some(
         (item: { imageUrl: string | null }) =>
@@ -311,6 +338,39 @@ describe('QuestionsController (e2e)', () => {
       .get(`/api/v1/questions/${pathId}`)
       .query({ type: 'ORIGINAL', limit: 5, excludeAnswered: true })
       .expect(401);
+  });
+
+  it('should return correct payload structure with new fields', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/questions/${pathId}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .query({ type: 'ORIGINAL', limit: 5, excludeAnswered: true })
+      .expect(200);
+
+    const question = response.body.data.questions[0];
+
+    // Verify all required fields exist
+    expect(question.id).toBeDefined();
+    expect(question.text).toBeDefined();
+    expect(question.imageUrl).toBeDefined();
+    expect(question.origin).toBeDefined();
+    expect(question.subjectName).toBeDefined();
+    expect(question.topicName).toBeDefined();
+    expect(question.alternatives).toBeDefined();
+
+    // Verify field types
+    expect(typeof question.id).toBe('string');
+    expect(typeof question.text).toBe('string');
+    expect(typeof question.origin).toBe('string');
+    expect(typeof question.subjectName).toBe('string');
+    expect(typeof question.topicName).toBe('string');
+    expect(Array.isArray(question.alternatives)).toBe(true);
+
+    // Verify alternatives structure
+    question.alternatives.forEach((alt: any) => {
+      expect(typeof alt.label).toBe('string');
+      expect(typeof alt.text).toBe('string');
+    });
   });
 
   it('should return 404 for nonexistent topic', async () => {

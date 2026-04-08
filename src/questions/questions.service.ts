@@ -41,7 +41,9 @@ export class QuestionsService {
       id: q.id,
       text: q.text,
       imageUrl: q.image_url,
-      type: type as 'ORIGINAL' | 'SIMPLIFIED',
+      origin: q.origin,
+      subjectName: q.subjectName,
+      topicName: q.topicName,
       alternatives: q.alternatives.map((a) => ({
         label: a.letter,
         text: a.text,

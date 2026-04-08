@@ -4,6 +4,7 @@ import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
+import { QuestionsModule } from './questions/questions.module';
 import { PrismaService } from './prisma.service';
 
 @Module({
@@ -16,6 +17,7 @@ import { PrismaService } from './prisma.service';
     HealthModule,
     AuthModule,
     SubjectModule,
+    QuestionsModule,
   ],
   controllers: [],
   providers: [PrismaService],

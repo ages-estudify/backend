@@ -71,6 +71,12 @@ describe('QuestionsRepository', () => {
         text: 'Pergunta 1',
         image_url: null,
         origin: 'ORIGINAL',
+        path: {
+          name: 'Álgebra',
+          subject: {
+            name: 'Matemática',
+          },
+        },
         alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
       },
     ];
@@ -86,7 +92,17 @@ describe('QuestionsRepository', () => {
       5,
     );
 
-    expect(result).toEqual(questionRow);
+    expect(result).toEqual([
+      {
+        id: 'q1',
+        text: 'Pergunta 1',
+        image_url: null,
+        origin: 'ORIGINAL',
+        subjectName: 'Matemática',
+        topicName: 'Álgebra',
+        alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
+      },
+    ]);
     expect(prisma.question.findMany).toHaveBeenCalledWith({
       where: {
         path_id: 'path-id',
@@ -98,6 +114,11 @@ describe('QuestionsRepository', () => {
         },
       },
       include: {
+        path: {
+          include: {
+            subject: true,
+          },
+        },
         alternatives: {
           select: {
             id: true,
@@ -116,6 +137,12 @@ describe('QuestionsRepository', () => {
       text: 'Pergunta 1',
       image_url: null,
       origin: 'ORIGINAL',
+      path: {
+        name: 'Álgebra',
+        subject: {
+          name: 'Matemática',
+        },
+      },
       alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
     };
     const answeredQuestion = {
@@ -123,6 +150,12 @@ describe('QuestionsRepository', () => {
       text: 'Pergunta 2',
       image_url: null,
       origin: 'ORIGINAL',
+      path: {
+        name: 'Áreas',
+        subject: {
+          name: 'Geometria',
+        },
+      },
       alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
     };
 
@@ -140,7 +173,28 @@ describe('QuestionsRepository', () => {
     );
 
     expect(result).toHaveLength(2);
-    expect(result).toEqual(expect.arrayContaining([unansweredQuestion, answeredQuestion]));
+    expect(result).toEqual(
+      expect.arrayContaining([
+        {
+          id: 'q1',
+          text: 'Pergunta 1',
+          image_url: null,
+          origin: 'ORIGINAL',
+          subjectName: 'Matemática',
+          topicName: 'Álgebra',
+          alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
+        },
+        {
+          id: 'q2',
+          text: 'Pergunta 2',
+          image_url: null,
+          origin: 'ORIGINAL',
+          subjectName: 'Geometria',
+          topicName: 'Áreas',
+          alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
+        },
+      ]),
+    );
   });
 
   it('findByPathAndType should include only correct answered questions when excludeAnswered is false and retrieveWrong is false', async () => {
@@ -149,6 +203,12 @@ describe('QuestionsRepository', () => {
       text: 'Pergunta 1',
       image_url: null,
       origin: 'ORIGINAL',
+      path: {
+        name: 'Álgebra',
+        subject: {
+          name: 'Matemática',
+        },
+      },
       alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
     };
     const answeredQuestion = {
@@ -156,6 +216,12 @@ describe('QuestionsRepository', () => {
       text: 'Pergunta 2',
       image_url: null,
       origin: 'ORIGINAL',
+      path: {
+        name: 'Áreas',
+        subject: {
+          name: 'Geometria',
+        },
+      },
       alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
     };
 
@@ -173,7 +239,28 @@ describe('QuestionsRepository', () => {
     );
 
     expect(result).toHaveLength(2);
-    expect(result).toEqual(expect.arrayContaining([unansweredQuestion, answeredQuestion]));
+    expect(result).toEqual(
+      expect.arrayContaining([
+        {
+          id: 'q1',
+          text: 'Pergunta 1',
+          image_url: null,
+          origin: 'ORIGINAL',
+          subjectName: 'Matemática',
+          topicName: 'Álgebra',
+          alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
+        },
+        {
+          id: 'q2',
+          text: 'Pergunta 2',
+          image_url: null,
+          origin: 'ORIGINAL',
+          subjectName: 'Geometria',
+          topicName: 'Áreas',
+          alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
+        },
+      ]),
+    );
   });
 });
 /* eslint-enable @typescript-eslint/unbound-method */

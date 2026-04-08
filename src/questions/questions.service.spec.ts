@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
-import { QuestionsRepository, QuestionResponse } from './questions.repository';
+import { QuestionsRepository } from './questions.repository';
 
 describe('QuestionsService', () => {
   let service: QuestionsService;
@@ -41,20 +41,20 @@ describe('QuestionsService', () => {
     questionsRepo.countByPathAndType.mockResolvedValue(3);
     questionsRepo.countAnsweredByUserInPath.mockResolvedValue(1);
 
-    const repositoryResponse: QuestionResponse[] = [
+    questionsRepo.findByPathAndType.mockResolvedValueOnce([
       {
         id: 'q1',
         text: 'Pergunta 1',
         image_url: null,
         origin: 'ORIGINAL',
+        subjectName: 'Matemática',
+        topicName: 'Álgebra',
         alternatives: [
           { id: 'a1', text: 'A', letter: 'A', is_correct: false },
           { id: 'a2', text: 'B', letter: 'B', is_correct: true },
         ],
       },
-    ];
-
-    questionsRepo.findByPathAndType.mockResolvedValue(repositoryResponse);
+    ] as never);
 
     const result = await service.getQuestionBatch(
       'topic-id',
@@ -65,29 +65,28 @@ describe('QuestionsService', () => {
       'user-id',
     );
 
-    expect(result).toEqual({
-      data: {
-        questions: [
-          {
-            id: 'q1',
-            text: 'Pergunta 1',
-            imageUrl: null,
-            type: 'ORIGINAL',
-            alternatives: [
-              { label: 'A', text: 'A' },
-              { label: 'B', text: 'B' },
-            ],
-          },
-        ],
-        sessionProgress: {
-          current: 1,
-          total: 3,
-        },
-      },
+    expect(result.data).toBeDefined();
+    expect(result.data?.questions).toHaveLength(1);
+    expect(result.data?.questions[0]).toMatchObject({
+      id: 'q1',
+      text: 'Pergunta 1',
+      imageUrl: null,
+      origin: 'ORIGINAL',
+      subjectName: 'Matemática',
+      topicName: 'Álgebra',
+      alternatives: [
+        { label: 'A', text: 'A' },
+        { label: 'B', text: 'B' },
+      ],
     });
 
-    expect(result.data.questions[0]).not.toHaveProperty('is_correct');
-    expect(result.data.questions[0]).not.toHaveProperty('correctAnswer');
+    expect(result.data?.sessionProgress).toEqual({
+      current: 1,
+      total: 3,
+    });
+
+    expect(result.data?.questions[0]).not.toHaveProperty('is_correct');
+    expect(result.data?.questions[0]).not.toHaveProperty('correctAnswer');
   });
 
   it('should return data null when no questions are available', async () => {

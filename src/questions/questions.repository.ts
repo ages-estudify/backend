@@ -6,6 +6,8 @@ export type QuestionResponse = {
   text: string;
   image_url: string | null;
   origin: string;
+  subjectName: string;
+  topicName: string;
   alternatives: {
     id: string;
     text: string;
@@ -45,6 +47,11 @@ export class QuestionsRepository {
       const questions = await this.prisma.question.findMany({
         where,
         include: {
+          path: {
+            include: {
+              subject: true,
+            },
+          },
           alternatives: {
             select: {
               id: true,
@@ -57,7 +64,15 @@ export class QuestionsRepository {
       });
 
       const shuffled = questions.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, limitNum);
+      return shuffled.slice(0, limitNum).map((q) => ({
+        id: q.id,
+        text: q.text,
+        image_url: q.image_url,
+        origin: q.origin,
+        subjectName: q.path.subject.name,
+        topicName: q.path.name,
+        alternatives: q.alternatives,
+      }));
     } else {
       // Buscar questões não respondidas
       const unansweredQuestions = await this.prisma.question.findMany({
@@ -71,6 +86,11 @@ export class QuestionsRepository {
           },
         },
         include: {
+          path: {
+            include: {
+              subject: true,
+            },
+          },
           alternatives: {
             select: {
               id: true,
@@ -82,7 +102,17 @@ export class QuestionsRepository {
         },
       });
 
-      let result = [...unansweredQuestions];
+      const mappedUnanswered = unansweredQuestions.map((q) => ({
+        id: q.id,
+        text: q.text,
+        image_url: q.image_url,
+        origin: q.origin,
+        subjectName: q.path.subject.name,
+        topicName: q.path.name,
+        alternatives: q.alternatives,
+      }));
+
+      let result = [...mappedUnanswered];
 
       if (result.length < limitNum) {
         // Buscar questões respondidas
@@ -118,6 +148,11 @@ export class QuestionsRepository {
         const answeredQuestions = await this.prisma.question.findMany({
           where: answeredWhere,
           include: {
+            path: {
+              include: {
+                subject: true,
+              },
+            },
             alternatives: {
               select: {
                 id: true,
@@ -130,7 +165,16 @@ export class QuestionsRepository {
         });
 
         const shuffledAnswered = answeredQuestions.sort(() => Math.random() - 0.5);
-        result = result.concat(shuffledAnswered.slice(0, limitNum - result.length));
+        const mappedAnswered = shuffledAnswered.slice(0, limitNum - result.length).map((q) => ({
+          id: q.id,
+          text: q.text,
+          image_url: q.image_url,
+          origin: q.origin,
+          subjectName: q.path.subject.name,
+          topicName: q.path.name,
+          alternatives: q.alternatives,
+        }));
+        result = result.concat(mappedAnswered);
       }
 
       const shuffled = result.sort(() => Math.random() - 0.5);
