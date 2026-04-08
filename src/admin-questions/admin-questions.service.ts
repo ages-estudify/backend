@@ -110,13 +110,12 @@ export class AdminQuestionsService {
   }
 
   async importCsv(buffer: Buffer) {
-    // Remova o ';' antes do 'as' e tipamos como um array de objetos de string
     const records = parse(buffer, {
       columns: true,
       skip_empty_lines: true,
       trim: true,
       relax_quotes: true,
-    });
+    }); // <-- Adicione este "as"
 
     const results: { row: number; success: boolean; error?: string; id?: string }[] = [];
 
