@@ -110,6 +110,7 @@ export class AdminQuestionsService {
   }
 
   async importCsv(buffer: Buffer) {
+    // Remova o ';' antes do 'as' e tipamos como um array de objetos de string
     const records = parse(buffer, {
       columns: true,
       skip_empty_lines: true,
@@ -120,7 +121,7 @@ export class AdminQuestionsService {
     const results: { row: number; success: boolean; error?: string; id?: string }[] = [];
 
     for (let i = 0; i < records.length; i++) {
-      const row = records[i];
+      const row = records[i]; // Agora o TS sabe que 'row' é Record<string, string>
       try {
         this.validateCsvRow(row, i + 2);
 
