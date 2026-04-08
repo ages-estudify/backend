@@ -161,7 +161,8 @@ model Question {
   day          Int?
   number       Int?
   language     Language?
-  image_url    String?
+  image        String?
+  enable       Boolean      @default(true)
 
   path_id      String        @db.Uuid
   path         Path          @relation(fields: [path_id], references: [id])
