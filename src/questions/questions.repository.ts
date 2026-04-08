@@ -22,6 +22,7 @@ export class QuestionsRepository {
     pathId: string,
     type: string,
     excludeAnswered: boolean,
+    retrieveWrong: boolean,
     userId?: string,
     limit?: number,
   ): Promise<QuestionResponse[]> {
@@ -58,6 +59,7 @@ export class QuestionsRepository {
       const shuffled = questions.sort(() => Math.random() - 0.5);
       return shuffled.slice(0, limitNum);
     } else {
+      // Buscar questões não respondidas
       const unansweredQuestions = await this.prisma.question.findMany({
         where: {
           path_id: pathId,
@@ -83,16 +85,38 @@ export class QuestionsRepository {
       let result = [...unansweredQuestions];
 
       if (result.length < limitNum) {
-        const answeredQuestions = await this.prisma.question.findMany({
-          where: {
-            path_id: pathId,
-            origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
-            answers: {
-              some: {
-                user_id: userId,
-              },
+        // Buscar questões respondidas
+        const answeredWhere: any = {
+          path_id: pathId,
+          origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
+          answers: {
+            some: {
+              user_id: userId,
             },
           },
+        };
+
+        if (retrieveWrong) {
+          // retrieveWrong = true: incluir todas as respondidas (corretas + erradas)
+          answeredWhere.answers = {
+            some: {
+              user_id: userId,
+            },
+          };
+        } else {
+          // retrieveWrong = false: incluir apenas as corretas
+          answeredWhere.answers = {
+            some: {
+              user_id: userId,
+              alternative: {
+                is_correct: true,
+              },
+            },
+          };
+        }
+
+        const answeredQuestions = await this.prisma.question.findMany({
+          where: answeredWhere,
           include: {
             alternatives: {
               select: {

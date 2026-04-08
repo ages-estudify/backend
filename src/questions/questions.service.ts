@@ -10,6 +10,7 @@ export class QuestionsService {
     type: string,
     limit: number,
     excludeAnswered: boolean,
+    retrieveWrong: boolean,
     userId: string,
   ) {
     const pathExists = await this.questions.pathExists(topicId);
@@ -24,6 +25,7 @@ export class QuestionsService {
       topicId,
       type,
       excludeAnswered,
+      retrieveWrong,
       userId,
       limit,
     );

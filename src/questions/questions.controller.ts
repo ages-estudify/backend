@@ -36,6 +36,7 @@ export class QuestionsController {
     @Query('type') type: string,
     @Query('limit') limit?: string,
     @Query('excludeAnswered') excludeAnswered?: string,
+    @Query('retrieveWrong') retrieveWrong?: string,
   ): Promise<QuestionBatchDataDto> {
     if (!type || !['ORIGINAL', 'SIMPLIFIED'].includes(type)) {
       throw new BadRequestException('Tipo de questão inválido');
@@ -47,7 +48,15 @@ export class QuestionsController {
     }
 
     const exclude = excludeAnswered !== 'false'; // default true
+    const retrieveWrongParam = retrieveWrong !== 'false'; // default true
 
-    return this.questionsService.getQuestionBatch(topicId, type, limitNum, exclude, user.userId);
+    return this.questionsService.getQuestionBatch(
+      topicId,
+      type,
+      limitNum,
+      exclude,
+      retrieveWrongParam,
+      user.userId,
+    );
   }
 }

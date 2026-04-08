@@ -68,6 +68,7 @@ describe('QuestionsController', () => {
       'ORIGINAL',
       10,
       true,
+      true,
       'user-id',
     );
   });
@@ -89,6 +90,31 @@ describe('QuestionsController', () => {
       'topic-id',
       'SIMPLIFIED',
       5,
+      false,
+      true,
+      'user-id',
+    );
+  });
+
+  it('should call service with retrieveWrong false when query param is explicitly false', async () => {
+    const expected = { data: { questions: [], sessionProgress: { current: 0, total: 0 } } };
+    questionsService.getQuestionBatch.mockResolvedValue(expected as never);
+
+    const result = await controller.getQuestionBatch(
+      'topic-id',
+      { userId: 'user-id' } as never,
+      'ORIGINAL',
+      '10',
+      'false',
+      'false',
+    );
+
+    expect(result).toEqual(expected);
+    expect(questionsService.getQuestionBatch).toHaveBeenCalledWith(
+      'topic-id',
+      'ORIGINAL',
+      10,
+      false,
       false,
       'user-id',
     );

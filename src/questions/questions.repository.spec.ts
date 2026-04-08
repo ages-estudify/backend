@@ -77,7 +77,14 @@ describe('QuestionsRepository', () => {
 
     prisma.question.findMany.mockResolvedValue(questionRow as never);
 
-    const result = await repository.findByPathAndType('path-id', 'ORIGINAL', true, 'user-id', 5);
+    const result = await repository.findByPathAndType(
+      'path-id',
+      'ORIGINAL',
+      true,
+      true,
+      'user-id',
+      5,
+    );
 
     expect(result).toEqual(questionRow);
     expect(prisma.question.findMany).toHaveBeenCalledWith({
@@ -101,6 +108,72 @@ describe('QuestionsRepository', () => {
         },
       },
     });
+  });
+
+  it('findByPathAndType should include all answered questions when excludeAnswered is false and retrieveWrong is true', async () => {
+    const unansweredQuestion = {
+      id: 'q1',
+      text: 'Pergunta 1',
+      image_url: null,
+      origin: 'ORIGINAL',
+      alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
+    };
+    const answeredQuestion = {
+      id: 'q2',
+      text: 'Pergunta 2',
+      image_url: null,
+      origin: 'ORIGINAL',
+      alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
+    };
+
+    prisma.question.findMany
+      .mockResolvedValueOnce([unansweredQuestion] as never) // unanswered
+      .mockResolvedValueOnce([answeredQuestion] as never); // all answered
+
+    const result = await repository.findByPathAndType(
+      'path-id',
+      'ORIGINAL',
+      false,
+      true,
+      'user-id',
+      5,
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(expect.arrayContaining([unansweredQuestion, answeredQuestion]));
+  });
+
+  it('findByPathAndType should include only correct answered questions when excludeAnswered is false and retrieveWrong is false', async () => {
+    const unansweredQuestion = {
+      id: 'q1',
+      text: 'Pergunta 1',
+      image_url: null,
+      origin: 'ORIGINAL',
+      alternatives: [{ id: 'a1', text: 'A', letter: 'A', is_correct: true }],
+    };
+    const answeredQuestion = {
+      id: 'q2',
+      text: 'Pergunta 2',
+      image_url: null,
+      origin: 'ORIGINAL',
+      alternatives: [{ id: 'a2', text: 'B', letter: 'B', is_correct: true }],
+    };
+
+    prisma.question.findMany
+      .mockResolvedValueOnce([unansweredQuestion] as never) // unanswered
+      .mockResolvedValueOnce([answeredQuestion] as never); // all answered
+
+    const result = await repository.findByPathAndType(
+      'path-id',
+      'ORIGINAL',
+      false,
+      false,
+      'user-id',
+      5,
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(expect.arrayContaining([unansweredQuestion, answeredQuestion]));
   });
 });
 /* eslint-enable @typescript-eslint/unbound-method */

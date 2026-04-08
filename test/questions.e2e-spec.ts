@@ -30,9 +30,24 @@ describe('QuestionsController (e2e)', () => {
 
     prisma = app.get(PrismaService);
     jwtService = new JwtService({ secret: process.env.JWT_SECRET ?? 'dev-only-change-me' });
+  });
 
-    const email = `e2e-questions-user-${Date.now()}@email.com`;
-    const phoneNumber = `519999${Math.floor(Math.random() * 900000 + 100000)}`;
+  beforeEach(async () => {
+    // Cleanup all test data before each test
+    await prisma.refreshToken.deleteMany();
+    await prisma.studyDay.deleteMany();
+    await prisma.studyLog.deleteMany();
+    await prisma.attempt.deleteMany();
+    await prisma.answer.deleteMany();
+    await prisma.alternative.deleteMany();
+    await prisma.question.deleteMany();
+    await prisma.exam.deleteMany();
+    await prisma.path.deleteMany();
+    await prisma.subject.deleteMany();
+    await prisma.user.deleteMany();
+
+    const email = `e2e-questions-user-${Date.now()}-${Math.random()}@email.com`;
+    const phoneNumber = `519999${Math.floor(Math.random() * 900000 + 100000)}-${Date.now()}`;
 
     const user = await prisma.user.create({
       data: {
@@ -47,7 +62,7 @@ describe('QuestionsController (e2e)', () => {
 
     authToken = jwtService.sign({ userId: user.id, role: user.role, planExpirationDate: null });
 
-    const pathName = `Teste de Questões ${Date.now()}`;
+    const pathName = `Teste de Questões ${Date.now()}-${Math.random()}`;
     let path = await prisma.path.findFirst({ where: { name: pathName } });
 
     if (!path) {
@@ -124,6 +139,15 @@ describe('QuestionsController (e2e)', () => {
         include: { alternatives: true },
       });
 
+      await prisma.answer.create({
+        data: {
+          user_id: user.id,
+          question_id: originalAnswered.id,
+          alternative_id: originalAnswered.alternatives.find((alt) => alt.is_correct)!.id,
+          answer_date: new Date('2026-03-27T10:00:00'),
+        },
+      });
+
       const simplifiedImage = await prisma.question.create({
         data: {
           text: 'E2E Questão SIMPLIFIED com imagem',
@@ -165,11 +189,31 @@ describe('QuestionsController (e2e)', () => {
         include: { alternatives: true },
       });
 
+      const originalWrongAnswered = await prisma.question.create({
+        data: {
+          text: 'E2E Questão ORIGINAL respondida errada',
+          origin: 'ORIGINAL',
+          year: 2024,
+          feedback: 'Questão respondida incorretamente para testar retrieveWrong.',
+          path_id: path.id,
+          alternatives: {
+            create: [
+              { text: 'A', letter: 'A', is_correct: true },
+              { text: 'B', letter: 'B', is_correct: false },
+              { text: 'C', letter: 'C', is_correct: false },
+              { text: 'D', letter: 'D', is_correct: false },
+              { text: 'E', letter: 'E', is_correct: false },
+            ],
+          },
+        },
+        include: { alternatives: true },
+      });
+
       await prisma.answer.create({
         data: {
           user_id: user.id,
-          question_id: originalAnswered.id,
-          alternative_id: originalAnswered.alternatives.find((alt) => alt.is_correct)!.id,
+          question_id: originalWrongAnswered.id,
+          alternative_id: originalWrongAnswered.alternatives.find((alt) => !alt.is_correct)!.id, // resposta errada
           answer_date: new Date('2026-03-27T10:00:00'),
         },
       });
@@ -209,7 +253,7 @@ describe('QuestionsController (e2e)', () => {
       .expect(200);
 
     expect(response.body.data.questions).toHaveLength(2);
-    expect(response.body.data.sessionProgress).toEqual({ current: 1, total: 3 });
+    expect(response.body.data.sessionProgress).toEqual({ current: 2, total: 4 });
     expect(
       response.body.data.questions.some(
         (item: { imageUrl: string | null }) =>
@@ -275,6 +319,34 @@ describe('QuestionsController (e2e)', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .query({ type: 'ORIGINAL', limit: 5, excludeAnswered: true })
       .expect(404);
+  });
+
+  it('should include all answered questions when excludeAnswered is false and retrieveWrong is true', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/questions/${pathId}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .query({ type: 'ORIGINAL', limit: 10, excludeAnswered: false, retrieveWrong: true })
+      .expect(200);
+
+    expect(response.body.data.questions.length).toBeGreaterThanOrEqual(4); // 2 não respondidas + 2 respondidas
+    expect(response.body.data.sessionProgress).toEqual({ current: 2, total: 4 }); // 2 respondidas no total
+  });
+
+  it('should include only correct answered questions when excludeAnswered is false and retrieveWrong is false', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/questions/${pathId}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .query({ type: 'ORIGINAL', limit: 10, excludeAnswered: false, retrieveWrong: false })
+      .expect(200);
+
+    expect(response.body.data.questions.length).toBeGreaterThanOrEqual(3); // 2 não respondidas + 1 correta
+    expect(response.body.data.sessionProgress).toEqual({ current: 2, total: 4 });
+    // Deve incluir a questão correta, mas não a errada
+    expect(
+      response.body.data.questions.some(
+        (item: { text: string }) => item.text === 'E2E Questão ORIGINAL respondida errada',
+      ),
+    ).toBe(false);
   });
 });
 /* eslint-enable @typescript-eslint/no-unsafe-argument */

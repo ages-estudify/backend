@@ -30,7 +30,7 @@ describe('QuestionsService', () => {
     questionsRepo.pathExists.mockResolvedValue(false);
 
     await expect(
-      service.getQuestionBatch('missing-topic', 'ORIGINAL', 5, true, 'user-id'),
+      service.getQuestionBatch('missing-topic', 'ORIGINAL', 5, true, true, 'user-id'),
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(questionsRepo.pathExists).toHaveBeenCalledWith('missing-topic');
@@ -56,7 +56,14 @@ describe('QuestionsService', () => {
 
     questionsRepo.findByPathAndType.mockResolvedValue(repositoryResponse);
 
-    const result = await service.getQuestionBatch('topic-id', 'ORIGINAL', 10, true, 'user-id');
+    const result = await service.getQuestionBatch(
+      'topic-id',
+      'ORIGINAL',
+      10,
+      true,
+      true,
+      'user-id',
+    );
 
     expect(result).toEqual({
       data: {
@@ -89,7 +96,14 @@ describe('QuestionsService', () => {
     questionsRepo.countAnsweredByUserInPath.mockResolvedValue(2);
     questionsRepo.findByPathAndType.mockResolvedValue([]);
 
-    const result = await service.getQuestionBatch('topic-id', 'SIMPLIFIED', 10, true, 'user-id');
+    const result = await service.getQuestionBatch(
+      'topic-id',
+      'SIMPLIFIED',
+      10,
+      true,
+      true,
+      'user-id',
+    );
 
     expect(result).toEqual({
       data: null,
