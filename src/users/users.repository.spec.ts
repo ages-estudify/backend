@@ -5,6 +5,7 @@ import { UsersRepository } from './users.repository';
 describe('UsersRepository', () => {
   const prisma = {
     user: {
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
@@ -19,9 +20,16 @@ describe('UsersRepository', () => {
   });
 
   it('findByEmail delegates to prisma.user.findUnique', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue(null);
     await repo.findByEmail('a@b.com');
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'a@b.com' } });
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        email: {
+          equals: 'a@b.com',
+          mode: 'insensitive',
+        },
+      },
+    });
   });
 
   it('findByPhone delegates to prisma.user.findUnique on phone_number', async () => {
