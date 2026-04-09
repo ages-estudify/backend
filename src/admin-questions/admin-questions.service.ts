@@ -120,7 +120,7 @@ export class AdminQuestionsService {
     const results: { row: number; success: boolean; error?: string; id?: string }[] = [];
 
     for (let i = 0; i < records.length; i++) {
-      const row = records[i]; // Agora o TS sabe que 'row' é Record<string, string>
+      const row = records[i] as Record<string, string>;
       try {
         this.validateCsvRow(row, i + 2);
 
