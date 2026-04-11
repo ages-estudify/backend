@@ -39,4 +39,16 @@ export class UsersRepository {
       omit: { password: true },
     });
   }
+
+  async incrementCoins(id: string, amount: number): Promise<{ coins: number | null }> {
+    await this.prisma.user.updateMany({
+      where: { id, coins: null },
+      data: { coins: 0 },
+    });
+    return this.prisma.user.update({
+      where: { id },
+      data: { coins: { increment: amount } },
+      select: { coins: true },
+    });
+  }
 }

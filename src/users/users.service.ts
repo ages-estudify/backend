@@ -26,4 +26,12 @@ export class UsersService {
     }
     throw new ForbiddenException();
   }
+
+  async getCoins(userId: string): Promise<number> {
+    const user = await this.users.findUniqueById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.coins ?? 0;
+  }
 }

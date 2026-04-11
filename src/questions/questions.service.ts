@@ -1,16 +1,27 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
+import { GamificationService } from '../gamification/gamification.service';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class QuestionsService {
-  constructor(private questionsRepository: QuestionsRepository) {}
+  constructor(
+    private questionsRepository: QuestionsRepository,
+    private gamificationService: GamificationService,
+    private usersRepository: UsersRepository,
+  ) {}
 
   async questionFeedback(
     questionId: string,
     userId: string,
     selectedAnswer: string,
   ): Promise<AnswerSuccessResponseDto> {
+    const user = await this.usersRepository.findUniqueById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     const question = await this.questionsRepository.findQuestionById(questionId);
 
     if (!question) {
@@ -36,12 +47,20 @@ export class QuestionsService {
       answer_date: new Date(),
     });
 
+    const gamificationResult = await this.gamificationService.earnCoins({
+      userId,
+      isCorrect,
+      isSimulated: !!question.exam_id,
+    });
+
     return {
       success: true,
       data: {
         isCorrect,
         correctAnswer: correctAlternative.letter,
         explanation: question.feedback,
+        coinsEarned: gamificationResult.coinsEarned,
+        totalCoins: gamificationResult.totalCoins,
       },
     } as AnswerSuccessResponseDto;
   }

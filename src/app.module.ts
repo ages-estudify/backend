@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
 import { PrismaService } from './prisma.service';
 import { QuestionsModule } from './questions/questions.module';
+import { GamificationModule } from './gamification/gamification.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { QuestionsModule } from './questions/questions.module';
     AuthModule,
     SubjectModule,
     QuestionsModule,
+    GamificationModule,
   ],
   controllers: [],
   providers: [PrismaService],

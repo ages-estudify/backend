@@ -3,6 +3,7 @@ import {
   ApiBearerAuth,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
+import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -41,5 +43,20 @@ export class UsersController {
   @ApiNotFoundResponse({ description: 'User not found' })
   findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
     return this.usersService.findOne(viewer, id);
+  }
+
+  @Get('me/coins')
+  @ApiOperation({ summary: 'Get current user coins balance' })
+  @ApiOkResponse({ type: GetCoinsResponseDto })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: { example: { success: false, message: 'User not found' } },
+  })
+  async getCoins(@CurrentUser() user: JwtAuthUser): Promise<GetCoinsResponseDto> {
+    const coins = await this.usersService.getCoins(user.userId);
+    return {
+      success: true,
+      data: { coins },
+    };
   }
 }
