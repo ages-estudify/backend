@@ -74,7 +74,9 @@ describe('QuestionsController (e2e)', () => {
     if (!path) {
       const subject =
         (await prisma.subject.findFirst({ where: { name: 'Matemática' } })) ||
-        (await prisma.subject.create({ data: { name: 'Matemática' } }));
+        (await prisma.subject.create({
+          data: { name: 'Matemática', icon_url: 'https://example.com/math-icon.png' },
+        }));
 
       path = await prisma.path.create({
         data: {
@@ -83,6 +85,7 @@ describe('QuestionsController (e2e)', () => {
           trail_position: Math.floor(Math.random() * 900000) + 100000,
           subject_id: subject.id,
           text: 'Caminho usado para testes de entrega de questões.',
+          icon_url: 'https://example.com/path-icon.png',
         },
       });
 

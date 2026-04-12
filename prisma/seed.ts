@@ -891,16 +891,16 @@ async function main() {
   ];
 
   // Função auxiliar para gerar número aleatório entre min e max (inclusive)
-  function rand(min, max) {
+  function rand(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   // Função para criar alternativas genéricas (a primeira é a correta)
-  function generateAlternatives(correctText, wrongTexts) {
+  function generateAlternatives(correctText: string, wrongTexts: string[]): any[] {
     const letters = ['A', 'B', 'C', 'D', 'E'];
     const alternatives = [
       { text: correctText, letter: letters[0], is_correct: true },
-      ...wrongTexts.map((text, idx) => ({
+      ...wrongTexts.map((text: string, idx: number) => ({
         text,
         letter: letters[idx + 1],
         is_correct: false,

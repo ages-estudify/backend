@@ -2,19 +2,19 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class QuestionBatchItemDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  text: string;
+  text!: string;
 
   @ApiProperty({ nullable: true })
-  imageUrl: string | null;
+  imageUrl!: string | null;
 
   @ApiProperty({ enum: ['ORIGINAL', 'SIMPLIFIED'] })
-  origin: 'ORIGINAL' | 'SIMPLIFIED';
+  origin!: 'ORIGINAL' | 'SIMPLIFIED';
 
   @ApiProperty({ type: [Object] })
-  alternatives: {
+  alternatives!: {
     label: string;
     text: string;
   }[];
@@ -22,23 +22,23 @@ export class QuestionBatchItemDto {
 
 export class SessionProgressDto {
   @ApiProperty()
-  current: number;
+  current!: number;
 
   @ApiProperty()
-  total: number;
+  total!: number;
 }
 
 export class QuestionBatchResponseDto {
   @ApiProperty({ type: [QuestionBatchItemDto] })
-  questions: QuestionBatchItemDto[];
+  questions!: QuestionBatchItemDto[];
 
   @ApiProperty({ type: SessionProgressDto })
-  sessionProgress: SessionProgressDto;
+  sessionProgress!: SessionProgressDto;
 }
 
 export class QuestionBatchDataDto {
   @ApiProperty({ type: QuestionBatchResponseDto, nullable: true })
-  data: QuestionBatchResponseDto | null;
+  data!: QuestionBatchResponseDto | null;
 
   @ApiProperty({ required: false })
   message?: string;
