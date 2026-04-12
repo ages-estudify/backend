@@ -1,9 +1,22 @@
-import { Controller, Get, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  HttpCode,
+  Post,
+  Get,
+  HttpStatus,
+  Param,
+  Query,
+  UseGuards,
+  Body,
+  ParseUUIDPipe,
+  BadRequestException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiOkResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
@@ -13,6 +26,8 @@ import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { QuestionsService } from './questions.service';
 import { QuestionBatchDataDto } from './dto/question-batch.dto';
+import { AnswerQuestionDto } from './dto/answer-question.dto';
+import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 
 @ApiTags('questions')
 @ApiBearerAuth('JWT-auth')
@@ -58,5 +73,34 @@ export class QuestionsController {
       retrieveWrongParam,
       user.userId,
     );
+  }
+
+  @Post(':questionId/answer')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Answer a question and get feedback' })
+  @ApiOkResponse({ type: AnswerSuccessResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid selected answer',
+    schema: {
+      example: { success: false, message: 'Question has no correct answer defined' },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Question not found',
+    schema: {
+      example: { success: false, message: 'Question not found' },
+    },
+  })
+  async questionFeedback(
+    @Param('questionId', new ParseUUIDPipe({ version: '4' })) questionId: string,
+    @Body() body: AnswerQuestionDto,
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<AnswerSuccessResponseDto> {
+    const result = await this.questionsService.questionFeedback(
+      questionId,
+      user.userId,
+      body.selectedAnswer,
+    );
+    return result;
   }
 }

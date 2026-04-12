@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
 import { QuestionsModule } from './questions/questions.module';
 import { PrismaService } from './prisma.service';
+import { QuestionsModule } from './questions/questions.module';
 
 @Module({
   imports: [

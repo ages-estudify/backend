@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { Prisma, Question, Answer } from '@prisma/client';
 
 export type QuestionResponse = {
   id: string;
@@ -14,6 +15,10 @@ export type QuestionResponse = {
     letter: string;
     is_correct: boolean;
   }[];
+};
+
+export type QuestionWithAlternatives = Question & {
+  alternatives: Prisma.AlternativeGetPayload<true>[];
 };
 
 @Injectable()
@@ -74,6 +79,15 @@ export class QuestionsRepository {
       where: {
         path_id: pathId,
         origin: this.getOrigin(type),
+      },
+    });
+  }
+
+  async findQuestionById(id: string): Promise<QuestionWithAlternatives | null> {
+    return this.prisma.question.findUnique({
+      where: { id },
+      include: {
+        alternatives: true,
       },
     });
   }
@@ -161,5 +175,10 @@ export class QuestionsRepository {
 
   private shuffleAndTake<T>(items: T[], limit: number): T[] {
     return items.sort(() => Math.random() - 0.5).slice(0, limit);
+  }
+  async createAnswer(data: Prisma.AnswerUncheckedCreateInput): Promise<Answer> {
+    return this.prisma.answer.create({
+      data,
+    });
   }
 }
