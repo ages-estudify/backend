@@ -1001,6 +1001,515 @@ async function main() {
 
   console.log('Respostas aleatórias criadas para os usuários!');
 
+  // Questões de matemática adicionais para testes manuais
+  const mathQuestion1 = await prisma.question.create({
+    data: {
+      text: 'Resolva 2 + 2.',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'A soma simples é a base para calcular expressões maiores.',
+      day: 1,
+      number: 1,
+      path_id: matematicaBasica.id,
+      alternatives: {
+        create: [
+          { text: '3', letter: 'A', is_correct: false },
+          { text: '4', letter: 'B', is_correct: true },
+          { text: '5', letter: 'C', is_correct: false },
+          { text: '6', letter: 'D', is_correct: false },
+          { text: '8', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion2 = await prisma.question.create({
+    data: {
+      text: 'Qual é a solução da equação x + 3 = 7?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Equações do 1º grau exigem isolamento do x.',
+      day: 1,
+      number: 2,
+      path_id: matematicaAlgebra.id,
+      alternatives: {
+        create: [
+          { text: '3', letter: 'A', is_correct: false },
+          { text: '4', letter: 'B', is_correct: true },
+          { text: '7', letter: 'C', is_correct: false },
+          { text: '10', letter: 'D', is_correct: false },
+          { text: '0', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion3 = await prisma.question.create({
+    data: {
+      text: 'Em geometria, qual figura tem 4 lados iguais e 4 ângulos retos?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: 'Considere propriedades de quadriláteros.',
+      day: 1,
+      number: 3,
+      path_id: matematicaGeometria.id,
+      alternatives: {
+        create: [
+          { text: 'Losango', letter: 'A', is_correct: false },
+          { text: 'Retângulo', letter: 'B', is_correct: false },
+          { text: 'Quadrado', letter: 'C', is_correct: true },
+          { text: 'Trapézio', letter: 'D', is_correct: false },
+          { text: 'Paralelogramo', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion4 = await prisma.question.create({
+    data: {
+      text: 'Qual é o seno de um ângulo de 90º?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: 'Revise os valores básicos das funções trigonométricas.',
+      day: 1,
+      number: 4,
+      path_id: matematicaTrigonometria.id,
+      alternatives: {
+        create: [
+          { text: '0', letter: 'A', is_correct: false },
+          { text: '1', letter: 'B', is_correct: true },
+          { text: '-1', letter: 'C', is_correct: false },
+          { text: '0.5', letter: 'D', is_correct: false },
+          { text: '√2/2', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion5 = await prisma.question.create({
+    data: {
+      text: 'Quanto é 5 x 6?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Multiplicação básica.',
+      day: 2,
+      number: 1,
+      path_id: matematicaBasica.id,
+      alternatives: {
+        create: [
+          { text: '25', letter: 'A', is_correct: false },
+          { text: '30', letter: 'B', is_correct: true },
+          { text: '35', letter: 'C', is_correct: false },
+          { text: '40', letter: 'D', is_correct: false },
+          { text: '45', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion6 = await prisma.question.create({
+    data: {
+      text: 'Resolva 2x - 4 = 0.',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Isolamento da variável.',
+      day: 2,
+      number: 2,
+      path_id: matematicaAlgebra.id,
+      alternatives: {
+        create: [
+          { text: '2', letter: 'A', is_correct: true },
+          { text: '1', letter: 'B', is_correct: false },
+          { text: '4', letter: 'C', is_correct: false },
+          { text: '0', letter: 'D', is_correct: false },
+          { text: '-2', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion7 = await prisma.question.create({
+    data: {
+      text: 'Qual é a área de um círculo de raio 3?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: 'Fórmula: πr².',
+      day: 2,
+      number: 3,
+      path_id: matematicaGeometria.id,
+      alternatives: {
+        create: [
+          { text: '6π', letter: 'A', is_correct: false },
+          { text: '9π', letter: 'B', is_correct: true },
+          { text: '3π', letter: 'C', is_correct: false },
+          { text: '12π', letter: 'D', is_correct: false },
+          { text: '18π', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion8 = await prisma.question.create({
+    data: {
+      text: 'Qual é o cosseno de 0º?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: 'Cosseno de 0 é 1.',
+      day: 2,
+      number: 4,
+      path_id: matematicaTrigonometria.id,
+      alternatives: {
+        create: [
+          { text: '0', letter: 'A', is_correct: false },
+          { text: '1', letter: 'B', is_correct: false },
+          { text: '-1', letter: 'C', is_correct: false },
+          { text: '1', letter: 'D', is_correct: true },
+          { text: '0.5', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion9 = await prisma.question.create({
+    data: {
+      text: 'Qual é a média de 2, 4, 6?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Soma dividida pelo número de elementos.',
+      day: 3,
+      number: 1,
+      path_id: matematicaEstatistica.id,
+      alternatives: {
+        create: [
+          { text: '3', letter: 'A', is_correct: false },
+          { text: '4', letter: 'B', is_correct: true },
+          { text: '5', letter: 'C', is_correct: false },
+          { text: '6', letter: 'D', is_correct: false },
+          { text: '2', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion10 = await prisma.question.create({
+    data: {
+      text: 'Quanto é 10 ÷ 2?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Divisão básica.',
+      day: 3,
+      number: 2,
+      path_id: matematicaBasica.id,
+      alternatives: {
+        create: [
+          { text: '5', letter: 'A', is_correct: true },
+          { text: '2', letter: 'B', is_correct: false },
+          { text: '10', letter: 'C', is_correct: false },
+          { text: '20', letter: 'D', is_correct: false },
+          { text: '0', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion11 = await prisma.question.create({
+    data: {
+      text: 'Resolva x² - 4 = 0.',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Raízes quadradas.',
+      day: 3,
+      number: 3,
+      path_id: matematicaAlgebra.id,
+      alternatives: {
+        create: [
+          { text: 'x = 2', letter: 'A', is_correct: false },
+          { text: 'x = ±2', letter: 'B', is_correct: false },
+          { text: 'x = ±2', letter: 'C', is_correct: true },
+          { text: 'x = 4', letter: 'D', is_correct: false },
+          { text: 'x = 0', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion12 = await prisma.question.create({
+    data: {
+      text: 'Qual é o perímetro de um quadrado de lado 5?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: '4 x lado.',
+      day: 3,
+      number: 4,
+      path_id: matematicaGeometria.id,
+      alternatives: {
+        create: [
+          { text: '15', letter: 'A', is_correct: false },
+          { text: '20', letter: 'B', is_correct: true },
+          { text: '25', letter: 'C', is_correct: false },
+          { text: '30', letter: 'D', is_correct: false },
+          { text: '5', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion13 = await prisma.question.create({
+    data: {
+      text: 'Qual é a tangente de 45º?',
+      origin: 'EXTERNAL',
+      year: 2023,
+      feedback: 'Tan = sen/cos.',
+      day: 4,
+      number: 1,
+      path_id: matematicaTrigonometria.id,
+      alternatives: {
+        create: [
+          { text: '0', letter: 'A', is_correct: false },
+          { text: '1', letter: 'B', is_correct: false },
+          { text: '-1', letter: 'C', is_correct: false },
+          { text: '0.5', letter: 'D', is_correct: false },
+          { text: '1', letter: 'E', is_correct: true },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion14 = await prisma.question.create({
+    data: {
+      text: 'Qual é a mediana de 1, 3, 5?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Valor do meio.',
+      day: 4,
+      number: 2,
+      path_id: matematicaEstatistica.id,
+      alternatives: {
+        create: [
+          { text: '3', letter: 'A', is_correct: true },
+          { text: '1', letter: 'B', is_correct: false },
+          { text: '5', letter: 'C', is_correct: false },
+          { text: '2', letter: 'D', is_correct: false },
+          { text: '4', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion15 = await prisma.question.create({
+    data: {
+      text: 'Quanto é 7 + 8?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Soma simples.',
+      day: 4,
+      number: 3,
+      path_id: matematicaBasica.id,
+      alternatives: {
+        create: [
+          { text: '13', letter: 'A', is_correct: false },
+          { text: '14', letter: 'B', is_correct: false },
+          { text: '15', letter: 'C', is_correct: true },
+          { text: '16', letter: 'D', is_correct: false },
+          { text: '17', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion16 = await prisma.question.create({
+    data: {
+      text: 'Qual é o resultado de 9 - 5?',
+      origin: 'ORIGINAL',
+      year: 2024,
+      feedback: 'Subtrações simples fazem parte da matemática básica.',
+      day: 4,
+      number: 4,
+      path_id: matematicaBasica.id,
+      alternatives: {
+        create: [
+          { text: '3', letter: 'A', is_correct: false },
+          { text: '4', letter: 'B', is_correct: true },
+          { text: '5', letter: 'C', is_correct: false },
+          { text: '6', letter: 'D', is_correct: false },
+          { text: '7', letter: 'E', is_correct: false },
+        ],
+      },
+    },
+  });
+
+  const mathQuestion1Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion1.id },
+  });
+  const mathQuestion2Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion2.id },
+  });
+  const mathQuestion3Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion3.id },
+  });
+  const mathQuestion4Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion4.id },
+  });
+  const mathQuestion5Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion5.id },
+  });
+  const mathQuestion6Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion6.id },
+  });
+  const mathQuestion7Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion7.id },
+  });
+  const mathQuestion8Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion8.id },
+  });
+  const mathQuestion9Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion9.id },
+  });
+  const mathQuestion10Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion10.id },
+  });
+  const mathQuestion11Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion11.id },
+  });
+  const mathQuestion12Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion12.id },
+  });
+  const mathQuestion13Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion13.id },
+  });
+  const mathQuestion14Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion14.id },
+  });
+  const mathQuestion15Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion15.id },
+  });
+  const mathQuestion16Alts = await prisma.alternative.findMany({
+    where: { question_id: mathQuestion16.id },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion1.id,
+      alternative_id: mathQuestion1Alts.find((alt) => alt.letter === 'B')!.id,
+      answer_date: new Date('2026-03-27T12:00:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion2.id,
+      alternative_id: mathQuestion2Alts.find((alt) => alt.letter === 'A')!.id,
+      answer_date: new Date('2026-03-27T12:05:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion3.id,
+      alternative_id: mathQuestion3Alts.find((alt) => alt.letter === 'C')!.id,
+      answer_date: new Date('2026-03-27T12:10:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion4.id,
+      alternative_id: mathQuestion4Alts.find((alt) => alt.letter === 'A')!.id,
+      answer_date: new Date('2026-03-27T12:15:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion5.id,
+      alternative_id: mathQuestion5Alts.find((alt) => alt.letter === 'B')!.id,
+      answer_date: new Date('2026-03-28T10:00:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion6.id,
+      alternative_id: mathQuestion6Alts.find((alt) => alt.letter === 'C')!.id,
+      answer_date: new Date('2026-03-28T10:05:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion16.id,
+      alternative_id: mathQuestion16Alts.find((alt) => alt.letter === 'A')!.id,
+      answer_date: new Date('2026-03-28T10:07:00'),
+    },
+  });
+
+  // mathQuestion7 não respondida
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion8.id,
+      alternative_id: mathQuestion8Alts.find((alt) => alt.letter === 'D')!.id,
+      answer_date: new Date('2026-03-28T10:10:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion9.id,
+      alternative_id: mathQuestion9Alts.find((alt) => alt.letter === 'A')!.id,
+      answer_date: new Date('2026-03-28T10:15:00'),
+    },
+  });
+
+  // mathQuestion10 não respondida
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion11.id,
+      alternative_id: mathQuestion11Alts.find((alt) => alt.letter === 'C')!.id,
+      answer_date: new Date('2026-03-29T11:00:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user2.id,
+      question_id: mathQuestion12.id,
+      alternative_id: mathQuestion12Alts.find((alt) => alt.letter === 'D')!.id,
+      answer_date: new Date('2026-03-29T11:05:00'),
+    },
+  });
+
+  // mathQuestion13 não respondida
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion14.id,
+      alternative_id: mathQuestion14Alts.find((alt) => alt.letter === 'A')!.id,
+      answer_date: new Date('2026-03-29T11:10:00'),
+    },
+  });
+
+  await prisma.answer.create({
+    data: {
+      user_id: user3.id,
+      question_id: mathQuestion15.id,
+      alternative_id: mathQuestion15Alts.find((alt) => alt.letter === 'B')!.id,
+      answer_date: new Date('2026-03-29T11:15:00'),
+    },
+  });
+
   const q3 = await prisma.question.create({
     data: {
       text: 'Qual é a fórmula da água?',

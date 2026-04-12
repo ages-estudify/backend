@@ -11,7 +11,7 @@ export class QuestionBatchItemDto {
   imageUrl: string | null;
 
   @ApiProperty({ enum: ['ORIGINAL', 'SIMPLIFIED'] })
-  type: 'ORIGINAL' | 'SIMPLIFIED';
+  origin: 'ORIGINAL' | 'SIMPLIFIED';
 
   @ApiProperty({ type: [Object] })
   alternatives: {

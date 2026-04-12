@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { QuestionsRepository } from './questions.repository';
+import { QuestionBatchDataDto } from './dto/question-batch.dto';
+import { QuestionResponse, QuestionsRepository } from './questions.repository';
 
 @Injectable()
 export class QuestionsService {
@@ -12,9 +13,8 @@ export class QuestionsService {
     excludeAnswered: boolean,
     retrieveWrong: boolean,
     userId: string,
-  ) {
-    const pathExists = await this.questions.pathExists(topicId);
-    if (!pathExists) {
+  ): Promise<QuestionBatchDataDto> {
+    if (!(await this.questions.pathExists(topicId))) {
       throw new NotFoundException('Tópico não encontrado');
     }
 
@@ -31,33 +31,51 @@ export class QuestionsService {
     );
 
     if (questions.length === 0) {
-      return {
-        data: null,
-        message: 'Todas as questões deste tipo foram respondidas neste tópico',
-      };
+      return this.buildEmptyResult();
     }
 
-    const transformedQuestions = questions.map((q) => ({
-      id: q.id,
-      text: q.text,
-      imageUrl: q.image_url,
-      origin: q.origin,
-      subjectName: q.subjectName,
-      topicName: q.topicName,
-      alternatives: q.alternatives.map((a) => ({
-        label: a.letter,
-        text: a.text,
-      })),
-    }));
-
     return {
-      data: {
-        questions: transformedQuestions,
-        sessionProgress: {
-          current,
-          total,
-        },
+      data: this.buildResponseData(questions, current, total),
+    };
+  }
+
+  private buildEmptyResult(): QuestionBatchDataDto {
+    return {
+      data: null,
+      message: 'Todas as questões deste tipo foram respondidas neste tópico',
+    };
+  }
+
+  private buildResponseData(
+    questions: QuestionResponse[],
+    current: number,
+    total: number,
+  ): QuestionBatchDataDto['data'] {
+    return {
+      questions: questions.map((q) => this.transformQuestion(q)),
+      sessionProgress: {
+        current,
+        total,
       },
     };
+  }
+
+  private transformQuestion(question: QuestionResponse) {
+    return {
+      id: question.id,
+      text: question.text,
+      imageUrl: question.image_url,
+      origin: this.mapOrigin(question.origin),
+      subjectName: question.subjectName,
+      topicName: question.topicName,
+      alternatives: question.alternatives.map((alternative) => ({
+        label: alternative.letter,
+        text: alternative.text,
+      })),
+    };
+  }
+
+  private mapOrigin(origin: 'ORIGINAL' | 'EXTERNAL'): 'ORIGINAL' | 'SIMPLIFIED' {
+    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
   }
 }

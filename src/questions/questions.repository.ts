@@ -5,7 +5,7 @@ export type QuestionResponse = {
   id: string;
   text: string;
   image_url: string | null;
-  origin: string;
+  origin: 'ORIGINAL' | 'EXTERNAL';
   subjectName: string;
   topicName: string;
   alternatives: {
@@ -28,165 +28,52 @@ export class QuestionsRepository {
     userId?: string,
     limit?: number,
   ): Promise<QuestionResponse[]> {
+    const origin = this.getOrigin(type);
     const limitNum = limit || 10;
+    const baseWhere: any = {
+      path_id: pathId,
+      origin,
+    };
 
     if (excludeAnswered || !userId) {
-      const where: any = {
-        path_id: pathId,
-        origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
-      };
-
       if (excludeAnswered && userId) {
-        where.answers = {
+        baseWhere.answers = {
           none: {
             user_id: userId,
           },
         };
       }
 
-      const questions = await this.prisma.question.findMany({
-        where,
-        include: {
-          path: {
-            include: {
-              subject: true,
-            },
-          },
-          alternatives: {
-            select: {
-              id: true,
-              text: true,
-              letter: true,
-              is_correct: true,
-            },
-          },
-        },
-      });
-
-      const shuffled = questions.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, limitNum).map((q) => ({
-        id: q.id,
-        text: q.text,
-        image_url: q.image_url,
-        origin: q.origin,
-        subjectName: q.path.subject.name,
-        topicName: q.path.name,
-        alternatives: q.alternatives,
-      }));
-    } else {
-      // Buscar questões não respondidas
-      const unansweredQuestions = await this.prisma.question.findMany({
-        where: {
-          path_id: pathId,
-          origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
-          answers: {
-            none: {
-              user_id: userId,
-            },
-          },
-        },
-        include: {
-          path: {
-            include: {
-              subject: true,
-            },
-          },
-          alternatives: {
-            select: {
-              id: true,
-              text: true,
-              letter: true,
-              is_correct: true,
-            },
-          },
-        },
-      });
-
-      const mappedUnanswered = unansweredQuestions.map((q) => ({
-        id: q.id,
-        text: q.text,
-        image_url: q.image_url,
-        origin: q.origin,
-        subjectName: q.path.subject.name,
-        topicName: q.path.name,
-        alternatives: q.alternatives,
-      }));
-
-      let result = [...mappedUnanswered];
-
-      if (result.length < limitNum) {
-        // Buscar questões respondidas
-        const answeredWhere: any = {
-          path_id: pathId,
-          origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
-          answers: {
-            some: {
-              user_id: userId,
-            },
-          },
-        };
-
-        if (retrieveWrong) {
-          // retrieveWrong = true: incluir todas as respondidas (corretas + erradas)
-          answeredWhere.answers = {
-            some: {
-              user_id: userId,
-            },
-          };
-        } else {
-          // retrieveWrong = false: incluir apenas as corretas
-          answeredWhere.answers = {
-            some: {
-              user_id: userId,
-              alternative: {
-                is_correct: true,
-              },
-            },
-          };
-        }
-
-        const answeredQuestions = await this.prisma.question.findMany({
-          where: answeredWhere,
-          include: {
-            path: {
-              include: {
-                subject: true,
-              },
-            },
-            alternatives: {
-              select: {
-                id: true,
-                text: true,
-                letter: true,
-                is_correct: true,
-              },
-            },
-          },
-        });
-
-        const shuffledAnswered = answeredQuestions.sort(() => Math.random() - 0.5);
-        const mappedAnswered = shuffledAnswered.slice(0, limitNum - result.length).map((q) => ({
-          id: q.id,
-          text: q.text,
-          image_url: q.image_url,
-          origin: q.origin,
-          subjectName: q.path.subject.name,
-          topicName: q.path.name,
-          alternatives: q.alternatives,
-        }));
-        result = result.concat(mappedAnswered);
-      }
-
-      const shuffled = result.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, limitNum);
+      return this.shuffleAndTake(await this.findQuestions(baseWhere), limitNum);
     }
+
+    const unansweredQuestions = await this.findQuestions({
+      ...baseWhere,
+      answers: {
+        none: {
+          user_id: userId,
+        },
+      },
+    });
+
+    let result = [...unansweredQuestions];
+
+    if (result.length < limitNum) {
+      const answeredQuestions = await this.findQuestions(
+        this.buildAnsweredWhere(baseWhere, userId, retrieveWrong),
+      );
+
+      result = result.concat(this.shuffleAndTake(answeredQuestions, limitNum - result.length));
+    }
+
+    return this.shuffleAndTake(result, limitNum);
   }
 
   async countByPathAndType(pathId: string, type: string): Promise<number> {
     return this.prisma.question.count({
       where: {
         path_id: pathId,
-        origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
+        origin: this.getOrigin(type),
       },
     });
   }
@@ -197,7 +84,7 @@ export class QuestionsRepository {
         user_id: userId,
         question: {
           path_id: pathId,
-          origin: type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL',
+          origin: this.getOrigin(type),
         },
       },
     });
@@ -208,5 +95,71 @@ export class QuestionsRepository {
       where: { id: pathId },
     });
     return !!path;
+  }
+
+  private getOrigin(type: string): 'EXTERNAL' | 'ORIGINAL' {
+    return type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL';
+  }
+
+  private getQuestionInclude() {
+    return {
+      path: {
+        include: {
+          subject: true,
+        },
+      },
+      alternatives: {
+        select: {
+          id: true,
+          text: true,
+          letter: true,
+          is_correct: true,
+        },
+      },
+    };
+  }
+
+  private async findQuestions(where: any): Promise<QuestionResponse[]> {
+    const questions = await this.prisma.question.findMany({
+      where,
+      include: this.getQuestionInclude(),
+    });
+
+    return questions.map((question) => this.mapQuestion(question));
+  }
+
+  private mapQuestion(question: any): QuestionResponse {
+    return {
+      id: question.id,
+      text: question.text,
+      image_url: question.image_url,
+      origin: question.origin,
+      subjectName: question.path.subject.name,
+      topicName: question.path.name,
+      alternatives: question.alternatives,
+    };
+  }
+
+  private buildAnsweredWhere(baseWhere: any, userId: string, retrieveWrong: boolean): any {
+    const answeredWhere = {
+      ...baseWhere,
+      answers: {
+        some: {
+          user_id: userId,
+        },
+      },
+    };
+
+    if (!retrieveWrong) {
+      answeredWhere.answers.some.alternative = {
+        is_correct: true,
+      };
+    }
+
+    return answeredWhere;
+  }
+
+  private shuffleAndTake<T>(items: T[], limit: number): T[] {
+    return items.sort(() => Math.random() - 0.5).slice(0, limit);
   }
 }
