@@ -3,10 +3,33 @@ import { QuestionsService } from './questions.service';
 import { QuestionsRepository } from './questions.repository';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SelectedAnswer } from './dto/answer-question.dto';
+import { GamificationService } from '../gamification/gamification.service';
+import { UsersRepository } from '../users/users.repository';
+import { Role } from '@prisma/client';
+
+const createUserBuilder = (overrides: Partial<any> = {}) => ({
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  full_name: 'Test User',
+  email: 'test@example.com',
+  phone_number: '123456789',
+  role: Role.USER,
+  plan_end_date: null,
+  streak: null,
+  coins: 0,
+  createdAt: new Date('2023-01-01T00:00:00.000Z'),
+  enable: true,
+  desired_course: null,
+  desired_exam: null,
+  last_active: null,
+  birth_date: null,
+  ...overrides,
+});
 
 describe('QuestionsService', () => {
   let service: QuestionsService;
   let repository: any;
+  let gamificationService: any;
+  let usersRepository: any;
 
   const createAlternative = (id: string, letter: string, is_correct: boolean) => ({
     id,
@@ -34,6 +57,14 @@ describe('QuestionsService', () => {
       createAnswer: jest.fn(),
     };
 
+    const mockGamificationService = {
+      earnCoins: jest.fn(),
+    };
+
+    const mockUsersRepository = {
+      findUniqueById: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
@@ -41,11 +72,21 @@ describe('QuestionsService', () => {
           provide: QuestionsRepository,
           useValue: mockRepository,
         },
+        {
+          provide: GamificationService,
+          useValue: mockGamificationService,
+        },
+        {
+          provide: UsersRepository,
+          useValue: mockUsersRepository,
+        },
       ],
     }).compile();
 
     service = module.get<QuestionsService>(QuestionsService);
     repository = mockRepository;
+    gamificationService = mockGamificationService;
+    usersRepository = mockUsersRepository;
   });
 
   it('should be defined', () => {
@@ -141,6 +182,8 @@ describe('QuestionsService', () => {
       const question = createQuestion();
       repository.findQuestionById.mockResolvedValue(question as any);
       repository.createAnswer.mockResolvedValue({} as any);
+      gamificationService.earnCoins.mockResolvedValue({ coinsEarned: 1, totalCoins: 11 });
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
 
       const result = await service.questionFeedback('q1', 'u1', SelectedAnswer.A);
 
@@ -150,6 +193,8 @@ describe('QuestionsService', () => {
           isCorrect: true,
           correctAnswer: 'A',
           explanation: 'Explanation',
+          coinsEarned: 1,
+          totalCoins: 11,
         },
       });
       expect(repository.createAnswer).toHaveBeenCalledWith({
@@ -158,12 +203,19 @@ describe('QuestionsService', () => {
         alternative_id: 'a1',
         answer_date: expect.any(Date),
       });
+      expect(gamificationService.earnCoins).toHaveBeenCalledWith({
+        userId: 'u1',
+        isCorrect: true,
+        isSimulated: false,
+      });
     });
 
     it('should return incorrect for wrong selection', async () => {
       const question = createQuestion();
       repository.findQuestionById.mockResolvedValue(question as any);
       repository.createAnswer.mockResolvedValue({} as any);
+      gamificationService.earnCoins.mockResolvedValue({ coinsEarned: 0, totalCoins: 10 });
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
 
       const result = await service.questionFeedback('q1', 'u1', SelectedAnswer.B);
 
@@ -173,12 +225,20 @@ describe('QuestionsService', () => {
           isCorrect: false,
           correctAnswer: 'A',
           explanation: 'Explanation',
+          coinsEarned: 0,
+          totalCoins: 10,
         },
+      });
+      expect(gamificationService.earnCoins).toHaveBeenCalledWith({
+        userId: 'u1',
+        isCorrect: false,
+        isSimulated: false,
       });
     });
 
     it('should throw NotFoundException for non-existent question', async () => {
       repository.findQuestionById.mockResolvedValue(null);
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
 
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
         NotFoundException,
@@ -188,6 +248,7 @@ describe('QuestionsService', () => {
     it('should throw BadRequestException for invalid selected answer', async () => {
       const question = createQuestion('q1', 'Explanation', [createAlternative('a1', 'A', true)]);
       repository.findQuestionById.mockResolvedValue(question as any);
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
 
       await expect(service.questionFeedback('q1', 'u1', 'Z')).rejects.toThrow(BadRequestException);
     });
@@ -198,9 +259,18 @@ describe('QuestionsService', () => {
         createAlternative('a2', 'B', false),
       ]);
       repository.findQuestionById.mockResolvedValue(question as any);
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
 
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      usersRepository.findUniqueById.mockResolvedValue(null);
+
+      await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

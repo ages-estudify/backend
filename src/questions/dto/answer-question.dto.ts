@@ -17,5 +17,5 @@ export class AnswerQuestionDto {
   })
   @IsEnum(SelectedAnswer, { message: 'Selected answer must be A, B, C, D, or E' })
   @IsNotEmpty()
-  selectedAnswer: SelectedAnswer;
+  selectedAnswer!: SelectedAnswer;
 }
