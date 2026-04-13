@@ -1,17 +1,87 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { QuestionsRepository } from './questions.repository';
+import { QuestionBatchDataDto } from './dto/question-batch.dto';
+import { QuestionResponse, QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 
 @Injectable()
 export class QuestionsService {
-  constructor(private questionsRepository: QuestionsRepository) {}
+  constructor(private readonly questions: QuestionsRepository) {}
+
+  async getQuestionBatch(
+    topicId: string,
+    type: string,
+    limit: number,
+    excludeAnswered: boolean,
+    retrieveWrong: boolean,
+    userId: string,
+  ): Promise<QuestionBatchDataDto> {
+    if (!(await this.questions.pathExists(topicId))) {
+      throw new NotFoundException('Tópico não encontrado');
+    }
+
+    const total = await this.questions.countByPathAndType(topicId, type);
+    const current = await this.questions.countAnsweredByUserInPath(userId, topicId, type);
+
+    const questions = await this.questions.findByPathAndType(
+      topicId,
+      type,
+      excludeAnswered,
+      retrieveWrong,
+      userId,
+      limit,
+    );
+
+    if (questions.length === 0) {
+      return this.buildEmptyResult();
+    }
+
+    return {
+      data: this.buildResponseData(questions, current, total),
+    };
+  }
+
+  private buildEmptyResult(): QuestionBatchDataDto {
+    return {
+      data: null,
+      message: 'Todas as questões deste tipo foram respondidas neste tópico',
+    };
+  }
+
+  private buildResponseData(
+    questions: QuestionResponse[],
+    current: number,
+    total: number,
+  ): QuestionBatchDataDto['data'] {
+    return {
+      questions: questions.map((q) => this.transformQuestion(q)),
+      sessionProgress: {
+        current,
+        total,
+      },
+    };
+  }
+
+  private transformQuestion(question: QuestionResponse) {
+    return {
+      id: question.id,
+      text: question.text,
+      imageUrl: question.image_url,
+      origin: this.mapOrigin(question.origin),
+      subjectName: question.subjectName,
+      topicName: question.topicName,
+      alternatives: question.alternatives.map((alternative) => ({
+        label: alternative.letter,
+        text: alternative.text,
+      })),
+    };
+  }
 
   async questionFeedback(
     questionId: string,
     userId: string,
     selectedAnswer: string,
   ): Promise<AnswerSuccessResponseDto> {
-    const question = await this.questionsRepository.findQuestionById(questionId);
+    const question = await this.questions.findQuestionById(questionId);
 
     if (!question) {
       throw new NotFoundException('Question not found');
@@ -29,7 +99,7 @@ export class QuestionsService {
       throw new BadRequestException('Selected answer is not a valid alternative for this question');
     }
 
-    await this.questionsRepository.createAnswer({
+    await this.questions.createAnswer({
       user_id: userId,
       question_id: questionId,
       alternative_id: selectedAlternative.id,
@@ -44,5 +114,9 @@ export class QuestionsService {
         explanation: question.feedback,
       },
     } as AnswerSuccessResponseDto;
+  }
+
+  private mapOrigin(origin: 'ORIGINAL' | 'EXTERNAL'): 'ORIGINAL' | 'SIMPLIFIED' {
+    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
   }
 }

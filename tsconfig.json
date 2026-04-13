@@ -23,7 +23,8 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false,
-    "types": ["jest"]
-  }
+    "types": ["jest"],
+    "noFallthroughCasesInSwitch": false
+  },
+  "exclude": ["node_modules", "dist", "prisma"]
 }
