@@ -4,9 +4,9 @@ import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
-import { PrismaService } from './prisma.service';
 import { QuestionsModule } from './questions/questions.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { PrismaService } from './prisma.service';
 
 @Module({
   imports: [

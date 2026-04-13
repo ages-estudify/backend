@@ -1,16 +1,86 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { QuestionsRepository } from './questions.repository';
+import { QuestionBatchDataDto } from './dto/question-batch.dto';
+import { QuestionResponse, QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class QuestionsService {
-  constructor(
+    constructor(
     private questionsRepository: QuestionsRepository,
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
   ) {}
+
+  async getQuestionBatch(
+    topicId: string,
+    type: string,
+    limit: number,
+    excludeAnswered: boolean,
+    retrieveWrong: boolean,
+    userId: string,
+  ): Promise<QuestionBatchDataDto> {
+    if (!(await this.questions.pathExists(topicId))) {
+      throw new NotFoundException('Tópico não encontrado');
+    }
+
+    const total = await this.questions.countByPathAndType(topicId, type);
+    const current = await this.questions.countAnsweredByUserInPath(userId, topicId, type);
+
+    const questions = await this.questions.findByPathAndType(
+      topicId,
+      type,
+      excludeAnswered,
+      retrieveWrong,
+      userId,
+      limit,
+    );
+
+    if (questions.length === 0) {
+      return this.buildEmptyResult();
+    }
+
+    return {
+      data: this.buildResponseData(questions, current, total),
+    };
+  }
+
+  private buildEmptyResult(): QuestionBatchDataDto {
+    return {
+      data: null,
+      message: 'Todas as questões deste tipo foram respondidas neste tópico',
+    };
+  }
+
+  private buildResponseData(
+    questions: QuestionResponse[],
+    current: number,
+    total: number,
+  ): QuestionBatchDataDto['data'] {
+    return {
+      questions: questions.map((q) => this.transformQuestion(q)),
+      sessionProgress: {
+        current,
+        total,
+      },
+    };
+  }
+
+  private transformQuestion(question: QuestionResponse) {
+    return {
+      id: question.id,
+      text: question.text,
+      imageUrl: question.image_url,
+      origin: this.mapOrigin(question.origin),
+      subjectName: question.subjectName,
+      topicName: question.topicName,
+      alternatives: question.alternatives.map((alternative) => ({
+        label: alternative.letter,
+        text: alternative.text,
+      })),
+    };
+  }
 
   async questionFeedback(
     questionId: string,
@@ -40,7 +110,7 @@ export class QuestionsService {
       throw new BadRequestException('Selected answer is not a valid alternative for this question');
     }
 
-    await this.questionsRepository.createAnswer({
+    await this.questions.createAnswer({
       user_id: userId,
       question_id: questionId,
       alternative_id: selectedAlternative.id,
@@ -63,5 +133,9 @@ export class QuestionsService {
         totalCoins: gamificationResult.totalCoins,
       },
     } as AnswerSuccessResponseDto;
+  }
+
+  private mapOrigin(origin: 'ORIGINAL' | 'EXTERNAL'): 'ORIGINAL' | 'SIMPLIFIED' {
+    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
   }
 }

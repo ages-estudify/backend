@@ -17,7 +17,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Controller('subjects')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth('JWT-Auth')
+@ApiBearerAuth('JWT-auth')
 export class SubjectController {
   constructor(private readonly subjectService: SubjectService) {}
 

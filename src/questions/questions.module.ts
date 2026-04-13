@@ -10,5 +10,6 @@ import { UsersModule } from '../users/users.module';
   imports: [GamificationModule, UsersModule],
   controllers: [QuestionsController],
   providers: [QuestionsService, QuestionsRepository, PrismaService],
+  exports: [QuestionsRepository],
 })
 export class QuestionsModule {}
