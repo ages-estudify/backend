@@ -7,7 +7,7 @@ import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class QuestionsService {
-    constructor(
+  constructor(
     private questionsRepository: QuestionsRepository,
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
@@ -21,14 +21,14 @@ export class QuestionsService {
     retrieveWrong: boolean,
     userId: string,
   ): Promise<QuestionBatchDataDto> {
-    if (!(await this.questions.pathExists(topicId))) {
+    if (!(await this.questionsRepository.pathExists(topicId))) {
       throw new NotFoundException('Tópico não encontrado');
     }
 
-    const total = await this.questions.countByPathAndType(topicId, type);
-    const current = await this.questions.countAnsweredByUserInPath(userId, topicId, type);
+    const total = await this.questionsRepository.countByPathAndType(topicId, type);
+    const current = await this.questionsRepository.countAnsweredByUserInPath(userId, topicId, type);
 
-    const questions = await this.questions.findByPathAndType(
+    const questions = await this.questionsRepository.findByPathAndType(
       topicId,
       type,
       excludeAnswered,
@@ -110,7 +110,7 @@ export class QuestionsService {
       throw new BadRequestException('Selected answer is not a valid alternative for this question');
     }
 
-    await this.questions.createAnswer({
+    await this.questionsRepository.createAnswer({
       user_id: userId,
       question_id: questionId,
       alternative_id: selectedAlternative.id,
