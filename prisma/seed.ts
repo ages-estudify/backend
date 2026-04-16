@@ -1011,7 +1011,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'A soma simples é a base para calcular expressões maiores.',
-      day: 1,
       number: 1,
       path_id: matematicaBasica.id,
       alternatives: {
@@ -1032,7 +1031,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Equações do 1º grau exigem isolamento do x.',
-      day: 1,
       number: 2,
       path_id: matematicaAlgebra.id,
       alternatives: {
@@ -1053,7 +1051,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: 'Considere propriedades de quadriláteros.',
-      day: 1,
       number: 3,
       path_id: matematicaGeometria.id,
       alternatives: {
@@ -1074,7 +1071,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: 'Revise os valores básicos das funções trigonométricas.',
-      day: 1,
       number: 4,
       path_id: matematicaTrigonometria.id,
       alternatives: {
@@ -1095,7 +1091,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Multiplicação básica.',
-      day: 2,
       number: 1,
       path_id: matematicaBasica.id,
       alternatives: {
@@ -1116,7 +1111,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Isolamento da variável.',
-      day: 2,
       number: 2,
       path_id: matematicaAlgebra.id,
       alternatives: {
@@ -1137,7 +1131,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: 'Fórmula: πr².',
-      day: 2,
       number: 3,
       path_id: matematicaGeometria.id,
       alternatives: {
@@ -1158,7 +1151,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: 'Cosseno de 0 é 1.',
-      day: 2,
       number: 4,
       path_id: matematicaTrigonometria.id,
       alternatives: {
@@ -1179,7 +1171,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Soma dividida pelo número de elementos.',
-      day: 3,
       number: 1,
       path_id: matematicaEstatistica.id,
       alternatives: {
@@ -1200,7 +1191,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Divisão básica.',
-      day: 3,
       number: 2,
       path_id: matematicaBasica.id,
       alternatives: {
@@ -1221,7 +1211,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Raízes quadradas.',
-      day: 3,
       number: 3,
       path_id: matematicaAlgebra.id,
       alternatives: {
@@ -1242,7 +1231,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: '4 x lado.',
-      day: 3,
       number: 4,
       path_id: matematicaGeometria.id,
       alternatives: {
@@ -1263,7 +1251,6 @@ async function main() {
       origin: 'EXTERNAL',
       year: 2023,
       feedback: 'Tan = sen/cos.',
-      day: 4,
       number: 1,
       path_id: matematicaTrigonometria.id,
       alternatives: {
@@ -1284,7 +1271,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Valor do meio.',
-      day: 4,
       number: 2,
       path_id: matematicaEstatistica.id,
       alternatives: {
@@ -1305,7 +1291,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Soma simples.',
-      day: 4,
       number: 3,
       path_id: matematicaBasica.id,
       alternatives: {
@@ -1326,7 +1311,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Subtrações simples fazem parte da matemática básica.',
-      day: 4,
       number: 4,
       path_id: matematicaBasica.id,
       alternatives: {
@@ -1519,7 +1503,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      day: 1,
       number: 1,
       path_id: quimicaModelosAtomicos.id,
       alternatives: {
@@ -1540,7 +1523,6 @@ async function main() {
       origin: 'ORIGINAL',
       year: 2024,
       feedback: 'Revise este conteúdo.',
-      day: 2,
       number: 2,
       path_id: fisicaOndulatoria.id,
       alternatives: {
@@ -1554,6 +1536,8 @@ async function main() {
       },
     },
   });
+
+  /*
 
   const exam1 = await prisma.exam.create({
     data: {
@@ -1592,6 +1576,8 @@ async function main() {
     },
   });
 
+  */
+ 
   await prisma.studyLog.create({
     data: {
       user_id: user2.id,
