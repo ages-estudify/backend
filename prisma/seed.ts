@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { Language, Origin, PrismaClient } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { WeekDay } from '@prisma/client';
 import { text } from 'stream/consumers';
@@ -17,22 +17,40 @@ function resolveBcryptRounds(envValue?: string): number {
   return 10;
 }
 
+function makeAlternatives(correctLetter: string) {
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+
+  return letters.map((letter) => ({
+    letter,
+    text: `Alternativa ${letter}`,
+    is_correct: letter === correctLetter,
+  }));
+}
+
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 async function main() {
   // LIMPA BANCO
-  await prisma.answer.deleteMany();
-  await prisma.alternative.deleteMany();
-  await prisma.question.deleteMany();
-  await prisma.attempt.deleteMany();
-  await prisma.exam.deleteMany();
-  await prisma.studyLog.deleteMany();
-  await prisma.path.deleteMany();
-  await prisma.subject.deleteMany();
-  await prisma.studyDay.deleteMany();
-  await prisma.user.deleteMany();
+await prisma.answer.deleteMany();
+await prisma.attemptDay.deleteMany();
+await prisma.attempt.deleteMany();
+
+await prisma.alternative.deleteMany();
+await prisma.question.deleteMany();
+
+await prisma.examDay.deleteMany();
+await prisma.exam.deleteMany();
+
+await prisma.studyLog.deleteMany();
+await prisma.studyDay.deleteMany();
+
+await prisma.path.deleteMany();
+await prisma.subject.deleteMany();
+
+await prisma.refreshToken.deleteMany();
+await prisma.user.deleteMany();
 
   // =========================
   // USERS
@@ -1577,6 +1595,82 @@ async function main() {
   });
 
   */
+
+  type ExamWithDays = {
+  exam: {
+    id: string;
+    name: string;
+    origin: string;
+    image_url: string | null;
+  };
+  examDays: {
+    id: string;
+    day: number;
+    exam_id: string;
+  }[];
+};
+
+const exams: ExamWithDays[] = [];
+
+// Criando exams + days
+for (let i = 0; i < 5; i++) {
+  const exam = await prisma.exam.create({
+    data: {
+      name: `Simulado ${i + 1}`,
+      origin: Origin.EXTERNAL,
+      image_url: `https://example.com/${i + 1}.png`,
+    },
+  });
+
+  const examDays = [1, 2].map((day) => ({
+    id: crypto.randomUUID(),
+    day,
+    exam_id: exam.id,
+  }));
+
+  await prisma.examDay.createMany({
+    data: examDays,
+  });
+
+  exams.push({ exam, examDays });
+}
+
+// Pegando dados
+//const allPaths = await prisma.path.findMany();
+const examDays = await prisma.examDay.findMany();
+
+// Criando questões + alternativas
+for (const examDay of examDays) {
+  const prova = await prisma.exam.findUnique({
+    where: {
+      id: examDay.exam_id,
+    },
+  });
+
+  for (let i = 1; i <= 15; i++) {
+    const question = await prisma.question.create({
+      data: {
+        text: `Questão ${i} do ${prova?.name} do dia ${examDay.day}`,
+        origin: Origin.EXTERNAL,
+        year: 2023,
+        feedback: `Comentário da questão ${i} do ${prova?.name} dia ${examDay.day}`,
+        number: i,
+        // language: Language.ENGLISH,
+        exam_day_id: examDay.id,
+        path_id:
+          allPaths[Math.floor(Math.random() * allPaths.length)].id,
+      },
+    });
+
+    await prisma.alternative.createMany({
+      data: makeAlternatives('A').map((alt) => ({
+        ...alt,
+        question_id: question.id,
+      })),
+    });
+  }
+}
+
  
   await prisma.studyLog.create({
     data: {
@@ -1595,6 +1689,87 @@ async function main() {
       done: false,
     },
   });
+
+const allAlternatives = await prisma.alternative.findMany();
+
+// mapa pra evitar query por resposta
+const altMap = new Map(
+  allAlternatives.map((a) => [`${a.question_id}_${a.letter}`, a.id])
+);
+
+function getRandom<T>(arr: T[]) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+for (const user of users) {
+  for (let i = 0; i < 3; i++) {
+    const exam = getRandom(exams).exam;
+
+    const attempt = await prisma.attempt.create({
+      data: {
+        user_id: user.id,
+        exam_id: exam.id,
+        language: Language.ENGLISH,
+        time_spent_minutes: Math.floor(Math.random() * 60) + 20,
+        init_time: new Date(),
+        end_time: Math.random() < 0.5 ? null : new Date(),
+      },
+    });
+
+    // pega os dias do exam
+    const examDays = exams.find(e => e.exam.id === exam.id)!.examDays;
+
+    for (const examDay of examDays) {
+      const attemptDay = await prisma.attemptDay.create({
+        data: {
+          attempt_id: attempt.id,
+          exam_day_id: examDay.id,
+          time_spent_minutes: Math.floor(Math.random() * 30) + 10,
+          current_question: 1,
+          init_time: new Date(),
+          end_time: new Date(),
+        },
+      });
+
+      // pega questões desse dia
+      const questions = await prisma.question.findMany({
+        where: {
+          exam_day_id: examDay.id,
+        },
+      });
+
+      for (const question of questions) {
+        // 70% chance de acertar
+        const isCorrect = Math.random() < 0.7;
+
+        const alternatives = allAlternatives.filter(
+          (a) => a.question_id === question.id
+        );
+
+        const correctAlt = alternatives.find((a) => a.is_correct)!;
+        const wrongAlts = alternatives.filter((a) => !a.is_correct);
+
+        const chosen = isCorrect
+          ? correctAlt
+          : getRandom(wrongAlts);
+
+        const alternativeId = altMap.get(
+          `${question.id}_${chosen.letter}`
+        );
+
+        await prisma.answer.create({
+          data: {
+            user_id: user.id,
+            question_id: question.id,
+            alternative_id: alternativeId,
+            attempt_day_id: attemptDay.id,
+            answer_date: new Date(),
+          },
+        });
+      }
+    }
+  }
+}
 
   console.log('Seed completed');
 }
