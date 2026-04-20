@@ -4,7 +4,7 @@ import { IsString, IsNotEmpty } from 'class-validator';
 export class CreateAttemptDto {
   @ApiProperty({
     description: 'Selected language for the exam',
-    example: 'ENG',
+    example: 'ENGLISH',
   })
   @IsString()
   @IsNotEmpty()
