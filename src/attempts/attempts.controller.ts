@@ -78,7 +78,7 @@ export class AttemptsController {
     return await this.attemptsService.update(attemptId, updateAttemptDto, user.userId);
   }
 
-@ApiOperation({
+  @ApiOperation({
     summary: 'Finalize exam and calculate final score',
   })
   @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
