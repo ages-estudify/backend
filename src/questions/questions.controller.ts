@@ -100,6 +100,7 @@ export class QuestionsController {
       questionId,
       user.userId,
       body.selectedAnswer,
+      body.attemptId,
     );
     return result;
   }

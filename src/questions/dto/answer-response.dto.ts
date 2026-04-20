@@ -36,6 +36,6 @@ export class AnswerSuccessResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
 
-  @ApiProperty({ type: AnswerResponseDto })
-  data!: AnswerResponseDto;
+  @ApiProperty({ type: AnswerResponseDto, required: false })
+  data?: AnswerResponseDto;
 }

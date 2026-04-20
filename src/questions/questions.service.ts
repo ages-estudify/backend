@@ -86,6 +86,7 @@ export class QuestionsService {
     questionId: string,
     userId: string,
     selectedAnswer: string,
+    attemptId?: string,
   ): Promise<AnswerSuccessResponseDto> {
     const user = await this.usersRepository.findUniqueById(userId);
     if (!user) {
@@ -116,6 +117,10 @@ export class QuestionsService {
       alternative_id: selectedAlternative.id,
       answer_date: new Date(),
     });
+
+    if (attemptId) {
+      return { success: true };
+    }
 
     const gamificationResult = await this.gamificationService.earnCoins({
       userId,
