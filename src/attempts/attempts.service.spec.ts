@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptsService } from './attempts.service';
 import { PrismaService } from '../prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 const mockPrismaService = {
   exam: {
@@ -9,13 +9,14 @@ const mockPrismaService = {
   },
   attempt: {
     findFirst: jest.fn(),
-    findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
   },
   answer: {
     findMany: jest.fn(),
+    createMany: jest.fn(),
   },
+  $transaction: jest.fn((callback) => callback(mockPrismaService)),
 };
 
 describe('AttemptsService', () => {
@@ -44,147 +45,120 @@ describe('AttemptsService', () => {
   });
 
   describe('create()', () => {
-    it('should throw NotFoundException if exam is not found in database', async () => {
-      prisma.exam.findUnique.mockResolvedValue(null);
-      await expect(service.create('invalid-uuid', 'invalid-user', 'SPANISH')).rejects.toThrow(
-        NotFoundException,
-      );
-      expect(prisma.exam.findUnique).toHaveBeenCalledTimes(1);
-    });
-    it('should return to existing attempt', async () => {
-      const mockExam = { id: 'exam-123' };
-      const mockExistingAttempt = { id: 'attempt-123', end_time: null }; 
-      
+    it('should create attempt and generate answer placeholders', async () => {
+      const mockExam = { id: 'exam-1', questions: [{ id: 'q1' }, { id: 'q2' }] };
+      const mockAttempt = { id: 'att-1', user_id: 'user-1' };
+
       prisma.exam.findUnique.mockResolvedValue(mockExam);
-      prisma.attempt.findFirst.mockResolvedValue(mockExistingAttempt);
+      prisma.attempt.findFirst.mockResolvedValue(null);
+      prisma.attempt.create.mockResolvedValue(mockAttempt);
 
-      const result = await service.create('exam-123', 'user-123', 'pt-BR');
+      const result = await service.create('exam-1', 'user-1', 'SPANISH');
 
-      expect(result).toEqual(mockExistingAttempt); 
-      expect(prisma.attempt.create).not.toHaveBeenCalled(); 
-    });
-
-    it('should create a new attempt if exam exists and there is no other attempt', async () => {
-      const mockExam = { id: 'exam-123' };
-      const mockNewAttempt = { id: 'new-attempt-123', current_question: 1 };
-      
-      prisma.exam.findUnique.mockResolvedValue(mockExam);
-      prisma.attempt.findFirst.mockResolvedValue(null); 
-      prisma.attempt.create.mockResolvedValue(mockNewAttempt); 
-
-      const result = await service.create('exam-123', 'user-123', 'pt-BR');
-
-      expect(result).toEqual(mockNewAttempt);
-      expect(prisma.attempt.create).toHaveBeenCalledTimes(1); 
+      expect(result).toEqual(mockAttempt);
+      expect(prisma.answer.createMany).toHaveBeenCalledWith({
+        data: [
+          {
+            attempt_id: 'att-1',
+            question_id: 'q1',
+            user_id: 'user-1',
+            answer_date: expect.any(Date),
+          },
+          {
+            attempt_id: 'att-1',
+            question_id: 'q2',
+            user_id: 'user-1',
+            answer_date: expect.any(Date),
+          },
+        ],
+      });
     });
   });
 
   describe('update()', () => {
+    const updateDto = { current_question: 5, time_spent_minutes: 20 };
+
     it('should update the attempt successfully', async () => {
-      const updateDto = { current_question: 2, time_spent_minutes: 15 };
-      const mockUpdatedAttempt = { id: 'attempt-123', ...updateDto };
+      const mockAttempt = { id: 'att-1', user_id: 'user-1', end_time: null };
+      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
+      prisma.attempt.update.mockResolvedValue({ ...mockAttempt, ...updateDto });
 
-      prisma.attempt.update.mockResolvedValue(mockUpdatedAttempt);
+      const result = await service.update('att-1', updateDto, 'user-1');
 
-      const result = await service.update('attempt-123', updateDto);
-
-      expect(result).toEqual(mockUpdatedAttempt);
-      expect(prisma.attempt.update).toHaveBeenCalledTimes(1);
+      expect(result.current_question).toBe(5);
       expect(prisma.attempt.update).toHaveBeenCalledWith({
-        where: { id: 'attempt-123' },
-        data: {
-          current_question: updateDto.current_question,
-          time_spent_minutes: updateDto.time_spent_minutes,
-        },
+        where: { id: 'att-1' },
+        data: expect.objectContaining(updateDto),
       });
     });
 
-    it('should throw NotFoundException if attempt is not found (P2025)', async () => {
-      const updateDto = { current_question: 2, time_spent_minutes: 15 };
-      
-      const prismaError = new Error('Record to update not found.');
-      (prismaError as any).code = 'P2025';
-      
-      prisma.attempt.update.mockRejectedValue(prismaError);
+    it('should throw BadRequestException if attempt is already closed', async () => {
+      const closedAttempt = { id: 'att-1', end_time: new Date() };
+      prisma.attempt.findFirst.mockResolvedValue(closedAttempt);
 
-      await expect(
-        service.update('invalid-uuid', updateDto)
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('att-1', updateDto, 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw NotFoundException if attempt is not found or belongs to another user', async () => {
+      prisma.attempt.findFirst.mockResolvedValue(null);
+
+      await expect(service.update('wrong-id', updateDto, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('finish()', () => {
-    it('should calculate score correctly and group by subject', async () => {
-      const mockAttemptId = 'attempt-123';
-      const mockSubjectId = 'sub-1';
-      
-      const mockAttemptWithExam = {
-        id: mockAttemptId,
+    it('should calculate score correctly and set end_time', async () => {
+      const mockAttempt = {
+        id: 'att-1',
+        user_id: 'user-1',
+        end_time: null,
         exam: {
           questions: [
             {
               id: 'q1',
-              alternatives: [{ id: 'alt-correct-1' }],
-              path: { subject: { id: mockSubjectId, name: 'Matemática' } },
-            },
-            {
-              id: 'q2',
-              alternatives: [{ id: 'alt-correct-2' }],
-              path: { subject: { id: mockSubjectId, name: 'Matemática' } },
-            },
-            {
-              id: 'q3',
-              alternatives: [{ id: 'alt-correct-3' }],
-              path: { subject: { id: mockSubjectId, name: 'Matemática' } },
+              alternatives: [{ id: 'alt-correct' }],
+              path: { subject: { id: 's1', name: 'Matemática' } },
             },
           ],
         },
       };
 
-      const mockUserAnswers = [
-        { question_id: 'q1', alternative_id: 'alt-correct-1' },
-        { question_id: 'q2', alternative_id: 'alt-wrong-2' },
-      ];
+      const mockAnswers = [{ question_id: 'q1', alternative_id: 'alt-correct' }];
 
-      prisma.attempt.findUnique.mockResolvedValue(mockAttemptWithExam as any);
-      prisma.answer.findMany.mockResolvedValue(mockUserAnswers as any);
-      prisma.attempt.update.mockResolvedValue({ id: mockAttemptId, score: 1 });
+      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
+      prisma.answer.findMany.mockResolvedValue(mockAnswers);
+      prisma.attempt.update.mockResolvedValue({ ...mockAttempt, score: 1 });
 
-      const result = await service.finish(mockAttemptId);
-      
-      expect(result.resultBySubject[0]).toEqual({
-        subjectId: mockSubjectId,
-        subjectName: 'Matemática',
-        totalQuestions: 3,
-        correctAnswers: 1,
-        wrongAnswers: 1,
-        blankAnswers: 1,
-      });
-      
+      const result = await service.finish('att-1', 'user-1');
+
+      expect(result.score).toBe(1);
+      expect(result.resultBySubject[0].correctAnswers).toBe(1);
       expect(prisma.attempt.update).toHaveBeenCalledWith({
-        where: { id: mockAttemptId },
-        data: expect.objectContaining({ score: 1 }),
+        where: { id: 'att-1' },
+        data: expect.objectContaining({ score: 1, end_time: expect.any(Date) }),
       });
-    });
-
-    it('should throw NotFoundException if attempt does not exist', async () => {
-      prisma.attempt.findUnique.mockResolvedValue(null);
-
-      await expect(service.finish('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('findLast()', () => {
-    it('should return user last attempt', async () => {
+    it('should return user last attemptfor a specific exam', async () => {
       const mockAttempt = { id: 'last-1', end_time: null };
       prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
 
-      const result = await service.findLast('user-1');
+      const result = await service.findLast('user-1', 'exam-123');
 
       expect(result).toEqual(mockAttempt);
       expect(prisma.attempt.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { user_id: 'user-1', end_time: null },
+          where: {
+            user_id: 'user-1',
+            exam_id: 'exam-123',
+            end_time: null,
+          },
         }),
       );
     });

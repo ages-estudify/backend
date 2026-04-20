@@ -40,41 +40,53 @@ export class AttemptsController {
   }
 
   @ApiOperation({
-    summary: 'Get current active attempt',
+    summary: 'Get current active attempt for a specific exam',
   })
   @ApiResponse({
     status: 200,
     description: 'Return attempt or null',
   })
-  @Get('attempts/last')
-  async findLast(@CurrentUser() user: JwtAuthUser) {
-    return await this.attemptsService.findLast(user.userId);
+  @Get(':examId/attempts/latest')
+  async findLast(
+    @Param('examId', new ParseUUIDPipe({ version: '4' })) examId: string,
+    @CurrentUser() user: JwtAuthUser,
+  ) {
+    return await this.attemptsService.findLast(user.userId, examId);
   }
 
   @ApiOperation({
-    summary: 'Update progress (question and time)',
+    summary: 'Pause attempt and upgrade progress',
   })
   @ApiResponse({
     status: 200,
     description: 'Progress updated successfully',
   })
-  @Patch('attempts/:id')
-  async update(
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Body() updateAttemptDto: UpdateAttemptDto,
-  ) {
-    return await this.attemptsService.update(id, updateAttemptDto);
-  }
-
-  @ApiOperation({
-    summary: 'Finalize exam and calculate final score',
+  @ApiResponse({
+    status: 404,
+    description: 'Attempt not found or belongs to another user',
   })
   @ApiResponse({
-    status: 200,
-    description: 'Exam finished and score calculated',
+    status: 400,
+    description: 'Attempt already finished',
   })
-  @Patch('attempts/:id/finish')
-  async finish(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
-    return await this.attemptsService.finish(id);
+  @Patch('attempts/:attemptId/pause')
+  async pause(
+    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @Body() updateAttemptDto: UpdateAttemptDto,
+    @CurrentUser() user: JwtAuthUser,
+  ) {
+    return await this.attemptsService.update(attemptId, updateAttemptDto, user.userId);
+  }
+
+@ApiOperation({
+    summary: 'Finalize exam and calculate final score',
+  })
+  @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
+  @Post('attempts/:attemptId/finish') // Mudado de PATCH para POST conforme o PDF
+  async finish(
+    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @CurrentUser() user: JwtAuthUser,
+  ) {
+    return await this.attemptsService.finish(attemptId, user.userId);
   }
 }

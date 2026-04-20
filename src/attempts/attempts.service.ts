@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { UpdateAttemptDto } from './dto/update-attempt.dto';
 
@@ -7,10 +7,13 @@ export class AttemptsService {
   constructor(private prisma: PrismaService) {}
 
   async create(examId: string, userId: string, language: string) {
-    const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      include: { questions: true },
+    });
 
     if (!exam) {
-      throw new NotFoundException('Exame informado não existe.');
+      throw new NotFoundException('Exam does not exist.');
     }
 
     const existingAttempt = await this.prisma.attempt.findFirst({
@@ -25,40 +28,61 @@ export class AttemptsService {
       return existingAttempt;
     }
 
-    const attempt = await this.prisma.attempt.create({
-      data: {
-        user_id: userId,
-        exam_id: examId,
-        language: language as any,
-        init_time: new Date(),
-        current_question: 1,
-        time_spent_minutes: 0,
-      },
-    });
-    return attempt;
-  }
-
-  async update(id: string, updateAttemptDto: UpdateAttemptDto) {
-    try {
-      return await this.prisma.attempt.update({
-        where: { id },
+    return await this.prisma.$transaction(async (tx) => {
+      const attempt = await tx.attempt.create({
         data: {
-          current_question: updateAttemptDto.current_question,
-          time_spent_minutes: updateAttemptDto.time_spent_minutes,
+          user_id: userId,
+          exam_id: examId,
+          language: language as any,
+          init_time: new Date(),
+          current_question: 1,
+          time_spent_minutes: 0,
         },
       });
-    } catch (error: any) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`Attempt com id ${id} não encontrada`);
-      }
-      throw error;
-    }
+
+      const answerPlaceholders = exam.questions.map((q) => ({
+        attempt_id: attempt.id,
+        question_id: q.id,
+        user_id: userId,
+        answer_date: new Date(),
+      }));
+
+      await tx.answer.createMany({ data: answerPlaceholders });
+
+      return attempt;
+    });
   }
 
-  async findLast(userId: string) {
+  async update(id: string, updateAttemptDto: UpdateAttemptDto, userId: string) {
+    const attempt = await this.prisma.attempt.findFirst({
+      where: {
+        id,
+        user_id: userId,
+      },
+    });
+
+    if (!attempt) {
+      throw new NotFoundException(`Attempt not found`);
+    }
+
+    if (attempt.end_time) {
+      throw new BadRequestException('Attempt already finished');
+    }
+
+    return await this.prisma.attempt.update({
+      where: { id },
+      data: {
+        current_question: updateAttemptDto.current_question,
+        time_spent_minutes: updateAttemptDto.time_spent_minutes,
+      },
+    });
+  }
+
+  async findLast(userId: string, examId: string) {
     return await this.prisma.attempt.findFirst({
       where: {
         user_id: userId,
+        exam_id: examId,
         end_time: null,
       },
       orderBy: {
@@ -67,9 +91,12 @@ export class AttemptsService {
     });
   }
 
-  async finish(id: string) {
-    const attempt = await this.prisma.attempt.findUnique({
-      where: { id },
+  async finish(id: string, userId: string) {
+    const attempt = await this.prisma.attempt.findFirst({
+      where: {
+        id,
+        user_id: userId,
+      },
       include: {
         exam: {
           include: {
@@ -84,7 +111,8 @@ export class AttemptsService {
       },
     });
 
-    if (!attempt) throw new NotFoundException(`Attempt com id ${id} não encontrada`);
+    if (!attempt) throw new NotFoundException('Attempt not found');
+    if (attempt.end_time) throw new BadRequestException('Attempt already finished');
 
     const userAnswers = await this.prisma.answer.findMany({
       where: { attempt_id: id },
@@ -112,13 +140,9 @@ export class AttemptsService {
 
       const answer = userAnswers.find((a) => a.question_id === q.id);
 
-      if (!answer) {
-        stats.blankAnswers++;
-      } else {
-        const isCorrect = answer.alternative_id === q.alternatives[0]?.id;
-        if (isCorrect) stats.correctAnswers++;
-        else stats.wrongAnswers++;
-      }
+      if (!answer || !answer.alternative_id) stats.blankAnswers++;
+      else if (answer.alternative_id === q.alternatives[0]?.id) stats.correctAnswers++;
+      else stats.wrongAnswers++;
     });
 
     const resultBySubject = Array.from(subjectMap.values());
