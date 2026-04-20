@@ -16,10 +16,6 @@ export class AttemptsController {
     @Body() body: CreateAttemptDto,
     @CurrentUser() user: JwtAuthUser,
   ) {
-    return {
-      chegouExamId: examId,
-      chegouIdioma: body.language,
-      chegouUsuario: user.userId,
-    };
+    return await this.attemptsService.create(examId, user.userId, body.language);
   }
 }
