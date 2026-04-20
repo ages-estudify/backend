@@ -11,7 +11,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from 'src/auth/security/jwt-auth-user';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UpdateAttemptDto } from './dto/update-attempt.dto';
