@@ -31,6 +31,12 @@ enum Origin {
   EXTERNAL
 }
 
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
 
   id             String     @id @default(uuid()) @db.Uuid
@@ -123,13 +129,29 @@ model Path {
 
 model Exam {
 
-  id        String     @id @default(uuid()) @db.Uuid
+  id        String      @id @default(uuid()) @db.Uuid
   name      String
   origin    String
   image_url String?
+  status    ExamStatus  @default(DRAFT)
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
 
   attempts  Attempt[]
   questions Question[]
+  exam_days ExamDay[]
+
+}
+
+model ExamDay {
+
+  id        String     @id @default(uuid()) @db.Uuid
+  day       Int
+  exam_id   String     @db.Uuid
+  exam      Exam       @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@unique([exam_id, day])
 
 }
 
@@ -167,8 +189,12 @@ model Question {
   path         Path          @relation(fields: [path_id], references: [id])
   exam_id      String?       @db.Uuid
   exam         Exam?         @relation(fields: [exam_id], references: [id])
+  exam_day_id  String?       @db.Uuid
+  exam_day     ExamDay?      @relation(fields: [exam_day_id], references: [id], onDelete: SetNull)
   alternatives Alternative[]
   answers      Answer[]
+
+  @@index([exam_day_id])
 
 }
 
@@ -200,3 +226,5 @@ model Answer {
   attempt        Attempt?    @relation(fields: [attempt_id], references: [id])
 
 }
+
+
