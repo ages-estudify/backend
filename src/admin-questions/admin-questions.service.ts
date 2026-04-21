@@ -13,33 +13,28 @@ export class AdminQuestionsService {
   constructor(private readonly repository: AdminQuestionsRepository) {}
 
   async create(dto: CreateQuestionDto) {
-    try {
-      await this.validateRelations(dto.path_id, dto.exam_id);
-      this.validateAlternatives(dto.alternatives);
+    await this.validateRelations(dto.path_id, dto.exam_id);
+    this.validateAlternatives(dto.alternatives);
 
-      return await this.repository.create(
-        {
-          text: dto.text,
-          feedback: dto.feedback,
-          image: dto.image ?? null,
-          number: dto.number ?? null,
-          year: dto.year,
-          day: dto.day ?? null,
-          language: dto.language ?? null,
-          origin: dto.origin,
-          path_id: dto.path_id,
-          exam_id: dto.exam_id ?? null,
-        },
-        dto.alternatives.map((alt) => ({
-          letter: alt.letter,
-          text: alt.text,
-          is_correct: alt.is_correct,
-        })),
-      );
-    } catch (error) {
-      console.error('CREATE QUESTION ERROR:', error);
-      throw error;
-    }
+    return await this.repository.create(
+      {
+        text: dto.text,
+        feedback: dto.feedback,
+        image: dto.image ?? null,
+        number: dto.number ?? null,
+        year: dto.year,
+        day: dto.day ?? null,
+        language: dto.language ?? null,
+        origin: dto.origin,
+        path_id: dto.path_id,
+        exam_id: dto.exam_id ?? null,
+      },
+      dto.alternatives.map((alt) => ({
+        letter: alt.letter,
+        text: alt.text,
+        is_correct: alt.is_correct,
+      })),
+    );
   }
 
   async findAll(query: QueryQuestionsDto) {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,24 +12,41 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminQuestionsService } from './admin-questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
 
 @ApiTags('Admin Questions')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADM)
+@ApiUnauthorizedResponse({
+  description: 'Missing or invalid JWT',
+  schema: { example: { success: false, message: 'Unauthorized' } },
+})
+@ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
 @Controller({ path: 'admin/questions', version: '1' })
 export class AdminQuestionsController {
   constructor(private readonly service: AdminQuestionsService) {}
@@ -56,7 +74,11 @@ export class AdminQuestionsController {
     },
   })
   @ApiOkResponse({ description: 'CSV import results' })
-  async importCsv(@UploadedFile() file: Express.Multer.File) {
+  @ApiBadRequestResponse({ description: 'CSV file is required' })
+  async importCsv(@UploadedFile() file?: Express.Multer.File) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('CSV file is required');
+    }
     const data = await this.service.importCsv(file.buffer);
     return { success: true, data };
   }
