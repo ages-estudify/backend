@@ -21,7 +21,7 @@ enum WeekDay {
   SUNDAY
 }
 
-enum Language{
+enum Language {
   ENGLISH
   SPANISH
 }
@@ -32,23 +32,22 @@ enum Origin {
 }
 
 model User {
-
-  id             String     @id @default(uuid()) @db.Uuid
+  id             String         @id @default(uuid()) @db.Uuid
   full_name      String
-  email          String     @unique
+  email          String         @unique
   password       String
-  phone_number   String     @unique
+  phone_number   String         @unique
   role           Role
   plan_end_date  DateTime?
   streak         Int?
   coins          Int?
-  createdAt      DateTime   @default(now())
-  enable         Boolean    @default(true)
+  createdAt      DateTime       @default(now())
+  enable         Boolean        @default(true)
   desired_course String?
   desired_university String?
   preferred_language Language?
   last_active    DateTime?
-  birth_date     DateTime?  @db.Date
+  birth_date     DateTime?      @db.Date
   Study_day      StudyDay[]
   answers        Answer[]
   attempts       Attempt[]
@@ -59,7 +58,6 @@ model User {
 }
 
 model RefreshToken {
-
   id        String   @id @default(uuid()) @db.Uuid
   tokenHash String   @unique
   user_id   String   @db.Uuid
@@ -71,134 +69,141 @@ model RefreshToken {
 }
 
 model StudyDay {
-
   id      String  @id @default(uuid()) @db.Uuid
   day     WeekDay
   hour    Int
   user_id String  @db.Uuid
   user    User    @relation(fields: [user_id], references: [id])
-
 }
 
 model StudyLog {
+  id   String   @id @default(uuid()) @db.Uuid
+  date DateTime
+  done Boolean  @default(false)
 
-  id      String   @id @default(uuid()) @db.Uuid
-  date    DateTime
-  done    Boolean  @default(false)
+  user_id String @db.Uuid
+  user    User   @relation(fields: [user_id], references: [id])
 
-  user_id String   @db.Uuid
-  user    User     @relation(fields: [user_id], references: [id])
-
-  path_id String   @db.Uuid
-  path    Path     @relation(fields: [path_id], references: [id])
+  path_id String @db.Uuid
+  path    Path   @relation(fields: [path_id], references: [id])
 
   @@unique([user_id, path_id, date])
-
 }
 
 model Subject {
-
-  id    String @id @default(uuid()) @db.Uuid
-  name  String
-  icon_url String 
-  paths Path[]
-
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  icon_url String
+  paths    Path[]
 }
 
 model Path {
-
-  id                String     @id @default(uuid()) @db.Uuid
+  id                String @id @default(uuid()) @db.Uuid
   name              String
   text              String
-  icon_url String 
-  schedule_position Int        @unique
+  icon_url          String
+  schedule_position Int    @unique
   trail_position    Int
 
-  subject_id        String     @db.Uuid
-  subject           Subject    @relation(fields: [subject_id], references: [id])
-  questions         Question[]
-  studyLog          StudyLog[]
+  subject_id String     @db.Uuid
+  subject    Subject    @relation(fields: [subject_id], references: [id])
+  questions  Question[]
+  studyLog   StudyLog[]
 
   @@unique([subject_id, trail_position])
-
 }
 
 model Exam {
-
-  id        String     @id @default(uuid()) @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
   name      String
   origin    String
   image_url String?
 
-  attempts  Attempt[]
-  questions Question[]
+  exam_days ExamDay[]
+  attempts Attempt[]
+}
 
+model ExamDay {
+  id  String @id @default(uuid()) @db.Uuid
+  day Int
+
+  exam_id String @db.Uuid
+  Exam    Exam   @relation(fields: [exam_id], references: [id])
+
+  attempts_day AttemptDay[]
+  questions    Question[]
 }
 
 model Attempt {
-
   id                 String    @id @default(uuid()) @db.Uuid
   time_spent_minutes Int
   score              Int?
-  current_question   Int
   language           Language
   init_time          DateTime
   end_time           DateTime?
 
-  exam_id            String   @db.Uuid
-  exam               Exam     @relation(fields: [exam_id], references: [id])
-  user_id            String   @db.Uuid
-  user               User     @relation(fields: [user_id], references: [id])
-  answers Answer[]
+  exam_id      String        @db.Uuid
+  exam         Exam          @relation(fields: [exam_id], references: [id])
+  user_id      String        @db.Uuid
+  user         User          @relation(fields: [user_id], references: [id])
+  attempt_days AttemptDay[]
+}
 
+model AttemptDay {
+  id                 String    @id @default(uuid()) @db.Uuid
+  time_spent_minutes Int
+  current_question   Int
+  init_time          DateTime
+  end_time           DateTime?
+
+  attempt_id  String   @db.Uuid
+  attempt     Attempt  @relation(fields: [attempt_id], references: [id])
+  exam_day_id String   @db.Uuid
+  exam_day    ExamDay @relation(fields: [exam_day_id], references: [id])
+  answers     Answer[]
+
+  @@unique([attempt_id, exam_day_id])
 }
 
 model Question {
-
-  id           String       @id @default(uuid()) @db.Uuid
-  text         String
-  origin       Origin
-  year         Int
-  feedback     String
-  day          Int?
-  number       Int?
-  language     Language?
-  image_url    String?
+  id        String    @id @default(uuid()) @db.Uuid
+  text      String
+  origin    Origin
+  year      Int
+  feedback  String
+  number    Int?
+  language  Language?
+  image_url String?
 
   path_id      String        @db.Uuid
   path         Path          @relation(fields: [path_id], references: [id])
-  exam_id      String?       @db.Uuid
-  exam         Exam?         @relation(fields: [exam_id], references: [id])
+  exam_day_id  String?       @db.Uuid
+  exam_day     ExamDay?     @relation(fields: [exam_day_id], references: [id])
   alternatives Alternative[]
   answers      Answer[]
-
 }
 
 model Alternative {
+  id         String  @id @default(uuid()) @db.Uuid
+  text       String
+  letter     String  @db.Char(1)
+  is_correct Boolean
 
-  id          String    @id @default(uuid()) @db.Uuid
-  text        String
-  letter      String    @db.Char(1)
-  is_correct  Boolean
-
-  question_id String     @db.Uuid
-  question    Question   @relation(fields: [question_id], references: [id])
+  question_id String   @db.Uuid
+  question    Question @relation(fields: [question_id], references: [id])
   answers     Answer[]
-
 }
 
 model Answer {
+  id          String   @id @default(uuid()) @db.Uuid
+  answer_date DateTime
 
-  id String @id @default(uuid()) @db.Uuid
-  answer_date    DateTime
-
-  user_id        String      @db.Uuid
-  user           User        @relation(fields: [user_id], references: [id])
-  question_id    String      @db.Uuid
-  question       Question    @relation(fields: [question_id], references: [id])
+  user_id        String       @db.Uuid
+  user           User         @relation(fields: [user_id], references: [id])
+  question_id    String       @db.Uuid
+  question       Question     @relation(fields: [question_id], references: [id])
   alternative_id String?      @db.Uuid
   alternative    Alternative? @relation(fields: [alternative_id], references: [id])
-  attempt_id     String?     @db.Uuid
-  attempt        Attempt?    @relation(fields: [attempt_id], references: [id])
-
+  attempt_day_id String?      @db.Uuid
+  attempt_day    AttemptDay? @relation(fields: [attempt_day_id], references: [id])
 }
