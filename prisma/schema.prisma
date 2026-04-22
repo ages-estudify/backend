@@ -53,6 +53,8 @@ model User {
   attempts       Attempt[]
   StudyLog       StudyLog[]
   refresh_tokens RefreshToken[]
+  target_university    String?
+  onboarding_completed Boolean @default(false)
 
 }
 
