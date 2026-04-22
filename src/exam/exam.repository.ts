@@ -47,39 +47,29 @@ export class ExamRepository {
       e.name,
       e.image_url,
       e.origin,
+      CASE WHEN a.id IS NULL THEN 'available' WHEN a.end_time IS NULL THEN 'in_progress' ELSE 'completed' END AS "status",
       a.language,
-      a.day1_completed AS "isCompleted1",
-      a.day2_completed AS "isCompleted2",
-
-      COUNT(DISTINCT q.id)::int AS "totalQuestions",
-
-      COUNT(DISTINCT q.id) FILTER (WHERE q.day = 1)::int AS "totalQuestions1",
-      COUNT(DISTINCT q.id) FILTER (WHERE q.day = 2)::int AS "totalQuestions2",
-      COUNT(DISTINCT w.id) FILTER (WHERE w.alternative_id IS NOT NULL)::int AS "answeredQuestions",
-
-      CASE
-        WHEN a.id IS NULL THEN 'available'
-        WHEN a.end_time IS NULL THEN 'in_progress'
-        ELSE 'completed'
-      END AS "status"
+      BOOL_OR(ad.end_time IS NOT NULL AND ed.day = 1) AS "isCompleted1",
+      BOOL_OR(ad.end_time IS NOT NULL AND ed.day = 2) AS "isCompleted2",
       
+      COUNT(DISTINCT q.id)::int AS "totalQuestions",
+      COUNT(DISTINCT q.id) FILTER (WHERE ed.day = 1)::int AS "totalQuestions1",
+      COUNT(DISTINCT q.id) FILTER (WHERE ed.day = 2)::int AS "totalQuestions2",
+      COUNT(DISTINCT aw.id) FILTER (WHERE aw.alternative_id IS NOT NULL)::int AS "answeredQuestions"
 
       FROM "Exam" e
 
-      JOIN "Question" q ON q.exam_id = e.id
-    
-      LEFT JOIN (
-        SELECT DISTINCT ON (a.exam_id)
-          a.*
-        FROM "Attempt" a
-        WHERE a.user_id = ${userId}
-        ORDER BY a.exam_id, a.init_time DESC
-      ) a ON a.exam_id = e.id
+      
+      LEFT JOIN "ExamDay"ed on ed.exam_id = e.id
+      LEFT JOIN "Question" q ON q.exam_day_id = ed.id
+      LEFT JOIN ( SELECT DISTINCT ON (a.exam_id) a.* FROM "Attempt" a WHERE a.user_id = ${userId} ORDER BY a.exam_id, a.init_time DESC ) a ON a.exam_id = e.id
+      LEFT JOIN "AttemptDay" ad ON ad.attempt_id = a.id
+      LEFT JOIN "Answer" aw ON aw.attempt_day_id = ad.id
 
-      LEFT JOIN "Answer"  w ON w.attempt_id = a.id
-
-      GROUP BY e.id, e.name, e.image_url, e.origin, a.id, a.end_time,a.language,a.day1_completed,a.day2_completed;
+      GROUP BY e.id, e.name, e.image_url, e.origin,a.id,a.end_time,a.language
     `;
+
+    console.log(result);
 
     return result;
   }
