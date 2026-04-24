@@ -25,7 +25,7 @@ export class AttemptsService {
     });
 
     if (existingAttempt) {
-      return existingAttempt;
+      await this.finish(existingAttempt.id, userId);
     }
 
     return await this.prisma.$transaction(async (tx) => {

@@ -1,20 +1,10 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Body,
-  ParseUUIDPipe,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, ParseUUIDPipe, Param, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UpdateAttemptDto } from './dto/update-attempt.dto';
 
 @ApiTags('Attempts')
 @ApiBearerAuth()
@@ -69,20 +59,11 @@ export class AttemptsController {
     status: 400,
     description: 'Attempt already finished',
   })
-  @Patch('attempts/:attemptId/pause')
-  async pause(
-    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
-    @Body() updateAttemptDto: UpdateAttemptDto,
-    @CurrentUser() user: JwtAuthUser,
-  ) {
-    return await this.attemptsService.update(attemptId, updateAttemptDto, user.userId);
-  }
-
   @ApiOperation({
     summary: 'Finalize exam and calculate final score',
   })
   @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
-  @Post('attempts/:attemptId/finish') // Mudado de PATCH para POST conforme o PDF
+  @Post('attempts/:attemptId/finish')
   async finish(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
     @CurrentUser() user: JwtAuthUser,
