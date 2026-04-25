@@ -1,14 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsBoolean,
-  IsInt,
-  IsString,
-  IsUUID,
-  ValidateNested,
-  IsIn,
-  isString,
-} from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsString, IsUUID, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DayDto {
@@ -23,7 +14,6 @@ export class DayDto {
   @ApiProperty({ example: false })
   @IsBoolean()
   isCompleted!: boolean;
-
 }
 
 export class ExamDto {
@@ -45,11 +35,11 @@ export class ExamDto {
 
   @ApiProperty({
     example: 'completed',
-    enum: ['completed', 'in_progress', 'not_started'],
+    enum: ['completed', 'in_progress', 'available'],
   })
   @IsString()
-  @IsIn(['completed', 'in_progress', 'not_started'])
-  status!: 'completed' | 'in_progress' | 'not_started';
+  @IsIn(['completed', 'in_progress', 'available'])
+  status!: 'completed' | 'in_progress' | 'available';
 
   @ApiProperty({ example: 0 })
   @IsInt()
@@ -59,7 +49,7 @@ export class ExamDto {
   @IsString()
   image_url!: string;
 
- @ApiProperty({ enum: ['ENGLISH', 'SPANISH'] })
+  @ApiProperty({ enum: ['ENGLISH', 'SPANISH'] })
   @IsIn(['ENGLISH', 'SPANISH'])
   @IsString()
   languages!: 'ENGLISH' | 'SPANISH';
