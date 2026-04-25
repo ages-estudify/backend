@@ -18,8 +18,8 @@ export class ExamController {
 
   @Get()
   @ApiOkResponse({
-  description: 'Lista de exames do usuário com progresso ',
-  type: ExamListingDto,
+    description: 'Lista de exames do usuário com progresso ',
+    type: ExamListingDto,
   })
   async examListing(@CurrentUser() user: JwtAuthUser): Promise<ExamListingDto> {
     return this.examservice.findAllWithLastAttemptByUser(user.userId);
