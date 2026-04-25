@@ -96,7 +96,8 @@ export class ExamRepository {
           LEFT JOIN last_attempt la ON la.exam_id = e.id
           LEFT JOIN attempt_days ad ON ad.attempt_id = la.id
           LEFT JOIN answer_stats ans ON ans.attempt_id = la.id
-          LEFT JOIN question_stats qs ON qs.exam_id = e.id;
+          LEFT JOIN question_stats qs ON qs.exam_id = e.id
+          WHERE e.status = 'PUBLISHED';
    `;
 
     return result;
