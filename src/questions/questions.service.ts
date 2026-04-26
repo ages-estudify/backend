@@ -4,6 +4,7 @@ import { QuestionResponse, QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class QuestionsService {
@@ -11,6 +12,7 @@ export class QuestionsService {
     private questionsRepository: QuestionsRepository,
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
+    private prisma: PrismaService,
   ) {}
 
   async getQuestionBatch(
@@ -87,16 +89,69 @@ export class QuestionsService {
     userId: string,
     selectedAnswer: string,
     attemptId?: string,
-  ): Promise<AnswerSuccessResponseDto> {
+    timeSpentSeconds?: number,
+  ): Promise<any> {
     const user = await this.usersRepository.findUniqueById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     const question = await this.questionsRepository.findQuestionById(questionId);
-
     if (!question) {
       throw new NotFoundException('Question not found');
+    }
+
+    const selectedAlternative = question.alternatives.find((alt) => alt.letter === selectedAnswer);
+    if (!selectedAlternative) {
+      throw new BadRequestException('Selected answer is not a valid alternative for this question');
+    }
+
+    if (attemptId) {
+      const attempt = await this.prisma.attempt.findUnique({
+        where: {
+          id: attemptId,
+        },
+      });
+
+      if (!attempt) throw new NotFoundException('Attempt not found');
+
+      if (timeSpentSeconds !== undefined && timeSpentSeconds < attempt.time_spent_seconds) {
+        throw new BadRequestException('Time spent cannot regress');
+      }
+
+      const existingAnswer = await this.prisma.answer.findFirst({
+        where: {
+          attempt_id: attemptId,
+          question_id: questionId,
+        },
+      });
+
+      if (existingAnswer) {
+        await this.prisma.answer.update({
+          where: { id: existingAnswer.id },
+          data: { alternative_id: selectedAlternative.id, answer_date: new Date() },
+        });
+      } else {
+        await this.prisma.answer.create({
+          data: {
+            attempt_id: attemptId,
+            question_id: questionId,
+            user_id: userId,
+            alternative_id: selectedAlternative.id,
+            answer_date: new Date(),
+          },
+        });
+      }
+
+      await this.prisma.attempt.update({
+        where: { id: attemptId },
+        data: {
+          time_spent_seconds: timeSpentSeconds ?? attempt.time_spent_seconds,
+          current_question: question.number ?? attempt.current_question + 1,
+        },
+      });
+
+      return { success: true, data: { saved: true } };
     }
 
     const correctAlternative = question.alternatives.find((alt) => alt.is_correct);
@@ -106,21 +161,12 @@ export class QuestionsService {
 
     const isCorrect = selectedAnswer === correctAlternative.letter;
 
-    const selectedAlternative = question.alternatives.find((alt) => alt.letter === selectedAnswer);
-    if (!selectedAlternative) {
-      throw new BadRequestException('Selected answer is not a valid alternative for this question');
-    }
-
     await this.questionsRepository.createAnswer({
       user_id: userId,
       question_id: questionId,
       alternative_id: selectedAlternative.id,
       answer_date: new Date(),
     });
-
-    if (attemptId) {
-      return { success: true };
-    }
 
     const gamificationResult = await this.gamificationService.earnCoins({
       userId,

@@ -11,10 +11,10 @@ export class UpdateAttemptDto {
   current_question?: number;
 
   @ApiProperty({
-    description: 'Total time spent in minutes',
-    example: 10,
+    description: 'Total time spent in seconds',
+    example: 243,
   })
   @IsNumber()
   @IsOptional()
-  time_spent_minutes?: number;
+  timeSpentSeconds?: number;
 }

@@ -9,7 +9,6 @@ export class AttemptsService {
   async create(examId: string, userId: string, language: string) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
-      include: { questions: true },
     });
 
     if (!exam) {
@@ -28,28 +27,15 @@ export class AttemptsService {
       await this.finish(existingAttempt.id, userId);
     }
 
-    return await this.prisma.$transaction(async (tx) => {
-      const attempt = await tx.attempt.create({
-        data: {
-          user_id: userId,
-          exam_id: examId,
-          language: language as any,
-          init_time: new Date(),
-          current_question: 1,
-          time_spent_minutes: 0,
-        },
-      });
-
-      const answerPlaceholders = exam.questions.map((q) => ({
-        attempt_id: attempt.id,
-        question_id: q.id,
+    return await this.prisma.attempt.create({
+      data: {
         user_id: userId,
-        answer_date: new Date(),
-      }));
-
-      await tx.answer.createMany({ data: answerPlaceholders });
-
-      return attempt;
+        exam_id: examId,
+        language: language as any,
+        init_time: new Date(),
+        current_question: 1,
+        time_spent_seconds: 0,
+      },
     });
   }
 
@@ -73,7 +59,7 @@ export class AttemptsService {
       where: { id },
       data: {
         current_question: updateAttemptDto.current_question,
-        time_spent_minutes: updateAttemptDto.time_spent_minutes,
+        time_spent_seconds: updateAttemptDto.timeSpentSeconds,
       },
     });
   }

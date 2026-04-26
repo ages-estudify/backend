@@ -101,6 +101,7 @@ export class QuestionsController {
       user.userId,
       body.selectedAnswer,
       body.attemptId,
+      body.timeSpentSeconds,
     );
     return result;
   }

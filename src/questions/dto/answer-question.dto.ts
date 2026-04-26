@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum SelectedAnswer {
@@ -25,4 +25,11 @@ export class AnswerQuestionDto {
   @IsOptional()
   @IsString()
   attemptId?: string;
+  @ApiProperty({
+    description: 'Total time spent in seconds',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  timeSpentSeconds?: number;
 }

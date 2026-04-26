@@ -1,10 +1,20 @@
-import { Controller, Post, Get, Body, ParseUUIDPipe, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  ParseUUIDPipe,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateAttemptDto } from './dto/update-attempt.dto';
 
 @ApiTags('Attempts')
 @ApiBearerAuth()
@@ -18,7 +28,7 @@ export class AttemptsController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Attempt created or retrieved successfully',
+    description: 'Attempt created or finalize previous attempt and create a new Attempt',
   })
   @Post(':examId/attempts')
   async create(
@@ -51,6 +61,14 @@ export class AttemptsController {
     status: 200,
     description: 'Progress updated successfully',
   })
+  @Patch(':attemptId/pause')
+  async pause(
+    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @Body() body: UpdateAttemptDto,
+    @CurrentUser() user: JwtAuthUser,
+  ) {
+    return await this.attemptsService.update(attemptId, body, user.userId);
+  }
   @ApiResponse({
     status: 404,
     description: 'Attempt not found or belongs to another user',
@@ -63,11 +81,15 @@ export class AttemptsController {
     summary: 'Finalize exam and calculate final score',
   })
   @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
-  @Post('attempts/:attemptId/finish')
+  @Post(':attemptId/finish')
   async finish(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @Body() body: UpdateAttemptDto,
     @CurrentUser() user: JwtAuthUser,
   ) {
+    if (body.timeSpentSeconds) {
+      await this.attemptsService.update(attemptId, body, user.userId);
+    }
     return await this.attemptsService.finish(attemptId, user.userId);
   }
 }
