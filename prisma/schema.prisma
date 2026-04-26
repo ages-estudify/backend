@@ -133,7 +133,7 @@ model ExamDay {
 
 model Attempt {
   id                 String    @id @default(uuid()) @db.Uuid
-  time_spent_minutes Int
+  time_spent_seconds Int       @default(0)
   score              Int?
   language           Language
   init_time          DateTime
@@ -148,7 +148,7 @@ model Attempt {
 
 model AttemptDay {
   id                 String    @id @default(uuid()) @db.Uuid
-  time_spent_minutes Int
+  time_spent_seconds Int       @default(0)
   current_question   Int
   init_time          DateTime
   end_time           DateTime?
