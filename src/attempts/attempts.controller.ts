@@ -61,7 +61,7 @@ export class AttemptsController {
     status: 200,
     description: 'Progress updated successfully',
   })
-  @Patch(':attemptId/pause')
+  @Patch('attempts/:attemptId/pause')
   async pause(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
     @Body() body: UpdateAttemptDto,
@@ -81,7 +81,7 @@ export class AttemptsController {
     summary: 'Finalize exam and calculate final score',
   })
   @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
-  @Post(':attemptId/finish')
+  @Post('attempts/:attemptId/finish')
   async finish(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
     @Body() body: UpdateAttemptDto,

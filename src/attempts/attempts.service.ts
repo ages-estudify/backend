@@ -27,7 +27,7 @@ export class AttemptsService {
       await this.finish(existingAttempt.id, userId);
     }
 
-    return await this.prisma.attempt.create({
+    const attempt = await this.prisma.attempt.create({
       data: {
         user_id: userId,
         exam_id: examId,
@@ -37,6 +37,8 @@ export class AttemptsService {
         time_spent_seconds: 0,
       },
     });
+
+    return { success: true, data: { attempt } };
   }
 
   async update(id: string, updateAttemptDto: UpdateAttemptDto, userId: string) {
@@ -55,26 +57,87 @@ export class AttemptsService {
       throw new BadRequestException('Attempt already finished');
     }
 
-    return await this.prisma.attempt.update({
+    if (
+      updateAttemptDto.timeSpentSeconds !== undefined &&
+      updateAttemptDto.timeSpentSeconds < attempt.time_spent_seconds
+    ) {
+      throw new BadRequestException('Time spent cannot regress');
+    }
+
+    const updatedAttempt = await this.prisma.attempt.update({
       where: { id },
       data: {
         current_question: updateAttemptDto.current_question,
         time_spent_seconds: updateAttemptDto.timeSpentSeconds,
       },
     });
+
+    return { success: true, data: { attempt: updatedAttempt } };
   }
 
   async findLast(userId: string, examId: string) {
-    return await this.prisma.attempt.findFirst({
-      where: {
-        user_id: userId,
-        exam_id: examId,
-        end_time: null,
-      },
-      orderBy: {
-        init_time: 'desc',
+    const attempt = await this.prisma.attempt.findFirst({
+      where: { user_id: userId, exam_id: examId },
+      orderBy: { init_time: 'desc' },
+      include: {
+        exam: {
+          include: {
+            exam_days: {
+              include: {
+                questions: {
+                  include: { alternatives: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    if (!attempt || attempt.end_time !== null) {
+      throw new NotFoundException('No current attempt could be found');
+    }
+
+    const userAnswers = await this.prisma.answer.findMany({
+      where: { attempt_day: { attempt_id: attempt.id } },
+    });
+
+    const questions = attempt.exam.exam_days
+      .flatMap((day) =>
+        day.questions.map((q) => {
+          const answer = userAnswers.find((a) => a.question_id === q.id);
+          return {
+            id: q.id,
+            number: q.number,
+            text: q.text,
+            imageUrl: q.image_url,
+            day: day.day,
+            alternatives: q.alternatives.map((alt) => ({
+              id: alt.id,
+              letter: alt.letter,
+              text: alt.text,
+            })),
+            selectedAlternativeId: answer?.alternative_id ?? null,
+          };
+        }),
+      )
+      .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+
+    return {
+      success: true,
+      data: {
+        attempt: {
+          id: attempt.id,
+          examId: attempt.exam_id,
+          currentQuestion: attempt.current_question,
+          timeSpentSeconds: attempt.time_spent_seconds,
+          language: attempt.language,
+          initTime: attempt.init_time,
+          endTime: attempt.end_time,
+        },
+        questions,
+      },
+    };
   }
 
   async finish(id: string, userId: string) {
@@ -86,10 +149,14 @@ export class AttemptsService {
       include: {
         exam: {
           include: {
-            questions: {
+            exam_days: {
               include: {
-                alternatives: { where: { is_correct: true } },
-                path: { include: { subject: true } },
+                questions: {
+                  include: {
+                    alternatives: { where: { is_correct: true } },
+                    path: { include: { subject: true } },
+                  },
+                },
               },
             },
           },
@@ -101,12 +168,18 @@ export class AttemptsService {
     if (attempt.end_time) throw new BadRequestException('Attempt already finished');
 
     const userAnswers = await this.prisma.answer.findMany({
-      where: { attempt_id: id },
+      where: {
+        attempt_day: {
+          attempt_id: id,
+        },
+      },
     });
 
     const subjectMap = new Map();
 
-    attempt.exam.questions.forEach((q) => {
+    const allQuestions = attempt.exam.exam_days.flatMap((day) => day.questions);
+
+    allQuestions.forEach((q) => {
       const subject = q.path?.subject;
       if (!subject) return;
 
@@ -135,6 +208,12 @@ export class AttemptsService {
 
     const totalScore = resultBySubject.reduce((acc, curr) => acc + curr.correctAnswers, 0);
 
+    const totalQuestions = resultBySubject.reduce((acc, curr) => acc + curr.totalQuestions, 0);
+    const correctAnswers = resultBySubject.reduce((acc, curr) => acc + curr.correctAnswers, 0);
+    const wrongAnswers = resultBySubject.reduce((acc, curr) => acc + curr.wrongAnswers, 0);
+    const blankAnswers = resultBySubject.reduce((acc, curr) => acc + curr.blankAnswers, 0);
+    const answeredQuestions = correctAnswers + wrongAnswers;
+
     try {
       const updated = await this.prisma.attempt.update({
         where: { id },
@@ -144,7 +223,22 @@ export class AttemptsService {
         },
       });
 
-      return { ...updated, resultBySubject };
+      return {
+        success: true,
+        data: {
+          attemptId: updated.id,
+          examId: updated.exam_id,
+          timeSpentSeconds: updated.time_spent_seconds,
+          endTime: updated.end_time,
+          score: totalScore,
+          totalQuestions,
+          answeredQuestions,
+          correctAnswers,
+          wrongAnswers,
+          blankAnswers,
+          resultBySubject, // A lista separada por matéria vai aqui dentro!
+        },
+      };
     } catch (error: any) {
       if (error.code === 'P2025') throw new NotFoundException('Attempt não encontrada');
       throw error;

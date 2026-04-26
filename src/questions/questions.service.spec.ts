@@ -6,6 +6,7 @@ import { SelectedAnswer } from './dto/answer-question.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
 import { Role } from '@prisma/client';
+import { PrismaService } from '../prisma.service';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -65,6 +66,12 @@ describe('QuestionsService', () => {
       findUniqueById: jest.fn(),
     };
 
+    const mockPrismaService = {
+      attempt: { findUnique: jest.fn(), update: jest.fn() },
+      attemptDay: { findFirst: jest.fn(), create: jest.fn() },
+      answer: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
@@ -79,6 +86,10 @@ describe('QuestionsService', () => {
         {
           provide: UsersRepository,
           useValue: mockUsersRepository,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

@@ -119,9 +119,29 @@ export class QuestionsService {
         throw new BadRequestException('Time spent cannot regress');
       }
 
+      if (!question.exam_day_id) {
+        throw new BadRequestException('Question needs exam_day_id');
+      }
+
+      let attemptDay = await this.prisma.attemptDay.findFirst({
+        where: { attempt_id: attemptId, exam_day_id: question.exam_day_id },
+      });
+
+      if (!attemptDay) {
+        attemptDay = await this.prisma.attemptDay.create({
+          data: {
+            attempt_id: attemptId,
+            exam_day_id: question.exam_day_id,
+            time_spent_seconds: 0,
+            current_question: question.number ?? 1,
+            init_time: new Date(),
+          },
+        });
+      }
+
       const existingAnswer = await this.prisma.answer.findFirst({
         where: {
-          attempt_id: attemptId,
+          attempt_day_id: attemptDay.id,
           question_id: questionId,
         },
       });
@@ -134,7 +154,7 @@ export class QuestionsService {
       } else {
         await this.prisma.answer.create({
           data: {
-            attempt_id: attemptId,
+            attempt_day_id: attemptDay.id,
             question_id: questionId,
             user_id: userId,
             alternative_id: selectedAlternative.id,
