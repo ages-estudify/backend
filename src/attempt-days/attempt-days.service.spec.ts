@@ -260,7 +260,9 @@ describe('AttemptDaysService', () => {
     const qid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const badAlts = [alt('x1', 'A', false), alt('x2', 'B', false)];
 
-    repository.findAttemptDayForUserResult.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
+    repository.findAttemptDayForUserResult.mockResolvedValue(
+      baseAttemptDay({ answers: [] }) as never,
+    );
     repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qid,
@@ -281,7 +283,9 @@ describe('AttemptDaysService', () => {
     const qid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const alts = [alt('l3', 'C', false), alt('l1', 'A', true), alt('l2', 'B', false)];
 
-    repository.findAttemptDayForUserResult.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
+    repository.findAttemptDayForUserResult.mockResolvedValue(
+      baseAttemptDay({ answers: [] }) as never,
+    );
     repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qid,
