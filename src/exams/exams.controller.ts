@@ -7,15 +7,15 @@ import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateAttemptDto } from './dto/update-attempt.dto';
 
-@ApiTags('Attempts')
-@ApiBearerAuth()
+@ApiTags('Exams')
+@ApiBearerAuth('JWT-auth')
 @Controller({ path: 'exams', version: '1' })
 @UseGuards(JwtAuthGuard)
-export class AttemptsController {
+export class ExamsController {
   constructor(private readonly attemptsService: AttemptsService) {}
 
   @ApiOperation({
-    summary: 'Start or resume an exam attempt',
+    summary: 'Start an exam attempt',
   })
   @ApiResponse({
     status: 201,
