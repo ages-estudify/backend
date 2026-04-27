@@ -192,10 +192,8 @@ describe('AttemptsService', () => {
       expect(result.data.questions[0].selectedAlternativeId).toBeNull();
     });
 
-    it('should throw NotFoundException if attempt is already closed', async () => {
-      const mockAttempt = { id: 'att-1', end_time: new Date() };
-      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
-
+    it('should throw NotFoundException if no active attempt exists', async () => {
+      prisma.attempt.findFirst.mockResolvedValue(null);
       await expect(service.findLast('user-1', 'exam-123')).rejects.toThrow(NotFoundException);
     });
   });
