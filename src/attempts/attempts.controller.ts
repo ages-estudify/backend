@@ -56,14 +56,14 @@ export class AttemptsController {
   @ApiOperation({
     summary: 'Finalize exam and calculate final score',
   })
-  @ApiResponse({ status: 201, description: 'Exam finished and score calculated' })
+  @ApiResponse({ status: 200, description: 'Exam finished and score calculated' })
   @Post('attempts/:attemptId/finish')
   async finish(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
     @Body() body: UpdateAttemptDto,
     @CurrentUser() user: JwtAuthUser,
   ) {
-    if (body.timeSpentSeconds) {
+    if (body.timeSpentSeconds !== undefined) {
       await this.attemptsService.update(attemptId, body, user.userId);
     }
     return await this.attemptsService.finish(attemptId, user.userId);

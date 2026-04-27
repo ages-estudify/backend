@@ -107,13 +107,16 @@ export class QuestionsService {
     }
 
     if (attemptId) {
-      const attempt = await this.prisma.attempt.findUnique({
+      const attempt = await this.prisma.attempt.findFirst({
         where: {
           id: attemptId,
+          user_id: userId,
         },
       });
 
       if (!attempt) throw new NotFoundException('Attempt not found');
+
+      if (attempt.end_time) throw new BadRequestException('Attempt already finished');
 
       if (timeSpentSeconds !== undefined && timeSpentSeconds < attempt.time_spent_seconds) {
         throw new BadRequestException('Time spent cannot regress');
