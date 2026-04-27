@@ -1,6 +1,7 @@
 ﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsUUID, IsString, IsInt, Min, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
+import type { MulterFile } from '../../common/types/multer-file';
 
 export class ImportCsvErrorDto {
   @ApiProperty({ example: 20 })
@@ -48,5 +49,5 @@ export class ImportExamResponseDto {
 
 export class ImportExamRequestDto {
   @ApiProperty({ type: 'string', format: 'binary' })
-  file!: Express.Multer.File;
+  file!: MulterFile;
 }

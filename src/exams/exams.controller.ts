@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ListExamsResponseDto, UpdateExamResponseDto } from './dto';
+import type { MulterFile } from '../common/types/multer-file';
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT')
@@ -32,7 +33,7 @@ export class ExamsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Not ADM' })
   @ApiResponse({ status: 413, description: 'File too large' })
-  async importExamFromCsv(@UploadedFile() file: Express.Multer.File) {
+  async importExamFromCsv(@UploadedFile() file: MulterFile) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -56,7 +57,7 @@ export class ExamsController {
   async updateExam(
     @Param('id') id: string,
     @Body() body: any,
-    @UploadedFile() image?: Express.Multer.File,
+    @UploadedFile() image?: MulterFile,
   ) {
     const updates = {
       title: body.title,

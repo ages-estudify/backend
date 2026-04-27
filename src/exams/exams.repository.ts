@@ -1,5 +1,6 @@
 ﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { Origin, ExamStatus } from '@prisma/client';
 
 export interface CreateExamData {
   name: string;
@@ -13,7 +14,7 @@ export interface CreateExamDayData {
 
 export interface CreateQuestionData {
   text: string;
-  origin: string;
+  origin: Origin;
   year: number;
   feedback: string;
   path_id: string;
@@ -108,7 +109,7 @@ export class ExamsRepository {
       name?: string;
       origin?: string;
       image_url?: string | null;
-      status?: string;
+      status?: ExamStatus;
     },
   ) {
     return this.prisma.exam.update({
@@ -170,7 +171,7 @@ export class ExamsRepository {
   async countQuestionsByExam(examId: string): Promise<number> {
     return this.prisma.question.count({
       where: {
-        exam_days: {
+        exam_day: {
           exam_id: examId,
         },
       },

@@ -2,6 +2,7 @@
 import { ExamsRepository } from './exams.repository';
 import { PrismaService } from '../prisma.service';
 import { ListExamsResponseDto, ListExamItemDto, ExamDayDto } from './dto';
+import { MulterFile } from '../common/types/multer-file';
 
 interface CsvRow {
   exam_title?: string;
@@ -18,7 +19,7 @@ interface CsvRow {
   correct_answer?: string;
   answer_explanation?: string;
   year?: string;
-  [key: string]: string | undefined;
+  [key: string]: any;
 }
 
 interface ValidatedRow extends CsvRow {
@@ -74,7 +75,7 @@ export class ExamsService {
   }
 
   async importExamFromCsv(
-    file: Express.Multer.File,
+    file: MulterFile,
   ): Promise<{
     success: boolean;
     data: {
@@ -88,7 +89,7 @@ export class ExamsService {
   }> {
     // Validate file size
     if (file.size > this.maxFileSize) {
-      throw new BadRequestException(\File size exceeds \ MB limit\);
+      throw new BadRequestException('File size exceeds MB limit');
     }
 
     // Parse CSV
@@ -107,14 +108,14 @@ export class ExamsService {
 
     // Validate question count
     if (validatedRows.validRows.length > this.maxQuestions) {
-      throw new BadRequestException(\CSV exceeds \ questions limit\);
+      throw new BadRequestException('CSV exceeds questions limit');
     }
 
     // Enrich rows with lookups and validation
     const enrichedAndValidated = await this.validateAndEnrichRows(validatedRows.validRows);
 
     // Create transaction
-    const result = await this.prisma.\(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // Create Exam
       const exam = await tx.exam.create({
         data: {
@@ -201,7 +202,7 @@ export class ExamsService {
     updates: {
       title?: string;
       origin?: string;
-      image?: Express.Multer.File;
+      image?: MulterFile;
       status?: 'DRAFT' | 'PUBLISHED';
     },
   ) {
@@ -310,7 +311,7 @@ export class ExamsService {
     const firstRow = rows[0];
     for (const col of this.requiredColumns) {
       if (!(col in firstRow)) {
-        errors.push({ line: 1, error: \Missing required column: \\ });
+        errors.push({ line: 1, error: 'Missing required column: ' + col });
       }
     }
 
@@ -322,7 +323,7 @@ export class ExamsService {
     for (const row of rows) {
       const rowErrors: string[] = [];
 
-      if (!row.exam_day || !/^\d+\$/.test(row.exam_day)) {
+      if (!row.exam_day || !/^\d+$/.test(row.exam_day)) {
         rowErrors.push('exam_day must be a positive integer');
       }
 
@@ -400,7 +401,7 @@ export class ExamsService {
       const pathId = await this.examsRepository.pathByNameAndSubject(row.content!, row.discipline!);
 
       if (!pathId) {
-        errors.push(\Path not found for discipline '\' and content '\'\);
+        errors.push(`Path not found for discipline '${row.discipline}' and content '${row.content}'`);
       }
 
       if (errors.length > 0) {
@@ -428,9 +429,9 @@ export class ExamsService {
     return { validRows, invalidRows };
   }
 
-  private async uploadImageToS3(file: Express.Multer.File, examId: string): Promise<string> {
+  private async uploadImageToS3(file: MulterFile, examId: string): Promise<string> {
     // TODO: Implement S3 upload
     // For now, return placeholder URL
-    return \https://s3.amazonaws.com/bucket/exam-\-\.png\;
+    return `https://s3.amazonaws.com/bucket/exam-${examId}.png`;
   }
 }
