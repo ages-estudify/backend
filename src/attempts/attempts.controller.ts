@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Body,
-  ParseUUIDPipe,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, ParseUUIDPipe, Param, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
@@ -54,21 +45,6 @@ export class AttemptsController {
     return await this.attemptsService.findLast(user.userId, examId);
   }
 
-  @ApiOperation({
-    summary: 'Pause attempt and upgrade progress',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Progress updated successfully',
-  })
-  @Patch('attempts/:attemptId/pause')
-  async pause(
-    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
-    @Body() body: UpdateAttemptDto,
-    @CurrentUser() user: JwtAuthUser,
-  ) {
-    return await this.attemptsService.update(attemptId, body, user.userId);
-  }
   @ApiResponse({
     status: 404,
     description: 'Attempt not found or belongs to another user',
