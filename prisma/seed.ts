@@ -34,7 +34,7 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   // LIMPA BANCO
   await prisma.answer.deleteMany();
-  await prisma.attemptDay.deleteMany();
+  await prisma.ExamDay.deleteMany();
   await prisma.attempt.deleteMany();
 
   await prisma.alternative.deleteMany();
