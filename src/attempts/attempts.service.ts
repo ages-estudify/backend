@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { UpdateAttemptDto } from './dto/update-attempt.dto';
+import { Language } from '@prisma/client';
 
 @Injectable()
 export class AttemptsService {
@@ -31,7 +32,7 @@ export class AttemptsService {
       data: {
         user_id: userId,
         exam_id: examId,
-        language: language as any,
+        language: language as Language,
         init_time: new Date(),
         current_question: 1,
         time_spent_seconds: 0,
@@ -77,7 +78,11 @@ export class AttemptsService {
 
   async findLast(userId: string, examId: string) {
     const attempt = await this.prisma.attempt.findFirst({
-      where: { user_id: userId, exam_id: examId },
+      where: {
+        user_id: userId,
+        exam_id: examId,
+        end_time: null,
+      },
       orderBy: { init_time: 'desc' },
       include: {
         exam: {
@@ -94,9 +99,7 @@ export class AttemptsService {
       },
     });
 
-    if (!attempt || attempt.end_time !== null) {
-      throw new NotFoundException('No current attempt could be found');
-    }
+    if (!attempt) throw new NotFoundException('No active attempt found');
 
     const userAnswers = await this.prisma.answer.findMany({
       where: { attempt_day: { attempt_id: attempt.id } },
