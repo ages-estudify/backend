@@ -36,7 +36,7 @@ export class AttemptDaysService {
 
     if (!attemptDay.end_time) {
       throw new BadRequestException('Attempt day not finished yet');
-    } 
+    }
 
     const questions = await this.prisma.question.findMany({
       where: { exam_day_id: attemptDay.exam_day_id },
