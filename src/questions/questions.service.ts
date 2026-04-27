@@ -120,7 +120,7 @@ export class QuestionsService {
     const gamificationResult = await this.gamificationService.earnCoins({
       userId,
       isCorrect,
-      isSimulated: !!question.exam_id,
+      isSimulated: !!question.exam_day_id,
     });
 
     return {
