@@ -7,7 +7,7 @@ import { OnboardingService } from './onboarding.service';
 import { OnboardingRequestDto } from './dto/onboarding-request.dto';
 
 @ApiTags('Onboarding')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('onboarding')
 export class OnboardingController {
