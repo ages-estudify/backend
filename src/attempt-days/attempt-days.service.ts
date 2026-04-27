@@ -99,7 +99,6 @@ export class AttemptDaysService {
     return { success: true, data };
   }
 
-  /** Keeps the most recent answer per question (by answer_date). */
   private latestAnswerByQuestionId<
     T extends {
       question_id: string;
