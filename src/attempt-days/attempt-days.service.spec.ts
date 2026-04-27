@@ -5,13 +5,13 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptDaysService } from './attempt-days.service';
-import { PrismaService } from '../prisma.service';
+import { AttemptDaysRepository } from './attempt-days.repository';
 
 describe('AttemptDaysService', () => {
   let service: AttemptDaysService;
-  let prisma: {
-    attemptDay: { findFirst: jest.Mock };
-    question: { findMany: jest.Mock };
+  let repository: {
+    findAttemptDayForUserResult: jest.Mock;
+    findQuestionsByExamDayId: jest.Mock;
   };
 
   const userId = '11111111-1111-1111-1111-111111111111';
@@ -47,13 +47,13 @@ describe('AttemptDaysService', () => {
   });
 
   beforeEach(async () => {
-    prisma = {
-      attemptDay: { findFirst: jest.fn() },
-      question: { findMany: jest.fn() },
+    repository = {
+      findAttemptDayForUserResult: jest.fn(),
+      findQuestionsByExamDayId: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AttemptDaysService, { provide: PrismaService, useValue: prisma }],
+      providers: [AttemptDaysService, { provide: AttemptDaysRepository, useValue: repository }],
     }).compile();
 
     service = module.get(AttemptDaysService);
@@ -64,7 +64,7 @@ describe('AttemptDaysService', () => {
   });
 
   it('throws NotFoundException when attempt day does not exist', async () => {
-    prisma.attemptDay.findFirst.mockResolvedValue(null);
+    repository.findAttemptDayForUserResult.mockResolvedValue(null);
 
     await expect(service.getAttemptDayResult(attemptDayId, userId)).rejects.toThrow(
       NotFoundException,
@@ -72,18 +72,11 @@ describe('AttemptDaysService', () => {
     await expect(service.getAttemptDayResult(attemptDayId, userId)).rejects.toMatchObject({
       message: 'Result not found',
     });
-    expect(prisma.attemptDay.findFirst).toHaveBeenCalledWith({
-      where: { id: attemptDayId, attempt: { user_id: userId } },
-      include: {
-        attempt: { include: { exam: true } },
-        exam_day: true,
-        answers: { include: { alternative: true } },
-      },
-    });
+    expect(repository.findAttemptDayForUserResult).toHaveBeenCalledWith(attemptDayId, userId);
   });
 
   it('throws NotFoundException when attempt belongs to another user (findFirst returns null)', async () => {
-    prisma.attemptDay.findFirst.mockResolvedValue(null);
+    repository.findAttemptDayForUserResult.mockResolvedValue(null);
 
     await expect(
       service.getAttemptDayResult(attemptDayId, '99999999-9999-9999-9999-999999999999'),
@@ -91,7 +84,7 @@ describe('AttemptDaysService', () => {
   });
 
   it('throws BadRequestException when end_time is null', async () => {
-    prisma.attemptDay.findFirst.mockResolvedValue(
+    repository.findAttemptDayForUserResult.mockResolvedValue(
       baseAttemptDay({ end_time: null, answers: [] }) as never,
     );
 
@@ -101,7 +94,7 @@ describe('AttemptDaysService', () => {
     await expect(service.getAttemptDayResult(attemptDayId, userId)).rejects.toMatchObject({
       message: 'Attempt day not finished yet',
     });
-    expect(prisma.question.findMany).not.toHaveBeenCalled();
+    expect(repository.findQuestionsByExamDayId).not.toHaveBeenCalled();
   });
 
   it('returns full result with totals scoped to the day and questions ordered by number asc', async () => {
@@ -115,7 +108,7 @@ describe('AttemptDaysService', () => {
     const a2c = alt('a2222222-2222-2222-2222-222222222221', 'A', false);
     const a2w = alt('a2222222-2222-2222-2222-222222222222', 'B', true);
 
-    prisma.attemptDay.findFirst.mockResolvedValue(
+    repository.findAttemptDayForUserResult.mockResolvedValue(
       baseAttemptDay({
         answers: [
           {
@@ -140,7 +133,7 @@ describe('AttemptDaysService', () => {
       }) as never,
     );
 
-    prisma.question.findMany.mockResolvedValue([
+    repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qCorrect,
         text: 'Q1',
@@ -194,11 +187,7 @@ describe('AttemptDaysService', () => {
       blankAnswers: 2,
     });
 
-    expect(prisma.question.findMany).toHaveBeenCalledWith({
-      where: { exam_day_id: examDayId },
-      include: { alternatives: true },
-      orderBy: [{ number: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
-    });
+    expect(repository.findQuestionsByExamDayId).toHaveBeenCalledWith(examDayId);
 
     expect(result.data.questions.map((q) => q.number)).toEqual([1, 2, 3, 4]);
     expect(result.data.questions[0]).toMatchObject({
@@ -230,7 +219,7 @@ describe('AttemptDaysService', () => {
     const oldAlt = alt('old-old-old-old-old-old-old-o1', 'A', true);
     const newAlt = alt('new-new-new-new-new-new-new-n1', 'B', false);
 
-    prisma.attemptDay.findFirst.mockResolvedValue(
+    repository.findAttemptDayForUserResult.mockResolvedValue(
       baseAttemptDay({
         answers: [
           {
@@ -249,7 +238,7 @@ describe('AttemptDaysService', () => {
       }) as never,
     );
 
-    prisma.question.findMany.mockResolvedValue([
+    repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qid,
         text: 'Only',
@@ -271,8 +260,8 @@ describe('AttemptDaysService', () => {
     const qid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const badAlts = [alt('x1', 'A', false), alt('x2', 'B', false)];
 
-    prisma.attemptDay.findFirst.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
-    prisma.question.findMany.mockResolvedValue([
+    repository.findAttemptDayForUserResult.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
+    repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qid,
         text: 'Bad',
@@ -292,8 +281,8 @@ describe('AttemptDaysService', () => {
     const qid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const alts = [alt('l3', 'C', false), alt('l1', 'A', true), alt('l2', 'B', false)];
 
-    prisma.attemptDay.findFirst.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
-    prisma.question.findMany.mockResolvedValue([
+    repository.findAttemptDayForUserResult.mockResolvedValue(baseAttemptDay({ answers: [] }) as never);
+    repository.findQuestionsByExamDayId.mockResolvedValue([
       {
         id: qid,
         text: 'Q',

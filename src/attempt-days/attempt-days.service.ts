@@ -4,31 +4,22 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import type {
-  AttemptDayResultDataDto,
-  AttemptDayResultQuestionDto,
-} from './dto/attempt-day-result-response.dto';
+import type { AttemptDayResultDataDto } from './dto/attempt-day-result-data.dto';
+import type { AttemptDayResultQuestionDto } from './dto/attempt-day-result-question.dto';
+import { AttemptDaysRepository } from './attempt-days.repository';
 
 @Injectable()
 export class AttemptDaysService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly attemptDaysRepository: AttemptDaysRepository) {}
 
   async getAttemptDayResult(
     attemptDayId: string,
     userId: string,
   ): Promise<{ success: true; data: AttemptDayResultDataDto }> {
-    const attemptDay = await this.prisma.attemptDay.findFirst({
-      where: {
-        id: attemptDayId,
-        attempt: { user_id: userId },
-      },
-      include: {
-        attempt: { include: { exam: true } },
-        exam_day: true,
-        answers: { include: { alternative: true } },
-      },
-    });
+    const attemptDay = await this.attemptDaysRepository.findAttemptDayForUserResult(
+      attemptDayId,
+      userId,
+    );
 
     if (!attemptDay) {
       throw new NotFoundException('Result not found');
@@ -38,11 +29,9 @@ export class AttemptDaysService {
       throw new BadRequestException('Attempt day not finished yet');
     }
 
-    const questions = await this.prisma.question.findMany({
-      where: { exam_day_id: attemptDay.exam_day_id },
-      include: { alternatives: true },
-      orderBy: [{ number: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
-    });
+    const questions = await this.attemptDaysRepository.findQuestionsByExamDayId(
+      attemptDay.exam_day_id,
+    );
 
     const answerByQuestionId = this.latestAnswerByQuestionId(attemptDay.answers);
 
