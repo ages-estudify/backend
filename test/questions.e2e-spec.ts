@@ -41,12 +41,14 @@ describe('QuestionsController (e2e)', () => {
   beforeEach(async () => {
     // Cleanup all test data before each test
     await prisma.answer.deleteMany({});
+    await prisma.attemptDay.deleteMany();
     await prisma.attempt.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.studyDay.deleteMany();
     await prisma.studyLog.deleteMany();
     await prisma.alternative.deleteMany();
     await prisma.question.deleteMany();
+    await prisma.examDay.deleteMany();
     await prisma.exam.deleteMany();
     await prisma.path.deleteMany();
     await prisma.subject.deleteMany();
