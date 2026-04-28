@@ -1,41 +1,35 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptsService } from './attempts.service';
-import { PrismaService } from '../prisma.service';
+import { AttemptsRepository } from './attempts.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
-const mockPrismaService = {
-  exam: {
-    findUnique: jest.fn(),
-  },
-  attempt: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  answer: {
-    findMany: jest.fn(),
-    createMany: jest.fn(),
-  },
-  $transaction: jest.fn((callback) => callback(mockPrismaService)),
+const mockAttemptsRepository = {
+  create: jest.fn(),
+  findActive: jest.fn(),
+  findByIdAndUser: jest.fn(),
+  update: jest.fn(),
+  findLastWithQuestions: jest.fn(),
+  findAnswersByAttemptId: jest.fn(),
+  findAttemptForFinish: jest.fn(),
 };
 
 describe('AttemptsService', () => {
   let service: AttemptsService;
-  let prisma: typeof mockPrismaService;
+  let repository: typeof mockAttemptsRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttemptsService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: AttemptsRepository,
+          useValue: mockAttemptsRepository,
         },
       ],
     }).compile();
 
     service = module.get<AttemptsService>(AttemptsService);
-    prisma = module.get(PrismaService);
+    repository = module.get(AttemptsRepository);
 
     jest.clearAllMocks();
   });
@@ -46,7 +40,6 @@ describe('AttemptsService', () => {
 
   describe('create()', () => {
     it('should create attempt and return it inside the success envelope', async () => {
-      const mockExam = { id: 'exam-1', questions: [{ id: 'q1' }, { id: 'q2' }] };
       const mockAttempt = {
         id: 'att-1',
         user_id: 'user-1',
@@ -56,13 +49,12 @@ describe('AttemptsService', () => {
         time_spent_seconds: 0,
       };
 
-      prisma.exam.findUnique.mockResolvedValue(mockExam);
-      prisma.attempt.findFirst.mockResolvedValue(null);
-      prisma.attempt.create.mockResolvedValue(mockAttempt);
+      repository.findActive.mockResolvedValue(null);
+      repository.create.mockResolvedValue(mockAttempt);
 
       const result = await service.create('exam-1', 'user-1', 'ENGLISH');
 
-      expect(prisma.attempt.create).toHaveBeenCalled();
+      expect(repository.create).toHaveBeenCalled();
       expect(result).toEqual({ success: true, data: { attempt: mockAttempt } });
     });
   });
@@ -79,17 +71,14 @@ describe('AttemptsService', () => {
       };
       const updatedAttempt = { ...mockAttempt, current_question: 5, time_spent_seconds: 1200 };
 
-      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
-      prisma.attempt.update.mockResolvedValue(updatedAttempt);
+      repository.findByIdAndUser.mockResolvedValue(mockAttempt);
+      repository.update.mockResolvedValue(updatedAttempt);
 
       const result = await service.update('att-1', updateDto, 'user-1');
 
-      expect(prisma.attempt.update).toHaveBeenCalledWith({
-        where: { id: 'att-1' },
-        data: {
-          current_question: 5,
-          time_spent_seconds: 1200,
-        },
+      expect(repository.update).toHaveBeenCalledWith('att-1', {
+        current_question: 5,
+        time_spent_seconds: 1200,
       });
       expect(result).toEqual({ success: true, data: { attempt: updatedAttempt } });
     });
@@ -101,7 +90,7 @@ describe('AttemptsService', () => {
         end_time: null,
         time_spent_seconds: 2000,
       };
-      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
+      repository.findByIdAndUser.mockResolvedValue(mockAttempt);
 
       await expect(service.update('att-1', updateDto, 'user-1')).rejects.toThrow(
         BadRequestException,
@@ -110,7 +99,7 @@ describe('AttemptsService', () => {
 
     it('should throw BadRequestException if attempt is already closed', async () => {
       const closedAttempt = { id: 'att-1', end_time: new Date() };
-      prisma.attempt.findFirst.mockResolvedValue(closedAttempt);
+      repository.findByIdAndUser.mockResolvedValue(closedAttempt);
 
       await expect(service.update('att-1', updateDto, 'user-1')).rejects.toThrow(
         BadRequestException,
@@ -141,9 +130,9 @@ describe('AttemptsService', () => {
 
       const mockAnswers = [{ question_id: 'q1', alternative_id: 'alt-correct' }];
 
-      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
-      prisma.answer.findMany.mockResolvedValue(mockAnswers);
-      prisma.attempt.update.mockResolvedValue({
+      repository.findAttemptForFinish.mockResolvedValue(mockAttempt);
+      repository.findAnswersByAttemptId.mockResolvedValue(mockAnswers);
+      repository.update.mockResolvedValue({
         id: 'att-1',
         exam_id: 'exam-1',
         score: 1,
@@ -159,10 +148,10 @@ describe('AttemptsService', () => {
       expect(result.data.correctAnswers).toBe(1);
       expect(result.data.resultBySubject[0].subjectName).toBe('Matemática');
 
-      expect(prisma.attempt.update).toHaveBeenCalledWith({
-        where: { id: 'att-1' },
-        data: expect.objectContaining({ score: 1, end_time: expect.any(Date) }),
-      });
+      expect(repository.update).toHaveBeenCalledWith(
+        'att-1',
+        expect.objectContaining({ score: 1, end_time: expect.any(Date) }),
+      );
     });
   });
 
@@ -181,8 +170,8 @@ describe('AttemptsService', () => {
         },
       };
 
-      prisma.attempt.findFirst.mockResolvedValue(mockAttempt);
-      prisma.answer.findMany.mockResolvedValue([]);
+      repository.findLastWithQuestions.mockResolvedValue(mockAttempt);
+      repository.findAnswersByAttemptId.mockResolvedValue([]);
 
       const result = await service.findLast('user-1', 'exam-123');
 
@@ -193,7 +182,8 @@ describe('AttemptsService', () => {
     });
 
     it('should throw NotFoundException if no active attempt exists', async () => {
-      prisma.attempt.findFirst.mockResolvedValue(null);
+      repository.findLastWithQuestions.mockResolvedValue(null);
+
       await expect(service.findLast('user-1', 'exam-123')).rejects.toThrow(NotFoundException);
     });
   });
