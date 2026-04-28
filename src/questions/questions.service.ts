@@ -4,7 +4,6 @@ import { QuestionResponse, QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
-import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class QuestionsService {
@@ -12,7 +11,6 @@ export class QuestionsService {
     private questionsRepository: QuestionsRepository,
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
-    private prisma: PrismaService,
   ) {}
 
   async getQuestionBatch(
@@ -107,12 +105,7 @@ export class QuestionsService {
     }
 
     if (attemptId) {
-      const attempt = await this.prisma.attempt.findFirst({
-        where: {
-          id: attemptId,
-          user_id: userId,
-        },
-      });
+      const attempt = await this.questionsRepository.findAttemptByIdAndUser(attemptId, userId);
 
       if (!attempt) throw new NotFoundException('Attempt not found');
 
@@ -126,53 +119,46 @@ export class QuestionsService {
         throw new BadRequestException('Question needs exam_day_id');
       }
 
-      let attemptDay = await this.prisma.attemptDay.findFirst({
-        where: { attempt_id: attemptId, exam_day_id: question.exam_day_id },
-      });
+      let attemptDay = await this.questionsRepository.findAttemptDay(
+        attemptId,
+        question.exam_day_id,
+      );
 
       if (!attemptDay) {
-        attemptDay = await this.prisma.attemptDay.create({
-          data: {
-            attempt_id: attemptId,
-            exam_day_id: question.exam_day_id,
-            time_spent_seconds: 0,
-            current_question: question.number ?? 1,
-            init_time: new Date(),
-          },
+        attemptDay = await this.questionsRepository.createAttemptDay({
+          attempt_id: attemptId,
+          exam_day_id: question.exam_day_id,
+          time_spent_seconds: 0,
+          current_question: question.number ?? 1,
+          init_time: new Date(),
         });
       }
 
-      const existingAnswer = await this.prisma.answer.findFirst({
-        where: {
-          attempt_day_id: attemptDay.id,
-          question_id: questionId,
-        },
-      });
+      const existingAnswer = await this.questionsRepository.findExistingAnswer(
+        attemptDay.id,
+        questionId,
+      );
 
       if (existingAnswer) {
-        await this.prisma.answer.update({
-          where: { id: existingAnswer.id },
-          data: { alternative_id: selectedAlternative.id, answer_date: new Date() },
-        });
+        await this.questionsRepository.updateAnswerAlternative(
+          existingAnswer.id,
+          selectedAlternative.id,
+        );
       } else {
-        await this.prisma.answer.create({
-          data: {
-            attempt_day_id: attemptDay.id,
-            question_id: questionId,
-            user_id: userId,
-            alternative_id: selectedAlternative.id,
-            answer_date: new Date(),
-          },
+        await this.questionsRepository.createAnswer({
+          attempt_day_id: attemptDay.id,
+          question_id: questionId,
+          user_id: userId,
+          alternative_id: selectedAlternative.id,
+          answer_date: new Date(),
         });
       }
 
-      await this.prisma.attempt.update({
-        where: { id: attemptId },
-        data: {
-          time_spent_seconds: timeSpentSeconds ?? attempt.time_spent_seconds,
-          current_question: question.number ?? attempt.current_question + 1,
-        },
-      });
+      await this.questionsRepository.updateAttemptProgress(
+        attemptId,
+        timeSpentSeconds ?? attempt.time_spent_seconds,
+        question.number ?? attempt.current_question + 1,
+      );
 
       return { success: true, data: { saved: true } };
     }
