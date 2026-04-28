@@ -1,7 +1,9 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 
 import { SubscriptionGuard } from './subscription.guard';
+import { JwtAuthUser } from '../security/jwt-auth-user';
+import { PrismaService } from '../../prisma.service';
 
 describe('SubscriptionGuard', () => {
   let guard: SubscriptionGuard;
@@ -12,25 +14,26 @@ describe('SubscriptionGuard', () => {
     },
   };
 
-  const createContext = (user: any) =>
+  const createContext = (user: JwtAuthUser): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({
           user,
         }),
       }),
-    }) as any;
+    }) as ExecutionContext;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    guard = new SubscriptionGuard(prismaMock as any);
+    guard = new SubscriptionGuard(prismaMock as unknown as PrismaService);
   });
 
   it('should allow ADM users even without plan', async () => {
     const context = createContext({
       userId: '1',
       role: Role.ADM,
+      planExpirationDate: null,
     });
 
     const result = await guard.canActivate(context);
@@ -48,6 +51,7 @@ describe('SubscriptionGuard', () => {
     const context = createContext({
       userId: '1',
       role: Role.USER,
+      planExpirationDate: null,
     });
 
     const result = await guard.canActivate(context);
@@ -64,6 +68,7 @@ describe('SubscriptionGuard', () => {
     const context = createContext({
       userId: '1',
       role: Role.USER,
+      planExpirationDate: null,
     });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
@@ -78,6 +83,7 @@ describe('SubscriptionGuard', () => {
     const context = createContext({
       userId: '1',
       role: Role.USER,
+      planExpirationDate: null,
     });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
@@ -92,6 +98,7 @@ describe('SubscriptionGuard', () => {
     const context = createContext({
       userId: '1',
       role: Role.USER,
+      planExpirationDate: null,
     });
 
     await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
