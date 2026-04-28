@@ -28,7 +28,7 @@ import { QuestionsService } from './questions.service';
 import { QuestionBatchDataDto } from './dto/question-batch.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
-import { SubscriptionGuard } from 'src/auth/guards/subscription.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 
 @ApiTags('questions')
 @ApiBearerAuth('JWT-auth')
