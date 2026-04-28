@@ -14,11 +14,15 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ResultGridQueryDto } from './dto/result-grid-query.dto';
+import {
+  ResultGridQueryDto,
+  ResultGridStatusFilter,
+} from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
 import { ExamService } from './exam.service';
 
@@ -37,8 +41,14 @@ export class ExamController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Grade de resultados da tentativa',
-    description:
-      'Requer utilizador autenticado (Bearer). `attemptId` pode ser o id da **Attempt** ou de um **AttemptDay**. Filtro opcional: query `statusFilter` (repetir para vários valores). No Swagger, usa **Authorize** com o access token do login.',
+  })
+  @ApiQuery({
+    name: 'statusFilter',
+    required: false,
+    enum: ResultGridStatusFilter,
+    isArray: true,
+    description: 'Filtra por status da questão.',
+    example: [ResultGridStatusFilter.CORRECT],
   })
   @ApiOkResponse({ type: ResultGridSuccessResponseDto })
   @ApiNotFoundResponse({

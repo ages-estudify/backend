@@ -3,23 +3,24 @@ import { Transform } from 'class-transformer';
 import { IsEnum, IsOptional } from 'class-validator';
 
 export enum ResultGridStatusFilter {
-  CERTO = 'CERTO',
-  ERRADO = 'ERRADO',
-  NULO = 'NULO',
+  CORRECT = 'CORRECT',
+  WRONG = 'WRONG',
+  BLANK = 'BLANK',
 }
 
 export class ResultGridQueryDto {
   @ApiPropertyOptional({
-    description:
-      'Filtra por status. Podes repetir o parâmetro (ex.: statusFilter=CERTO&statusFilter=NULO). Omitir devolve todas.',
     enum: ResultGridStatusFilter,
     isArray: true,
+    description: 'Filtra as questões pelo status',
+    example: [ResultGridStatusFilter.CORRECT],
   })
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === null || value === '') {
       return undefined;
     }
+
     return Array.isArray(value) ? value : [value];
   })
   @IsEnum(ResultGridStatusFilter, { each: true })

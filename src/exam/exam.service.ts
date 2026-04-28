@@ -1,61 +1,60 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ResultGridQueryDto, ResultGridStatusFilter } from './dto/result-grid-query.dto';
+import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import type {
-  ResultadoQuestao,
   ResultGridItemDto,
   ResultGridItemStatus,
+  ResultGridSuccessResponseDto,
 } from './dto/result-grid-response.dto';
 
 type AnswerWithRelations = {
-  id: string;
   answer_date: Date;
   question_id: string;
   alternative_id: string | null;
   question: {
-    id: string;
     number: number | null;
-    alternatives: { id: string; letter: string; is_correct: boolean }[];
+    alternatives: {
+      letter: string;
+      is_correct: boolean;
+    }[];
   };
-  alternative: { letter: string } | null;
+  alternative: {
+    letter: string;
+  } | null;
 };
 
 type AttemptDayWithAnswers = {
-  exam_day: { day: number };
+  exam_day: {
+    day: number;
+  };
   answers: AnswerWithRelations[];
 };
-
-const FILTER_TO_STATUS: Record<ResultGridStatusFilter, ResultGridItemStatus> = {
-  [ResultGridStatusFilter.CERTO]: 'CORRECT',
-  [ResultGridStatusFilter.ERRADO]: 'WRONG',
-  [ResultGridStatusFilter.NULO]: 'BLANK',
-};
-
-function toResultado(status: ResultGridItemStatus): ResultadoQuestao {
-  switch (status) {
-    case 'CORRECT':
-      return 'CERTO';
-    case 'WRONG':
-      return 'ERRADO';
-    case 'BLANK':
-      return 'VAZIO';
-  }
-}
 
 const ATTEMPT_RESULT_GRID_INCLUDE = {
   attempt_days: {
     include: {
-      exam_day: { select: { day: true } },
+      exam_day: {
+        select: {
+          day: true,
+        },
+      },
       answers: {
         include: {
           question: {
             include: {
               alternatives: {
-                select: { id: true, letter: true, is_correct: true },
+                select: {
+                  letter: true,
+                  is_correct: true,
+                },
               },
             },
           },
-          alternative: { select: { letter: true } },
+          alternative: {
+            select: {
+              letter: true,
+            },
+          },
         },
       },
     },
@@ -66,129 +65,113 @@ const ATTEMPT_RESULT_GRID_INCLUDE = {
 export class ExamService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getResultGrid(attemptIdParam: string, query: ResultGridQueryDto) {
-    const attempt = await this.loadAttemptForViewer(attemptIdParam);
+  async getResultGrid(
+    attemptId: string,
+    query: ResultGridQueryDto,
+  ): Promise<ResultGridSuccessResponseDto> {
+    const attempt = await this.getAttempt(attemptId);
 
-    const rows: {
-      examDayDay: number;
-      answer: AnswerWithRelations;
-    }[] = [];
+    const answers = this.getOrderedAnswers(
+      attempt.attempt_days as AttemptDayWithAnswers[],
+    );
 
-    for (const ad of attempt.attempt_days as AttemptDayWithAnswers[]) {
-      for (const answer of ad.answers) {
-        rows.push({ examDayDay: ad.exam_day.day, answer });
-      }
-    }
+    const gridWithoutFilter = answers.map(({ answer }, index) => ({
+      questionId: answer.question_id,
+      number: index + 1,
+      status: this.getQuestionStatus(answer),
+    }));
 
-    rows.sort((a, b) => {
-      if (a.examDayDay !== b.examDayDay) {
-        return a.examDayDay - b.examDayDay;
-      }
-      const na = a.answer.question.number;
-      const nb = b.answer.question.number;
-      if (na != null && nb != null && na !== nb) {
-        return na - nb;
-      }
-      if (na != null && nb == null) {
-        return -1;
-      }
-      if (na == null && nb != null) {
-        return 1;
-      }
-      const t = a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
-      if (t !== 0) {
-        return t;
-      }
-      return a.answer.question_id.localeCompare(b.answer.question_id);
-    });
-
-    const gridUnfiltered = rows.map(({ answer }, index) => {
-      const built = this.buildGridItem(answer);
-      const number = index + 1;
-      return {
-        questionId: built.questionId,
-        number,
-        resultado: toResultado(built.status),
-        selectedAnswer: built.selectedAnswer,
-        correctAnswer: built.correctAnswer,
-        _status: built.status,
-      };
-    });
-
-    const filters = query.statusFilter?.length
-      ? new Set(query.statusFilter.map((f) => FILTER_TO_STATUS[f]))
-      : null;
-
-    const grid = filters
-      ? gridUnfiltered.filter((item) => filters.has(item._status))
-      : gridUnfiltered;
-
-    const numberedGrid: ResultGridItemDto[] = grid.map(({ _status, ...item }) => item);
+    const grid = this.filterGridByStatus(gridWithoutFilter, query.statusFilter);
 
     return {
-      success: true as const,
+      success: true,
       data: {
         attemptId: attempt.id,
-        totalQuestions: gridUnfiltered.length,
-        grid: numberedGrid,
+        totalQuestions: gridWithoutFilter.length,
+        grid,
       },
     };
   }
 
-  private buildGridItem(answer: AnswerWithRelations): {
-    questionId: string;
-    status: ResultGridItemStatus;
-    selectedAnswer: string | null;
-    correctAnswer: string | null;
-  } {
-    const correct = answer.question.alternatives.find((alt) => alt.is_correct);
-    const correctAnswer = correct?.letter ?? null;
-
-    const selectedAnswer = answer.alternative?.letter ?? null;
-
-    let status: ResultGridItemStatus;
-    if (!answer.alternative_id || selectedAnswer === null) {
-      status = 'BLANK';
-    } else if (correctAnswer != null && selectedAnswer === correctAnswer) {
-      status = 'CORRECT';
-    } else {
-      status = 'WRONG';
-    }
-
-    return {
-      questionId: answer.question_id,
-      status,
-      selectedAnswer,
-      correctAnswer,
-    };
-  }
-
-
-  /** Resolve por id de `Attempt` ou de `AttemptDay` (qualquer utilizador autenticado). */
-  private async loadAttemptForViewer(attemptIdParam: string) {
-    const byAttemptId = await this.prisma.attempt.findFirst({
-      where: { id: attemptIdParam },
+  private async getAttempt(attemptId: string) {
+    const attempt = await this.prisma.attempt.findUnique({
+      where: {
+        id: attemptId,
+      },
       include: ATTEMPT_RESULT_GRID_INCLUDE,
     });
-    if (byAttemptId) {
-      return byAttemptId;
-    }
 
-    const day = await this.prisma.attemptDay.findFirst({
-      where: { id: attemptIdParam },
-      select: { attempt_id: true },
-    });
-    if (!day) {
-      throw new NotFoundException('Tentativa não encontrada');
-    }
-
-    const attempt = await this.prisma.attempt.findFirst({
-      where: { id: day.attempt_id },
-      include: ATTEMPT_RESULT_GRID_INCLUDE,
-    });
     if (!attempt) {
       throw new NotFoundException('Tentativa não encontrada');
     }
+
     return attempt;
+  }
+
+  private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
+    return attemptDays
+      .flatMap((attemptDay) =>
+        attemptDay.answers.map((answer) => ({
+          examDayDay: attemptDay.exam_day.day,
+          answer,
+        })),
+      )
+      .sort((a, b) => this.sortAnswers(a, b));
+  }
+
+  private sortAnswers(
+    a: { examDayDay: number; answer: AnswerWithRelations },
+    b: { examDayDay: number; answer: AnswerWithRelations },
+  ) {
+    const dayDifference = a.examDayDay - b.examDayDay;
+
+    if (dayDifference !== 0) {
+      return dayDifference;
+    }
+
+    const questionNumberA = a.answer.question.number ?? Number.MAX_SAFE_INTEGER;
+    const questionNumberB = b.answer.question.number ?? Number.MAX_SAFE_INTEGER;
+
+    const questionDifference = questionNumberA - questionNumberB;
+
+    if (questionDifference !== 0) {
+      return questionDifference;
+    }
+
+    const dateDifference =
+      a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
+
+    if (dateDifference !== 0) {
+      return dateDifference;
+    }
+
+    return a.answer.question_id.localeCompare(b.answer.question_id);
+  }
+
+  private filterGridByStatus(
+    grid: ResultGridItemDto[],
+    statusFilter?: ResultGridItemStatus[],
+  ): ResultGridItemDto[] {
+    if (!statusFilter?.length) {
+      return grid;
+    }
+
+    return grid.filter((item) => statusFilter.includes(item.status));
+  }
+
+  private getQuestionStatus(answer: AnswerWithRelations): ResultGridItemStatus {
+    if (!answer.alternative) {
+      return 'BLANK';
+    }
+
+    const correctAlternative = answer.question.alternatives.find(
+      (alternative) => alternative.is_correct,
+    );
+
+    if (answer.alternative.letter === correctAlternative?.letter) {
+      return 'CORRECT';
+    }
+
+    return 'WRONG';
   }
 }

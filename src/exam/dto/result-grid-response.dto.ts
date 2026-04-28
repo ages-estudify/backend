@@ -1,40 +1,46 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** Uso interno (filtro / regra de negócio). */
 export type ResultGridItemStatus = 'CORRECT' | 'WRONG' | 'BLANK';
 
-/** Resultado da resposta na prova (português). */
-export type ResultadoQuestao = 'CERTO' | 'ERRADO' | 'VAZIO';
-
 export class ResultGridItemDto {
-  @ApiProperty({ format: 'uuid', description: 'Identificador da questão' })
+  @ApiProperty({
+    format: 'uuid',
+    description: 'Identificador da questão',
+  })
   questionId!: string;
 
   @ApiProperty({
+    example: 1,
     description:
-      'Posição fixa na grelha completa da tentativa (1 … totalQuestions), pela mesma ordem devolvida sem filtro. Não muda quando aplica `statusFilter`.',
-    example: 12,
+      'Posição da questão no array geral sem filtro. Esse número não muda quando o filtro é aplicado.',
   })
   number!: number;
 
-  @ApiProperty({ enum: ['CERTO', 'ERRADO', 'VAZIO'], description: 'Certo, errado ou vazio (sem resposta).' })
-  resultado!: ResultadoQuestao;
-
-  @ApiProperty({ nullable: true, example: 'A', description: 'Alternativa escolhida (null se vazio)' })
-  selectedAnswer!: string | null;
-
-  @ApiProperty({ nullable: true, example: 'A', description: 'Alternativa correta' })
-  correctAnswer!: string | null;
+  @ApiProperty({
+    enum: ['CORRECT', 'WRONG', 'BLANK'],
+    example: 'CORRECT',
+    description: 'Status da resposta da questão.',
+  })
+  status!: ResultGridItemStatus;
 }
 
 export class ResultGridDataDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({
+    format: 'uuid',
+    description: 'Identificador da tentativa',
+  })
   attemptId!: string;
 
-  @ApiProperty({ example: 90 })
+  @ApiProperty({
+    example: 90,
+    description: 'Total de questões da tentativa sem filtro.',
+  })
   totalQuestions!: number;
 
-  @ApiProperty({ type: [ResultGridItemDto] })
+  @ApiProperty({
+    type: [ResultGridItemDto],
+    description: 'Grade de resultados da tentativa.',
+  })
   grid!: ResultGridItemDto[];
 }
 
