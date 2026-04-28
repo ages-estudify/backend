@@ -19,10 +19,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import {
-  ResultGridQueryDto,
-  ResultGridStatusFilter,
-} from './dto/result-grid-query.dto';
+import { ResultGridQueryDto, ResultGridStatusFilter } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
 import { ExamService } from './exam.service';
 

@@ -3,8 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExamService } from '../exam.service';
 import { PrismaService } from '../../prisma.service';
 import { ResultGridStatusFilter } from '../dto/result-grid-query.dto';
-;
-
 describe('ExamService', () => {
   let service: ExamService;
 
@@ -193,10 +191,7 @@ describe('ExamService', () => {
     prismaMock.attempt.findUnique.mockResolvedValue(mockAttempt);
 
     const result = await service.getResultGrid('attempt-uuid', {
-      statusFilter: [
-        ResultGridStatusFilter.CORRECT,
-        ResultGridStatusFilter.BLANK,
-      ],
+      statusFilter: [ResultGridStatusFilter.CORRECT, ResultGridStatusFilter.BLANK],
     });
 
     expect(result.data.totalQuestions).toBe(3);

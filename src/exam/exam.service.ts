@@ -71,9 +71,7 @@ export class ExamService {
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId);
 
-    const answers = this.getOrderedAnswers(
-      attempt.attempt_days as AttemptDayWithAnswers[],
-    );
+    const answers = this.getOrderedAnswers(attempt.attempt_days as AttemptDayWithAnswers[]);
 
     const gridWithoutFilter = answers.map(({ answer }, index) => ({
       questionId: answer.question_id,
@@ -138,8 +136,7 @@ export class ExamService {
       return questionDifference;
     }
 
-    const dateDifference =
-      a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
+    const dateDifference = a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
 
     if (dateDifference !== 0) {
       return dateDifference;
