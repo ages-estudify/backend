@@ -5,7 +5,6 @@ import { ExamRepository } from '../src/exam/exam.repository';
 
 describe('ExamService', () => {
   let service: ExamService;
-  let repository: ExamRepository;
 
   const repositoryMock = {
     findAttemptResultGridById: jest.fn(),
@@ -23,8 +22,7 @@ describe('ExamService', () => {
     }).compile();
 
     service = module.get<ExamService>(ExamService);
-    repository = module.get<ExamRepository>(ExamRepository);
-    
+
     jest.clearAllMocks();
   });
 
@@ -65,8 +63,8 @@ describe('ExamService', () => {
   it('deve lançar NotFoundException quando a tentativa não pertencer ao usuário', async () => {
     repositoryMock.findAttemptResultGridById.mockResolvedValue(null);
 
-    await expect(
-      service.getResultGrid('id-errado', 'user-id-123'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.getResultGrid('id-errado', 'user-id-123')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

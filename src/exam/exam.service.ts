@@ -29,7 +29,7 @@ type AttemptDayWithAnswers = {
 
 @Injectable()
 export class ExamService {
-  constructor(private readonly examRepository: ExamRepository) { }
+  constructor(private readonly examRepository: ExamRepository) {}
 
   async getResultGrid(
     attemptId: string,
@@ -58,18 +58,15 @@ export class ExamService {
     };
   }
 
-private async getAttempt(attemptId: string, userId: string) {
-  const attempt = await this.examRepository.findAttemptResultGridById(
-    attemptId,
-    userId,
-  );
+  private async getAttempt(attemptId: string, userId: string) {
+    const attempt = await this.examRepository.findAttemptResultGridById(attemptId, userId);
 
-  if (!attempt) {
-    throw new NotFoundException('Attempt not found');
+    if (!attempt) {
+      throw new NotFoundException('Attempt not found');
+    }
+
+    return attempt;
   }
-
-  return attempt;
-}
 
   private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
     return attemptDays

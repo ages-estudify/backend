@@ -41,7 +41,7 @@ type AuthenticatedRequest = Request & {
 })
 @Controller({ path: 'exam', version: '1' })
 export class ExamController {
-  constructor(private readonly examService: ExamService) { }
+  constructor(private readonly examService: ExamService) {}
 
   @Post(':attemptId/resultGrid')
   @HttpCode(HttpStatus.OK)
