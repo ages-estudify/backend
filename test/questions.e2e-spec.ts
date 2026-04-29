@@ -63,6 +63,8 @@ describe('QuestionsController (e2e)', () => {
         phone_number: phoneNumber,
         birth_date: new Date('1990-01-01'),
         role: Role.USER,
+        enable: true,
+        plan_end_date: new Date(Date.now() + 1000 * 60 * 60),
       },
     });
 
