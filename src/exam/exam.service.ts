@@ -1,11 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { ExamRepository } from './exam.repository';
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
-import type {
-  ResultGridItemDto,
-  ResultGridItemStatus,
-  ResultGridSuccessResponseDto,
-} from './dto/result-grid-response.dto';
+import type { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.dto';
+import type { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
 
 type AnswerWithRelations = {
   answer_date: Date;
@@ -30,44 +27,13 @@ type AttemptDayWithAnswers = {
   answers: AnswerWithRelations[];
 };
 
-const ATTEMPT_RESULT_GRID_INCLUDE = {
-  attempt_days: {
-    include: {
-      exam_day: {
-        select: {
-          day: true,
-        },
-      },
-      answers: {
-        include: {
-          question: {
-            include: {
-              alternatives: {
-                select: {
-                  letter: true,
-                  is_correct: true,
-                },
-              },
-            },
-          },
-          alternative: {
-            select: {
-              letter: true,
-            },
-          },
-        },
-      },
-    },
-  },
-} as const;
-
 @Injectable()
 export class ExamService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly examRepository: ExamRepository) { }
 
   async getResultGrid(
     attemptId: string,
-    query: ResultGridQueryDto,
+    query?: ResultGridQueryDto,
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId);
 
@@ -79,7 +45,7 @@ export class ExamService {
       status: this.getQuestionStatus(answer),
     }));
 
-    const grid = this.filterGridByStatus(gridWithoutFilter, query.statusFilter);
+    const grid = this.filterGridByStatus(gridWithoutFilter, query?.statusFilter);
 
     return {
       success: true,
@@ -92,12 +58,7 @@ export class ExamService {
   }
 
   private async getAttempt(attemptId: string) {
-    const attempt = await this.prisma.attempt.findUnique({
-      where: {
-        id: attemptId,
-      },
-      include: ATTEMPT_RESULT_GRID_INCLUDE,
-    });
+    const attempt = await this.examRepository.findAttemptResultGridById(attemptId);
 
     if (!attempt) {
       throw new NotFoundException('Attempt not found');

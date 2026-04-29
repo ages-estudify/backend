@@ -1,25 +1,25 @@
 import {
+  Body,
   Controller,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
-  Query,
   UseGuards,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ResultGridQueryDto, ResultGridStatusFilter } from './dto/result-grid-query.dto';
+import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
 import { ExamService } from './exam.service';
 
@@ -39,13 +39,9 @@ export class ExamController {
   @ApiOperation({
     summary: 'Attempt result grid',
   })
-  @ApiQuery({
-    name: 'statusFilter',
+  @ApiBody({
+    type: ResultGridQueryDto,
     required: false,
-    enum: ResultGridStatusFilter,
-    isArray: true,
-    description: 'Filters questions by status.',
-    example: [ResultGridStatusFilter.CORRECT],
   })
   @ApiOkResponse({ type: ResultGridSuccessResponseDto })
   @ApiNotFoundResponse({
@@ -54,7 +50,7 @@ export class ExamController {
   })
   async resultGrid(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
-    @Query() query: ResultGridQueryDto,
+    @Body() query: ResultGridQueryDto,
   ): Promise<ResultGridSuccessResponseDto> {
     return this.examService.getResultGrid(attemptId, query);
   }
