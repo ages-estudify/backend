@@ -18,6 +18,8 @@ export class ExamRepository {
         totalQuestions1: number;
         totalQuestions2: number;
         answeredQuestions: number;
+        answeredQuestions1: number;
+        answeredQuestions2: number;
         isCompleted1: boolean;
         isCompleted2: boolean;
       }[]
@@ -26,8 +28,7 @@ export class ExamRepository {
           SELECT DISTINCT ON (a.exam_id)
             a.id,
             a.exam_id,
-            a.end_time,
-            a.language
+            a.end_time
           FROM "Attempt" a
           WHERE a.user_id = ${userId}
           ORDER BY a.exam_id, a.init_time DESC
@@ -47,16 +48,26 @@ export class ExamRepository {
         ),
 
         answer_stats AS (
-          SELECT
-            ad.attempt_id,
-            COUNT(DISTINCT aw.id) FILTER (WHERE aw.alternative_id IS NOT NULL)::int AS answered_questions
-          FROM "AttemptDay" ad
-          LEFT JOIN "Answer" aw ON aw.attempt_day_id = ad.id
-          JOIN last_attempt la ON la.id = ad.attempt_id
-          GROUP BY ad.attempt_id
-        ),
-        
-        question_stats AS (
+        SELECT
+          ad.attempt_id,
+
+          COUNT(DISTINCT aw.id) FILTER (
+            WHERE aw.alternative_id IS NOT NULL AND ed.day = 1
+          )::int AS answered_questions1,
+
+          COUNT(DISTINCT aw.id) FILTER (
+            WHERE aw.alternative_id IS NOT NULL AND ed.day = 2
+          )::int AS answered_questions2
+
+        FROM "AttemptDay" ad
+        LEFT JOIN "Answer" aw ON aw.attempt_day_id = ad.id
+        JOIN "ExamDay" ed ON ed.id = ad.exam_day_id
+        JOIN last_attempt la ON la.id = ad.attempt_id
+
+        GROUP BY ad.attempt_id
+      ),
+
+         question_stats AS (
           SELECT
             e.id AS exam_id,
             COUNT(q.id)::int AS total,
@@ -69,36 +80,37 @@ export class ExamRepository {
         )
 
         SELECT
-          e.id,
-          e.name,
-          e.image_url,
-          e.origin,
+            e.id,
+            e.name,
+            e.image_url,
+            e.origin,
 
-          CASE
-            WHEN la.id IS NULL THEN 'available'
-            WHEN la.end_time IS NULL THEN 'in_progress'
-            ELSE 'completed'
-          END AS status,
+            CASE
+              WHEN la.id IS NULL THEN 'available'
+              WHEN la.end_time IS NULL THEN 'in_progress'
+              ELSE 'completed'
+            END AS status,
 
-          la.language,
+            qs.total AS "totalQuestions",
+            qs.total1 AS "totalQuestions1",
+            qs.total2 AS "totalQuestions2",
 
-          qs.total AS "totalQuestions",
-          qs.total1 AS "totalQuestions1",
-          qs.total2 AS "totalQuestions2",
+            COALESCE(at.answered_questions1, 0) + COALESCE(at.answered_questions2, 0) AS "answeredQuestions",
 
-          COALESCE(ans.answered_questions, 0) AS "answeredQuestions",
+            COALESCE(at.answered_questions1, 0) AS "answeredQuestions1",
+            COALESCE(at.answered_questions2, 0) AS "answeredQuestions2",
 
-          COALESCE(ad.is_completed_1, false) AS "isCompleted1",
-          COALESCE(ad.is_completed_2, false) AS "isCompleted2"
+            COALESCE(ad.is_completed_1, false) AS "isCompleted1",
+            COALESCE(ad.is_completed_2, false) AS "isCompleted2"
 
           FROM "Exam" e
 
           LEFT JOIN last_attempt la ON la.exam_id = e.id
           LEFT JOIN attempt_days ad ON ad.attempt_id = la.id
-          LEFT JOIN answer_stats ans ON ans.attempt_id = la.id
+          LEFT JOIN answer_stats at ON at.attempt_id = la.id
           LEFT JOIN question_stats qs ON qs.exam_id = e.id
           WHERE e.status = 'PUBLISHED';
-   `;
+            `;
 
     return result;
   }

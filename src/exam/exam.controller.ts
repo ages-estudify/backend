@@ -4,7 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { ApiBearerAuth, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { ExamService } from './exam.service';
-import { ExamListingDto } from './dto/examListing.dto';
+import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
 
 @Controller('exams')
 @UseGuards(JwtAuthGuard)
@@ -19,9 +19,11 @@ export class ExamController {
   @Get()
   @ApiOkResponse({
     description: 'Lista de exames do usuário com progresso ',
-    type: ExamListingDto,
+    type: ExamListingWithAttemptsByUserDto,
   })
-  async examListing(@CurrentUser() user: JwtAuthUser): Promise<ExamListingDto> {
+  async examListingWithAttemptsByUser(
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
     return this.examservice.findAllWithLastAttemptByUser(user.userId);
   }
 }

@@ -31,9 +31,10 @@ enum Origin {
   EXTERNAL
 }
 
-enum ExamStatus {
+enum ExamStatus{
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 model User {

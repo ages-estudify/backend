@@ -11,6 +11,10 @@ export class DayDto {
   @IsInt()
   totalQuestions!: number;
 
+  @ApiProperty({ example: 34 })
+  @IsInt()
+  answeredQuestions!: number;
+
   @ApiProperty({ example: false })
   @IsBoolean()
   isCompleted!: boolean;
@@ -49,11 +53,6 @@ export class ExamDto {
   @IsString()
   image_url!: string;
 
-  @ApiProperty({ enum: ['ENGLISH', 'SPANISH'] })
-  @IsIn(['ENGLISH', 'SPANISH'])
-  @IsString()
-  languages!: 'ENGLISH' | 'SPANISH';
-
   @ApiProperty({ type: [DayDto] })
   @IsArray()
   @ValidateNested({ each: true })
@@ -61,7 +60,7 @@ export class ExamDto {
   days!: DayDto[];
 }
 
-export class ExamListingDto {
+export class ExamListingWithAttemptsByUserDto {
   @ApiProperty({ example: true })
   @IsBoolean()
   success!: boolean;
