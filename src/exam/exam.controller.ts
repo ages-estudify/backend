@@ -32,25 +32,25 @@ import { ExamService } from './exam.service';
 })
 @Controller({ path: 'exam', version: VERSION_NEUTRAL })
 export class ExamController {
-  constructor(private readonly examService: ExamService) {}
+  constructor(private readonly examService: ExamService) { }
 
   @Post(':attemptId/resultGrid')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Grade de resultados da tentativa',
+    summary: 'Attempt result grid',
   })
   @ApiQuery({
     name: 'statusFilter',
     required: false,
     enum: ResultGridStatusFilter,
     isArray: true,
-    description: 'Filtra por status da questão.',
+    description: 'Filters questions by status.',
     example: [ResultGridStatusFilter.CORRECT],
   })
   @ApiOkResponse({ type: ResultGridSuccessResponseDto })
   @ApiNotFoundResponse({
-    description: 'Tentativa inexistente ou id inválido',
-    schema: { example: { success: false, message: 'Tentativa não encontrada' } },
+    description: 'Attempt not found or invalid id',
+    schema: { example: { success: false, message: 'Attempt not found' } },
   })
   async resultGrid(
     @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,

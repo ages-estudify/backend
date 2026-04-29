@@ -12,7 +12,7 @@ export class ResultGridQueryDto {
   @ApiPropertyOptional({
     enum: ResultGridStatusFilter,
     isArray: true,
-    description: 'Filtra as questões pelo status',
+    description: 'Filters questions by status.',
     example: [ResultGridStatusFilter.CORRECT],
   })
   @IsOptional()

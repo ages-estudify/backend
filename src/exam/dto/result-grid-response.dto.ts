@@ -5,21 +5,21 @@ export type ResultGridItemStatus = 'CORRECT' | 'WRONG' | 'BLANK';
 export class ResultGridItemDto {
   @ApiProperty({
     format: 'uuid',
-    description: 'Identificador da questão',
+    description: 'Question identifier.',
   })
   questionId!: string;
 
   @ApiProperty({
     example: 1,
     description:
-      'Posição da questão no array geral sem filtro. Esse número não muda quando o filtro é aplicado.',
+      'Question position in the unfiltered array. This number does not change when filters are applied.',
   })
   number!: number;
 
   @ApiProperty({
     enum: ['CORRECT', 'WRONG', 'BLANK'],
     example: 'CORRECT',
-    description: 'Status da resposta da questão.',
+    description: 'Question answer status.',
   })
   status!: ResultGridItemStatus;
 }
@@ -27,19 +27,19 @@ export class ResultGridItemDto {
 export class ResultGridDataDto {
   @ApiProperty({
     format: 'uuid',
-    description: 'Identificador da tentativa',
+    description: 'Attempt identifier.',
   })
   attemptId!: string;
 
   @ApiProperty({
     example: 90,
-    description: 'Total de questões da tentativa sem filtro.',
+    description: 'Total number of questions in the attempt before filters are applied.',
   })
   totalQuestions!: number;
 
   @ApiProperty({
     type: [ResultGridItemDto],
-    description: 'Grade de resultados da tentativa.',
+    description: 'Attempt result grid.',
   })
   grid!: ResultGridItemDto[];
 }

@@ -100,7 +100,7 @@ export class ExamService {
     });
 
     if (!attempt) {
-      throw new NotFoundException('Tentativa não encontrada');
+      throw new NotFoundException('Attempt not found');
     }
 
     return attempt;
