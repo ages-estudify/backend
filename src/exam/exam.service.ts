@@ -33,9 +33,10 @@ export class ExamService {
 
   async getResultGrid(
     attemptId: string,
+    userId: string,
     query?: ResultGridQueryDto,
   ): Promise<ResultGridSuccessResponseDto> {
-    const attempt = await this.getAttempt(attemptId);
+    const attempt = await this.getAttempt(attemptId, userId);
 
     const answers = this.getOrderedAnswers(attempt.attempt_days as AttemptDayWithAnswers[]);
 
@@ -57,15 +58,18 @@ export class ExamService {
     };
   }
 
-  private async getAttempt(attemptId: string) {
-    const attempt = await this.examRepository.findAttemptResultGridById(attemptId);
+private async getAttempt(attemptId: string, userId: string) {
+  const attempt = await this.examRepository.findAttemptResultGridById(
+    attemptId,
+    userId,
+  );
 
-    if (!attempt) {
-      throw new NotFoundException('Attempt not found');
-    }
-
-    return attempt;
+  if (!attempt) {
+    throw new NotFoundException('Attempt not found');
   }
+
+  return attempt;
+}
 
   private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
     return attemptDays
