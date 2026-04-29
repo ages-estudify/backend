@@ -49,7 +49,7 @@ export class SubjectRepository {
 
       LEFT JOIN "Question" q 
         ON q.path_id = p.id
-        AND q.exam_id IS NULL
+        AND q.exam_day_id IS NULL
 
       LEFT JOIN "Answer" a
         ON a.question_id = q.id
