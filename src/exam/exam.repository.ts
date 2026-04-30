@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma.service';
 export class ExamRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findAllWithLastAttemptByUser(userId: string) {
+  async findAllWithLastAttemptByUserTRUE(userId: string) {
     const result = await this.prisma.$queryRaw<
       {
         id: string;
@@ -114,4 +114,60 @@ export class ExamRepository {
 
     return result;
   }
+
+  async findAllWithLastAttemptByUser(userId: string) {
+  
+const exams = await this.prisma.exam.findMany({
+  where: { status: 'PUBLISHED' },
+  select: {
+    id: true,
+    origin: true,
+     name: true,
+    image_url: true,
+    exam_days: {
+      select: {
+        _count: {
+          select: { questions: true },
+        },
+      },
+    },
+  },
+});
+
+const attempts = await this.prisma.attempt.findMany({
+  where: {
+    user_id: userId,
+  },
+  orderBy: [
+    { exam_id: 'asc' },
+    { init_time: 'desc' },
+  ],
+  distinct: ['exam_id'],
+  select: {
+    id: true,
+    exam_id: true,
+    end_time: true,
+    attempt_days: {
+      select: {
+        end_time: true,
+        exam_day: {
+          select: {
+            day: true, 
+          },
+        },
+        _count: {
+          select: {
+            answers: true,
+          },
+        },
+      },
+    },
+  },
+});
+
+
+console.dir({ exams, attempts }, { depth: null });
+
+  }
+
 }

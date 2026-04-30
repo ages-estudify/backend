@@ -9,8 +9,9 @@ export class ExamService {
   constructor(private examRepository: ExamRepository) {}
 
   async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const result = await this.examRepository.findAllWithLastAttemptByUser(userId);
+    const result = await this.examRepository.findAllWithLastAttemptByUserTRUE(userId);
 
+    await this.examRepository.findAllWithLastAttemptByUser(userId);
     return {
       success: true,
       data: ExamMapper.toDtoList(result),
