@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ExamRepository } from './exam.repository';
+import { ExamRepository } from './exams.repository';
 import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
 import { ExamMapper } from './mapper/exam.mapper';
 

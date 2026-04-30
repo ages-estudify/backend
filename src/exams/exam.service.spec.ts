@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
-import { ExamService } from './exam.service';
-import { ExamRepository } from './exam.repository';
+import { ExamService } from './exams.service';
+import { ExamRepository } from './exams.repository';
 import { ExamMapper } from './mapper/exam.mapper';
 
 describe('ExamService', () => {
