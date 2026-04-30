@@ -8,7 +8,7 @@ export class UpdateAttemptDto {
   })
   @IsNumber()
   @IsOptional()
-  current_question?: number;
+  currentQuestion?: number;
 
   @ApiProperty({
     description: 'Total time spent in seconds',

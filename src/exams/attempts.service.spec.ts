@@ -60,7 +60,7 @@ describe('AttemptsService', () => {
   });
 
   describe('update()', () => {
-    const updateDto = { current_question: 5, timeSpentSeconds: 1200 };
+    const updateDto = { currentQuestion: 5, timeSpentSeconds: 1200 };
 
     it('should update the attempt successfully and return the envelope', async () => {
       const mockAttempt = {
