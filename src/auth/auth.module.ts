@@ -8,6 +8,8 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { PrismaService } from '../prisma.service';
+import { SubscriptionGuard } from './guards/subscription.guard';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
-  exports: [JwtModule, PassportModule, JwtAuthGuard, RolesGuard],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, SubscriptionGuard, PrismaService],
+  exports: [JwtModule, PassportModule, JwtAuthGuard, RolesGuard, SubscriptionGuard],
 })
 export class AuthModule {}

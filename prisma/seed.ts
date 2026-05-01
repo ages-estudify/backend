@@ -34,7 +34,7 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   // LIMPA BANCO
   await prisma.answer.deleteMany();
-  await prisma.ExamDay.deleteMany();
+  await prisma.attemptDay.deleteMany();
   await prisma.attempt.deleteMany();
 
   await prisma.alternative.deleteMany();
@@ -82,7 +82,7 @@ async function main() {
       phone_number: '51911111114',
       birth_date: new Date('2002-07-12'),
       desired_course: 'Medicina',
-      desired_exam: 'Pucrs',
+      desired_university: 'Pucrs',
       role: Role.USER,
       coins: 50,
       streak: 3,
@@ -104,7 +104,7 @@ async function main() {
       birth_date: new Date('2001-11-05'),
       plan_end_date: new Date('2030-12-31'),
       desired_course: 'Engenharia Civil',
-      desired_exam: 'UFRGS',
+      desired_university: 'UFRGS',
       role: Role.USER,
       coins: 120,
       streak: 7,

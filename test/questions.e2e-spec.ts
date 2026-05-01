@@ -32,16 +32,7 @@ describe('QuestionsController (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await prisma.answer.deleteMany();
-    await prisma.alternative.deleteMany();
-    await prisma.question.deleteMany();
-    await prisma.examDay.deleteMany();
-    await prisma.attemptDay.deleteMany();
-    await prisma.attempt.deleteMany();
-    await prisma.exam.deleteMany();
-    await prisma.path.deleteMany();
-    await prisma.subject.deleteMany();
-    await prisma.user.deleteMany();
+    await cleanDatabase();
 
     const admin = await prisma.user.create({
       data: {
@@ -79,9 +70,33 @@ describe('QuestionsController (e2e)', () => {
   });
 
   afterAll(async () => {
+    await cleanDatabase();
     await prisma.$disconnect();
     await app.close();
   });
+
+  async function cleanDatabase() {
+
+
+    await prisma.answer.deleteMany();        
+    await prisma.alternative.deleteMany();   
+    await prisma.question.deleteMany();      
+
+    await prisma.attemptDay.deleteMany();    
+    await prisma.examDay.deleteMany();       
+    await prisma.attempt.deleteMany();       
+
+    await prisma.studyLog.deleteMany();      
+    await prisma.studyDay.deleteMany();      
+
+    await prisma.exam.deleteMany();
+
+    await prisma.path.deleteMany();          
+    await prisma.subject.deleteMany();
+
+    await prisma.refreshToken.deleteMany();
+    await prisma.user.deleteMany();
+  }
 
   describe('GET /api/v1/admin/exams', () => {
     it('should list all exams with DRAFT status', async () => {

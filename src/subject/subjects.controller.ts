@@ -14,9 +14,10 @@ import {
 import { SubjectListingResponseDto } from './dto/subjectListing.dto.';
 import { AllSubjectsPathsResponseDto } from './dto/allPathsBySubject.dto';
 import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 
 @Controller('subjects')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 @ApiBearerAuth('JWT-auth')
 export class SubjectController {
   constructor(private readonly subjectService: SubjectService) {}
