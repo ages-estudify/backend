@@ -18,6 +18,7 @@ export class ExamService {
 
       return {
         ...exam,
+        hasAttempt: !!attempt,
         isCompleted: attempt?.isCompleted ?? false,
         totalAnswers: attempt?.totalAnswers ?? 0,
         attempt_days: attempt?.attempt_days ?? [],

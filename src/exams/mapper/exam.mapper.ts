@@ -1,3 +1,4 @@
+import { stat } from 'fs';
 import {
   ExamDto,
   DayDto,
@@ -35,14 +36,16 @@ export class ExamMapper {
 
     const isCompleted = item.isCompleted ?? false;
 
-    let status: ExamDto['status'] = 'available';
+    let status: ExamDto['status'];
 
-    if (isCompleted) {
-      status = 'completed';
-    } else if (item.totalAnswers > 0) {
-      status = 'in_progress';
-    }
-
+      if (isCompleted) {
+        status = 'completed';
+      } else if (item.hasAttempt) {
+        status = 'in_progress';
+      } else {
+        status = 'available';
+      }
+  
     return {
       id: item.id,
       name: item.name,
