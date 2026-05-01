@@ -37,14 +37,14 @@ export class ExamMapper {
 
     let status: ExamDto['status'];
 
-      if (isCompleted) {
-        status = 'completed';
-      } else if (item.hasAttempt) {
-        status = 'in_progress';
-      } else {
-        status = 'available';
-      }
-  
+    if (isCompleted) {
+      status = 'completed';
+    } else if (item.hasAttempt) {
+      status = 'in_progress';
+    } else {
+      status = 'available';
+    }
+
     return {
       id: item.id,
       name: item.name,
