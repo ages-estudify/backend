@@ -11,14 +11,11 @@ describe('ExamsController (e2e)', () => {
   let prisma: PrismaService;
   let jwtService: JwtService;
   let adminToken: string;
-  let examId: string;
-  let subjectId: string;
-  let pathId: string;
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) {
       process.env.DATABASE_URL =
-        'postgresql://postgres:postgres@localhost:5433/backend?schema=public';
+        'postgresql://postgres:postgres@localhost:5432/backend?schema=public';
     }
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,71 +23,70 @@ describe('ExamsController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.enableVersioning({
-      type: VersioningType.URI,
-    });
+    app.enableVersioning({ type: VersioningType.URI });
 
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     jwtService = moduleFixture.get<JwtService>(JwtService);
 
     await app.init();
-
-    // Create admin user and get token
-    const admin = await prisma.user.create({
-      data: {
-        full_name: 'Admin Test',
-        email: 'admin-test@test.com',
-        password: 'hashed_password',
-        phone_number: '1234567890',
-        role: Role.ADM,
-      },
-    });
-
-    adminToken = jwtService.sign({
-      sub: admin.id,
-      email: admin.email,role: admin.role,
-    });
-
-    // Create test data
-    const subject = await prisma.subject.create({
-      data: {
-        name: 'Matemática',
-        icon_url: 'https://example.com/math.png',
-      },
-    });
-    subjectId = subject.id;
-
-    const path = await prisma.path.create({
-      data: {
-        name: 'Álgebra',
-        text: 'Learn algebra',
-        icon_url: 'https://example.com/alg.png',
-        schedule_position: 1,
-        trail_position: 1,
-        subject_id: subjectId,
-      },
-    });
-    pathId = path.id;
   });
 
-  afterAll(async () => {
-    // Clean up
+  beforeEach(async () => {
     await prisma.answer.deleteMany();
     await prisma.alternative.deleteMany();
     await prisma.question.deleteMany();
     await prisma.examDay.deleteMany();
+    await prisma.attemptDay.deleteMany();
     await prisma.attempt.deleteMany();
     await prisma.exam.deleteMany();
     await prisma.path.deleteMany();
     await prisma.subject.deleteMany();
     await prisma.user.deleteMany();
 
+    const unique = `${Date.now()}-${Math.random()}`;
+
+    const admin = await prisma.user.create({
+      data: {
+        full_name: 'Admin Test',
+        email: `admin-${unique}@test.com`,
+        password: 'hashed_password',
+        phone_number: `phone-${unique}`,
+        role: Role.ADM,
+      },
+    });
+
+    adminToken = jwtService.sign({
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
+
+    const subject = await prisma.subject.create({
+      data: {
+        name: 'Matemática',
+        icon_url: 'https://example.com/math.png',
+      },
+    });
+
+    await prisma.path.create({
+      data: {
+        name: 'Álgebra',
+        text: 'Learn algebra',
+        icon_url: 'https://example.com/alg.png',
+        schedule_position: 1,
+        trail_position: 1,
+        subject_id: subject.id,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
     await app.close();
   });
 
   describe('GET /api/v1/admin/exams', () => {
     it('should list all exams with DRAFT status', async () => {
-      // First create an exam
       const exam = await prisma.exam.create({
         data: {
           name: 'Test Exam',
@@ -99,15 +95,14 @@ describe('ExamsController (e2e)', () => {
           status: 'DRAFT',
         },
       });
-      examId = exam.id;
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/admin/exams')
-        .set('Authorization', \Bearer \\);
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.some((e: any) => e.id === examId)).toBe(true);
+      expect(response.body.data.some((e: any) => e.id === exam.id)).toBe(true);
     });
 
     it('should return 401 without JWT token', async () => {
@@ -120,13 +115,16 @@ describe('ExamsController (e2e)', () => {
 
   describe('POST /api/v1/admin/exams/import', () => {
     it('should import exam from CSV', async () => {
-      const csvContent = \exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
-Test Simulado,ENEM,1,Matemática,Álgebra,What is 2+2?,A,B,C,D,E,B,The answer is 4,2024\;
+      const csvContent = `exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
+Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,2024`;
 
       const response = await request(app.getHttpServer())
         .post('/api/v1/admin/exams/import')
-        .set('Authorization', \Bearer \\)
-        .field('file', Buffer.from(csvContent), 'test.csv');
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', Buffer.from(csvContent), {
+          filename: 'test.csv',
+          contentType: 'text/csv',
+        });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -138,8 +136,11 @@ Test Simulado,ENEM,1,Matemática,Álgebra,What is 2+2?,A,B,C,D,E,B,The answer is
 
       const response = await request(app.getHttpServer())
         .post('/api/v1/admin/exams/import')
-        .set('Authorization', \Bearer \\)
-        .attach('file', largeBuffer, 'large.csv');
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', largeBuffer, {
+          filename: 'large.csv',
+          contentType: 'text/csv',
+        });
 
       expect(response.status).toBe(413);
     });
@@ -147,9 +148,17 @@ Test Simulado,ENEM,1,Matemática,Álgebra,What is 2+2?,A,B,C,D,E,B,The answer is
 
   describe('PUT /api/v1/admin/exams/:id', () => {
     it('should update exam title', async () => {
+      const exam = await prisma.exam.create({
+        data: {
+          name: 'Original Title',
+          origin: 'ENEM',
+          status: 'DRAFT',
+        },
+      });
+
       const response = await request(app.getHttpServer())
-        .put(\/api/v1/admin/exams/\\)
-        .set('Authorization', \Bearer \\)
+        .put(`/api/v1/admin/exams/${exam.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .field('title', 'Updated Title');
 
       expect(response.status).toBe(200);
@@ -157,9 +166,18 @@ Test Simulado,ENEM,1,Matemática,Álgebra,What is 2+2?,A,B,C,D,E,B,The answer is
     });
 
     it('should reject publish attempt without image', async () => {
+      const exam = await prisma.exam.create({
+        data: {
+          name: 'Test Exam',
+          origin: 'ENEM',
+          image_url: null,
+          status: 'DRAFT',
+        },
+      });
+
       const response = await request(app.getHttpServer())
-        .put(\/api/v1/admin/exams/\\)
-        .set('Authorization', \Bearer \\)
+        .put(`/api/v1/admin/exams/${exam.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .field('status', 'PUBLISHED');
 
       expect(response.status).toBe(400);
@@ -168,14 +186,24 @@ Test Simulado,ENEM,1,Matemática,Álgebra,What is 2+2?,A,B,C,D,E,B,The answer is
 
   describe('DELETE /api/v1/admin/exams/:id', () => {
     it('should soft delete exam (set status to ARCHIVED)', async () => {
+      const exam = await prisma.exam.create({
+        data: {
+          name: 'Test Exam',
+          origin: 'ENEM',
+          status: 'DRAFT',
+        },
+      });
+
       const response = await request(app.getHttpServer())
-        .delete(\/api/v1/admin/exams/\\)
-        .set('Authorization', \Bearer \\);
+        .delete(`/api/v1/admin/exams/${exam.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(204);
 
-      // Verify exam is archived
-      const archived = await prisma.exam.findUnique({ where: { id: examId } });
+      const archived = await prisma.exam.findUnique({
+        where: { id: exam.id },
+      });
+
       expect(archived?.status).toBe('ARCHIVED');
     });
   });
