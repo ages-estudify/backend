@@ -24,21 +24,21 @@ export class ExamService {
       };
     });
 
-const response = ExamMapper.toResponse(result);
+    const response = ExamMapper.toResponse(result);
 
-const sorted = {
-  ...response,
-  data: response.data.sort((a, b) => {
-    const order = {
-      in_progress: 1,
-      available: 2,
-      completed: 3,
+    const sorted = {
+      ...response,
+      data: response.data.sort((a, b) => {
+        const order = {
+          in_progress: 1,
+          available: 2,
+          completed: 3,
+        };
+
+        return order[a.status] - order[b.status];
+      }),
     };
 
-    return order[a.status] - order[b.status];
-  }),
-};
-
-return sorted;
+    return sorted;
   }
 }
