@@ -5,41 +5,14 @@ import {
 } from '../dto/examListingWithAttemptsByUser.dto';
 
 export class ExamMapper {
-  static toDay(item: any, day: number): DayDto {
+  static toResponse(items: any[]): ExamListingWithAttemptsByUserDto {
     return {
-      day,
-      totalQuestions: day === 1 ? item.totalQuestions1 : item.totalQuestions2,
-      answeredQuestions: day === 1 ? item.answeredQuestions1 : item.answeredQuestions2,
-      isCompleted: day === 1 ? item.isCompleted1 : item.isCompleted2,
+      success: true,
+      data: items.map((item) => this.toDto(item)),
     };
   }
 
   static toDto(item: any): ExamDto {
-    return {
-      id: item.id,
-      name: item.name,
-      totalQuestions: item.totalQuestions,
-      origin: item.origin,
-      status: item.status,
-      answeredQuestions: item.answeredQuestions,
-      image_url: item.image_url,
-
-      days: [1, 2].map((day) => this.toDay(item, day)),
-    };
-  }
-
-  static toDtoList(items: any[]): ExamDto[] {
-    return items.map((item) => this.toDto(item));
-  }
-
-  static toResponse(items: any[]): ExamListingWithAttemptsByUserDto {
-    return {
-      success: true,
-      data: items.map((item) => this.toDto1(item)),
-    };
-  }
-
-  static toDto1(item: any): ExamDto {
     const days: DayDto[] = [1, 2].map((day) => {
       const attemptDay = item.attempt_days?.find((d) => d.exam_day.day === day);
 
