@@ -1,42 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Injectable()
 export class AdminQuestionsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    questionData: {
-      text: string;
-      feedback: string;
-      image: string | null;
-      number: number | null;
-      year: number;
-      day: number | null;
-      language: any;
-      origin: any;
-      path_id: string;
-      exam_id?: string | null;
-    },
-    alternatives: { letter: string; text: string; is_correct: boolean }[],
-  ) {
+  async create(dto: CreateQuestionDto) {
     const question = await this.prisma.question.create({
       data: {
-        text: questionData.text,
-        feedback: questionData.feedback,
-        image: questionData.image,
-        number: questionData.number,
-        year: questionData.year,
-        day: questionData.day,
-        language: questionData.language,
-        origin: questionData.origin,
-        path: { connect: { id: questionData.path_id } },
-        exam: questionData.exam_id ? { connect: { id: questionData.exam_id } } : undefined,
+        text: dto.text,
+        feedback: dto.feedback,
+        image: dto.image ?? null,
+        number: dto.number ?? null,
+        year: dto.year,
+        day: dto.day ?? null,
+        language: dto.language ?? null,
+        origin: dto.origin,
+        path: { connect: { id: dto.path_id } },
+        exam: dto.exam_id ? { connect: { id: dto.exam_id } } : undefined,
       },
     });
 
-    for (const alt of alternatives) {
+    for (const alt of dto.alternatives) {
       await this.prisma.alternative.create({
         data: {
           letter: alt.letter,

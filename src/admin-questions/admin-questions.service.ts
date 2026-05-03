@@ -16,25 +16,7 @@ export class AdminQuestionsService {
     await this.validateRelations(dto.path_id, dto.exam_id);
     this.validateAlternatives(dto.alternatives);
 
-    return await this.repository.create(
-      {
-        text: dto.text,
-        feedback: dto.feedback,
-        image: dto.image ?? null,
-        number: dto.number ?? null,
-        year: dto.year,
-        day: dto.day ?? null,
-        language: dto.language ?? null,
-        origin: dto.origin,
-        path_id: dto.path_id,
-        exam_id: dto.exam_id ?? null,
-      },
-      dto.alternatives.map((alt) => ({
-        letter: alt.letter,
-        text: alt.text,
-        is_correct: alt.is_correct,
-      })),
-    );
+    return this.repository.create(dto);
   }
 
   async findAll(query: QueryQuestionsDto) {
@@ -70,18 +52,7 @@ export class AdminQuestionsService {
       if (!examExists) throw new BadRequestException('Exam not found');
     }
 
-    const updateData: Prisma.QuestionUpdateInput = {};
-    if (dto.text !== undefined) updateData.text = dto.text;
-    if (dto.feedback !== undefined) updateData.feedback = dto.feedback;
-    if (dto.image !== undefined) updateData.image = dto.image;
-    if (dto.number !== undefined) updateData.number = dto.number;
-    if (dto.year !== undefined) updateData.year = dto.year;
-    if (dto.day !== undefined) updateData.day = dto.day;
-    if (dto.language !== undefined) updateData.language = dto.language;
-    if (dto.origin !== undefined) updateData.origin = dto.origin;
-    if (dto.enable !== undefined) updateData.enable = dto.enable;
-    if (dto.path_id) updateData.path = { connect: { id: dto.path_id } };
-    if (dto.exam_id) updateData.exam = { connect: { id: dto.exam_id } };
+    const updateData = this.buildUpdateData(dto);
 
     if (dto.alternatives) {
       this.validateAlternatives(dto.alternatives);
@@ -127,27 +98,8 @@ export class AdminQuestionsService {
           if (!examExists) throw new Error(`Exam '${row['exam_id']}' not found`);
         }
 
-        const correctAnswer = row['correct_answer'].toUpperCase();
-
-        const question = await this.repository.create(
-          {
-            text: row['text'],
-            feedback: row['feedback'],
-            image: null,
-            number: row['number'] ? parseInt(row['number'], 10) : null,
-            year: parseInt(row['year'], 10),
-            day: row['day'] ? parseInt(row['day'], 10) : null,
-            language: row['language'] ? (row['language'] as Language) : null,
-            origin: row['origin'] as Origin,
-            path_id: row['path_id'],
-            exam_id: row['exam_id'] || null,
-          },
-          VALID_LETTERS.map((letter) => ({
-            letter,
-            text: row[`alternative_${letter.toLowerCase()}`],
-            is_correct: letter === correctAnswer,
-          })),
-        );
+        const dto = this.csvRowToDto(row);
+        const question = await this.repository.create(dto);
 
         results.push({ row: i + 2, success: true, id: question!.id });
       } catch (err) {
@@ -163,6 +115,51 @@ export class AdminQuestionsService {
     const errorCount = results.filter((r) => !r.success).length;
 
     return { total: records.length, successCount, errorCount, results };
+  }
+
+  async findAllPaths() {
+    return this.repository.findAllPaths();
+  }
+
+  async findAllExams() {
+    return this.repository.findAllExams();
+  }
+
+  private buildUpdateData(dto: UpdateQuestionDto): Prisma.QuestionUpdateInput {
+    const updateData: Prisma.QuestionUpdateInput = {};
+    if (dto.text !== undefined) updateData.text = dto.text;
+    if (dto.feedback !== undefined) updateData.feedback = dto.feedback;
+    if (dto.image !== undefined) updateData.image = dto.image;
+    if (dto.number !== undefined) updateData.number = dto.number;
+    if (dto.year !== undefined) updateData.year = dto.year;
+    if (dto.day !== undefined) updateData.day = dto.day;
+    if (dto.language !== undefined) updateData.language = dto.language;
+    if (dto.origin !== undefined) updateData.origin = dto.origin;
+    if (dto.enable !== undefined) updateData.enable = dto.enable;
+    if (dto.path_id) updateData.path = { connect: { id: dto.path_id } };
+    if (dto.exam_id) updateData.exam = { connect: { id: dto.exam_id } };
+    return updateData;
+  }
+
+  private csvRowToDto(row: Record<string, string>): CreateQuestionDto {
+    const correctAnswer = row['correct_answer'].toUpperCase();
+
+    return {
+      path_id: row['path_id'],
+      exam_id: row['exam_id'] || undefined,
+      text: row['text'],
+      feedback: row['feedback'],
+      number: row['number'] ? parseInt(row['number'], 10) : undefined,
+      year: parseInt(row['year'], 10),
+      day: row['day'] ? parseInt(row['day'], 10) : undefined,
+      language: row['language'] ? (row['language'] as Language) : undefined,
+      origin: row['origin'] as Origin,
+      alternatives: VALID_LETTERS.map((letter) => ({
+        letter,
+        text: row[`alternative_${letter.toLowerCase()}`],
+        is_correct: letter === correctAnswer,
+      })),
+    };
   }
 
   private validateCsvRow(row: Record<string, string>, rowNumber: number) {
@@ -213,14 +210,6 @@ export class AdminQuestionsService {
     if (isNaN(year)) {
       throw new Error(`Row ${rowNumber}: year must be a number`);
     }
-  }
-
-  async findAllPaths() {
-    return this.repository.findAllPaths();
-  }
-
-  async findAllExams() {
-    return this.repository.findAllExams();
   }
 
   private async validateRelations(pathId: string, examId?: string) {
