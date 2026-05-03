@@ -9,6 +9,7 @@ import { GamificationModule } from './gamification/gamification.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
+import { ExamModule } from './exams/exams.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PrismaService } from './prisma.service';
     GamificationModule,
     AttemptDaysModule,
     OnboardingModule,
+    ExamModule,
   ],
   controllers: [],
   providers: [PrismaService],
