@@ -118,9 +118,7 @@ export class CsvUtils {
   }
 
   private static hasAllAlternatives(row: ValidatedRow): boolean {
-    return ['a', 'b', 'c', 'd', 'e'].every(
-      (l) => row[`alternative_${l}`],
-    );
+    return ['a', 'b', 'c', 'd', 'e'].every((l) => row[`alternative_${l}`]);
   }
 
   static validateMetadata(rows: ValidatedRow[]): {

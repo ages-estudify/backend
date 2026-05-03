@@ -1,13 +1,19 @@
 ﻿import { INestApplication, VersioningType } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+import { Server } from 'http';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma.service';
 
+interface ExamResponseItem {
+  id: string;
+}
+
 describe('ExamsController (e2e)', () => {
   let app: INestApplication;
+  let server: Server;
   let prisma: PrismaService;
   let jwtService: JwtService;
   let adminToken: string;
@@ -29,6 +35,9 @@ describe('ExamsController (e2e)', () => {
     jwtService = moduleFixture.get<JwtService>(JwtService);
 
     await app.init();
+
+    // ✅ FIX principal
+    server = app.getHttpServer() as Server;
   });
 
   beforeEach(async () => {
@@ -96,18 +105,20 @@ describe('ExamsController (e2e)', () => {
         },
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .get('/api/v1/admin/exams')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.some((e: any) => e.id === exam.id)).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+
+      const exists = (response.body.data as ExamResponseItem[]).some((e) => e.id === exam.id);
+
+      expect(exists).toBe(true);
     });
 
     it('should return 401 without JWT token', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/v1/admin/exams');
+      const response = await request(server).get('/api/v1/admin/exams');
 
       expect(response.status).toBe(401);
     });
@@ -118,7 +129,7 @@ describe('ExamsController (e2e)', () => {
       const csvContent = `exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
 Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,2024`;
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .post('/api/v1/admin/exams/import')
         .set('Authorization', `Bearer ${adminToken}`)
         .attach('file', Buffer.from(csvContent), {
@@ -134,7 +145,7 @@ Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,202
     it('should reject file larger than 10 MB', async () => {
       const largeBuffer = Buffer.alloc(11 * 1024 * 1024);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .post('/api/v1/admin/exams/import')
         .set('Authorization', `Bearer ${adminToken}`)
         .attach('file', largeBuffer, {
@@ -156,7 +167,7 @@ Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,202
         },
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .put(`/api/v1/admin/exams/${exam.id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .field('title', 'Updated Title');
@@ -175,7 +186,7 @@ Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,202
         },
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .put(`/api/v1/admin/exams/${exam.id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .field('status', 'PUBLISHED');
@@ -194,7 +205,7 @@ Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,202
         },
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(server)
         .delete(`/api/v1/admin/exams/${exam.id}`)
         .set('Authorization', `Bearer ${adminToken}`);
 

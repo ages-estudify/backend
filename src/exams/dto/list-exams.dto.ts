@@ -1,5 +1,14 @@
 ﻿import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsString, IsOptional, IsUrl, IsEnum, IsInt, Min, ValidateNested } from 'class-validator';
+import {
+  IsUUID,
+  IsString,
+  IsOptional,
+  IsUrl,
+  IsEnum,
+  IsInt,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ExamDayDto {

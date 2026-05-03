@@ -7,7 +7,6 @@ import { PrismaService } from '../prisma.service';
 describe('ExamsService', () => {
   let service: ExamsService;
   let repository: jest.Mocked<ExamsRepository>;
-  let prisma: jest.Mocked<PrismaService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,15 +26,14 @@ describe('ExamsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            transaction: jest.fn(),
+            $transaction: jest.fn(),
           },
         },
       ],
     }).compile();
 
-    service = module.get<ExamsService>(ExamsService);
-    repository = module.get(ExamsRepository) as jest.Mocked<ExamsRepository>;
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    service = module.get(ExamsService);
+    repository = module.get(ExamsRepository);
   });
 
   afterEach(() => {
@@ -62,7 +60,10 @@ describe('ExamsService', () => {
         },
       ];
 
-      repository.findAllExams.mockResolvedValue(mockExams as any);
+      repository.findAllExams.mockResolvedValue(
+        mockExams as unknown as Awaited<ReturnType<ExamsRepository['findAllExams']>>,
+      );
+
       repository.countQuestionsByExam.mockResolvedValue(2);
 
       const result = await service.listAllExams();
@@ -82,11 +83,14 @@ describe('ExamsService', () => {
         status: 'DRAFT',
       };
 
-      repository.findExamById.mockResolvedValue(exam as any);
+      repository.findExamById.mockResolvedValue(
+        exam as Awaited<ReturnType<ExamsRepository['findExamById']>>,
+      );
+
       repository.updateExam.mockResolvedValue({
         ...exam,
         name: 'New Title',
-      } as any);
+      } as Awaited<ReturnType<ExamsRepository['updateExam']>>);
 
       const result = await service.updateExam('exam1', {
         title: 'New Title',
@@ -105,11 +109,13 @@ describe('ExamsService', () => {
         status: 'DRAFT',
       };
 
-      repository.findExamById.mockResolvedValue(exam as any);
+      repository.findExamById.mockResolvedValue(
+        exam as Awaited<ReturnType<ExamsRepository['findExamById']>>,
+      );
 
-      await expect(
-        service.updateExam('exam1', { status: 'PUBLISHED' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateExam('exam1', { status: 'PUBLISHED' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -118,15 +124,21 @@ describe('ExamsService', () => {
       const exam = {
         id: 'exam1',
         name: 'Title',
+        origin: 'ENEM',
+        image_url: null,
         status: 'PUBLISHED',
       };
 
-      repository.findExamById.mockResolvedValue(exam as any);
-      repository.deleteExamLogical.mockResolvedValue(void 0);
+      repository.findExamById.mockResolvedValue(
+        exam as Awaited<ReturnType<ExamsRepository['findExamById']>>,
+      );
+
+      const spy = jest.spyOn(repository, 'deleteExamLogical');
+      spy.mockResolvedValue(undefined);
 
       await service.deleteExamLogical('exam1');
 
-      expect(repository.deleteExamLogical).toHaveBeenCalledWith('exam1');
+      expect(spy).toHaveBeenCalledWith('exam1');
     });
 
     it('should throw error if exam does not exist', async () => {

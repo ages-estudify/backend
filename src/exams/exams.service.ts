@@ -10,9 +10,26 @@ import { ListExamsResponseDto, ListExamItemDto } from './dto';
 import { MulterFile } from '../common/types/multer-file';
 import { CsvUtils, ValidatedRow } from './utils/csv.utils';
 
+interface ParsedRow {
+  exam_title: string;
+  bank: string;
+  exam_day: string;
+  discipline: string;
+  content: string;
+  question: string;
+  alternative_a: string;
+  alternative_b: string;
+  alternative_c: string;
+  alternative_d: string;
+  alternative_e: string;
+  correct_answer: string;
+  answer_explanation: string;
+  year: string;
+}
+
 @Injectable()
 export class ExamsService {
-  private readonly maxFileSize = 10 * 1024 * 1024; // 10 MB
+  private readonly maxFileSize = 10 * 1024 * 1024;
   private readonly maxQuestions = 180;
 
   private readonly requiredColumns = [
@@ -65,16 +82,10 @@ export class ExamsService {
 
     const parsedRows = CsvUtils.parseCsv(file.buffer.toString('utf-8'));
 
-    const { validRows, errors } = CsvUtils.validateStructure(
-      parsedRows,
-      this.requiredColumns,
-    );
+    const { validRows, errors } = CsvUtils.validateStructure(parsedRows, this.requiredColumns);
 
     if (errors.length > 0) {
-      throw new BadRequestException(
-        'CSV format invalid',
-        JSON.stringify(errors),
-      );
+      throw new BadRequestException('CSV format invalid', JSON.stringify(errors));
     }
 
     const metadata = CsvUtils.validateMetadata(validRows);
@@ -87,8 +98,7 @@ export class ExamsService {
       throw new BadRequestException('CSV exceeds questions limit');
     }
 
-    const enrichedAndValidated =
-      await this.validateAndEnrichRows(validRows);
+    const enrichedAndValidated = await this.validateAndEnrichRows(validRows);
 
     const result = await this.prisma.$transaction(async (tx) => {
       const exam = await tx.exam.create({
@@ -100,11 +110,7 @@ export class ExamsService {
         },
       });
 
-      const uniqueDays = [
-        ...new Set(
-          enrichedAndValidated.validRows.map((r) => r.parsed.exam_day),
-        ),
-      ];
+      const uniqueDays = [...new Set(enrichedAndValidated.validRows.map((r) => r.parsed.exam_day))];
 
       const createdDays = new Map<string, string>();
 
@@ -122,9 +128,11 @@ export class ExamsService {
       let importedCount = 0;
 
       for (const enriched of enrichedAndValidated.validRows) {
-        const examDayId = createdDays.get(
-          enriched.parsed.exam_day,
-        )!;
+        const examDayId = createdDays.get(enriched.parsed.exam_day);
+
+        if (!examDayId) {
+          throw new Error(`Exam day not found for ${enriched.parsed.exam_day}`);
+        }
 
         const question = await tx.question.create({
           data: {
@@ -137,8 +145,7 @@ export class ExamsService {
           },
         });
 
-        const correctAnswer =
-          enriched.parsed.correct_answer.toUpperCase();
+        const correctAnswer = enriched.parsed.correct_answer.toUpperCase();
 
         const alternatives = [
           { letter: 'A', text: enriched.parsed.alternative_a },
@@ -193,38 +200,32 @@ export class ExamsService {
     }
 
     if (updates.status && !['DRAFT', 'PUBLISHED'].includes(updates.status)) {
-      throw new BadRequestException(
-        'Invalid status. Only DRAFT or PUBLISHED allowed',
-      );
+      throw new BadRequestException('Invalid status');
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      name: string;
+      origin: string;
+      image_url: string | null;
+      status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+    }> = {};
 
     if (updates.title) updateData.name = updates.title;
     if (updates.origin) updateData.origin = updates.origin;
 
     if (updates.image) {
-      const imageUrl = await this.uploadImageToS3(updates.image, id);
+      const imageUrl = this.uploadImageToS3(updates.image, id);
       updateData.image_url = imageUrl;
       updateData.status = updates.status ?? 'PUBLISHED';
     } else if (updates.status) {
       updateData.status = updates.status;
     }
 
-    if (
-      updateData.status === 'PUBLISHED' &&
-      !updateData.image_url &&
-      !exam.image_url
-    ) {
-      throw new BadRequestException(
-        'Cannot publish exam without image',
-      );
+    if (updateData.status === 'PUBLISHED' && !updateData.image_url && !exam.image_url) {
+      throw new BadRequestException('Cannot publish exam without image');
     }
 
-    const updated = await this.examsRepository.updateExam(
-      id,
-      updateData,
-    );
+    const updated = await this.examsRepository.updateExam(id, updateData);
 
     return {
       success: true,
@@ -248,15 +249,15 @@ export class ExamsService {
   }
 
   private async validateAndEnrichRows(rows: ValidatedRow[]) {
-    const validRows: any[] = [];
+    const validRows: {
+      parsed: ParsedRow;
+      pathId: string;
+    }[] = [];
+
     const invalidRows: ValidatedRow[] = [];
 
     for (const row of rows) {
-      const pathId =
-        await this.examsRepository.pathByNameAndSubject(
-          row.content!,
-          row.discipline!,
-        );
+      const pathId = await this.examsRepository.pathByNameAndSubject(row.content!, row.discipline!);
 
       if (!pathId) {
         invalidRows.push({
@@ -267,19 +268,15 @@ export class ExamsService {
       }
 
       validRows.push({
-        ...row,
+        parsed: CsvUtils.parseRow(row) as ParsedRow,
         pathId,
-        parsed: CsvUtils.parseRow(row),
       });
     }
 
     return { validRows, invalidRows };
   }
 
-  private async uploadImageToS3(
-    file: MulterFile,
-    examId: string,
-  ): Promise<string> {
+  private uploadImageToS3(file: MulterFile, examId: string): string {
     return `https://s3.amazonaws.com/bucket/exam-${examId}.png`;
   }
 }
