@@ -10,7 +10,6 @@ import { ExamModule } from './exam/exam.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
-import { ExamModule } from './exams/exams.module';
 
 @Module({
   imports: [
