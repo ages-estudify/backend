@@ -22,6 +22,7 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiBody,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { ExamsService } from './exams.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,6 +31,9 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ListExamsResponseDto, UpdateExamResponseDto } from './dto';
 import type { MulterFile } from '../common/types/multer-file';
+import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { JwtAuthUser } from 'src/auth/security/jwt-auth-user';
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT-auth')
@@ -159,5 +163,16 @@ Rules:
   @ApiResponse({ status: 404, description: 'Exam not found' })
   async deleteExam(@Param('id') id: string): Promise<void> {
     await this.examsService.deleteExamLogical(id);
+  }
+
+  @Get()
+  @ApiOkResponse({
+    description: 'Lista de exames do usuário com progresso',
+    type: ExamListingWithAttemptsByUserDto,
+  })
+  async examListingWithAttemptsByUser(
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
+    return this.examsService.findAllWithLastAttemptByUser(user.userId);
   }
 }

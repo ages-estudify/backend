@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma.service';
 import { ListExamsResponseDto, ListExamItemDto } from './dto';
 import { MulterFile } from '../common/types/multer-file';
 import { CsvUtils, ValidatedRow } from './utils/csv.utils';
+import { ExamMapper } from './mapper/exam.mapper';
+import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
 
 interface ParsedRow {
   exam_title: string;
@@ -246,6 +248,42 @@ export class ExamsService {
     }
 
     await this.examsRepository.deleteExamLogical(id);
+  }
+
+  async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
+    const exams = await this.examsRepository.findAllExams();
+    const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
+
+    const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));
+
+    const result = exams.map((exam) => {
+      const attempt = attemptByExamId.get(exam.id);
+
+      return {
+        ...exam,
+        hasAttempt: !!attempt,
+        isCompleted: attempt?.isCompleted ?? false,
+        totalAnswers: attempt?.totalAnswers ?? 0,
+        attempt_days: attempt?.attempt_days ?? [],
+      };
+    });
+
+    const response = ExamMapper.toResponse(result);
+
+    const sorted = {
+      ...response,
+      data: response.data.sort((a, b) => {
+        const order = {
+          in_progress: 1,
+          available: 2,
+          completed: 3,
+        };
+
+        return order[a.status] - order[b.status];
+      }),
+    };
+
+    return sorted;
   }
 
   private async validateAndEnrichRows(rows: ValidatedRow[]) {
