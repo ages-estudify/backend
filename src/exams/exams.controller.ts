@@ -32,8 +32,8 @@ import { Role } from '@prisma/client';
 import { ListExamsResponseDto, UpdateExamResponseDto } from './dto';
 import type { MulterFile } from '../common/types/multer-file';
 import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtAuthUser } from 'src/auth/security/jwt-auth-user';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT-auth')
