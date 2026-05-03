@@ -49,7 +49,8 @@ model User {
   createdAt      DateTime       @default(now())
   enable         Boolean        @default(true)
   desired_course String?
-  desired_exam   String?
+  desired_university String?
+  preferred_language Language?
   last_active    DateTime?
   birth_date     DateTime?      @db.Date
   Study_day      StudyDay[]
@@ -58,6 +59,7 @@ model User {
   StudyLog       StudyLog[]
   refresh_tokens RefreshToken[]
   subscriptions  Subscription[]
+  onboarding_completed Boolean @default(false)
 }
 
 model RefreshToken {
