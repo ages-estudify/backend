@@ -55,6 +55,23 @@ type AttemptDayWithAnswers = {
   answers: AnswerWithRelations[];
 };
 
+interface ParsedRow {
+  exam_title: string;
+  bank: string;
+  exam_day: string;
+  discipline: string;
+  content: string;
+  question: string;
+  alternative_a: string;
+  alternative_b: string;
+  alternative_c: string;
+  alternative_d: string;
+  alternative_e: string;
+  correct_answer: string;
+  answer_explanation: string;
+  year: string;
+}
+
 @Injectable()
 export class ExamsService {
   private readonly maxFileSize = 10 * 1024 * 1024;
