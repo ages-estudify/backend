@@ -1,5 +1,5 @@
 ﻿import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsString, IsOptional, IsUrl, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
 import type { MulterFile } from '../../common/types/multer-file';
 
 export class UpdateExamRequestDto {

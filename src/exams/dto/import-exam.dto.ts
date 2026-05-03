@@ -1,6 +1,5 @@
 ﻿import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsString, IsInt, Min, ValidateNested, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsInt } from 'class-validator';
 import type { MulterFile } from '../../common/types/multer-file';
 
 export class ImportCsvErrorDto {
