@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { UpdateAttemptDto } from './dto/update-attempt.dto';
-import { AttemptResponseDto } from './dto/attempt-response.dto';
+import { UpdateAttemptDto } from '././dto/update-attempt.dto';
+import { AttemptResponseDto } from '././dto/attempt-response.dto';
 import { AttemptsRepository } from './attempts.repository';
 import { Language } from '@prisma/client';
 

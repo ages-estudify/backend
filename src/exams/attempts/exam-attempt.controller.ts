@@ -2,9 +2,9 @@ import { Controller, Post, Get, Body, ParseUUIDPipe, Param, UseGuards } from '@n
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtAuthUser } from '../../auth/security/jwt-auth-user';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { UpdateAttemptDto } from './dto/update-attempt.dto';
 
 @ApiTags('Exams')
@@ -12,7 +12,7 @@ import { UpdateAttemptDto } from './dto/update-attempt.dto';
 @Controller({ path: 'exams', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class AttemptExamsController {
-  constructor(private readonly attemptsService: AttemptsService) {}
+  constructor(private readonly attemptsService: AttemptsService) { }
 
   @ApiOperation({
     summary: 'Start an exam attempt',
