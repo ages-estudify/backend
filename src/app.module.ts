@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
 import { QuestionsModule } from './questions/questions.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ExamModule } from './exam/exam.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
@@ -25,6 +26,7 @@ import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
     QuestionsModule,
     GamificationModule,
     AttemptExamsModule,
+    SubscriptionsModule,
     ExamModule,
     AttemptDaysModule,
     OnboardingModule,

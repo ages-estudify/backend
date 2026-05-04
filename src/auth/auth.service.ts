@@ -97,9 +97,7 @@ export class AuthService {
     return session;
   }
 
-  private async buildAuthSession(
-    user: Pick<User, 'id' | 'role' | 'plan_end_date'>,
-  ): Promise<AuthSession> {
+  async buildAuthSession(user: Pick<User, 'id' | 'role' | 'plan_end_date'>): Promise<AuthSession> {
     const planExpirationDate = this.formatPlanDate(user.plan_end_date);
     const payload: JwtUserClaims = {
       userId: user.id,
