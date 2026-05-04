@@ -11,7 +11,7 @@ import { UpdateAttemptDto } from './dto/update-attempt.dto';
 @ApiBearerAuth('JWT-auth')
 @Controller({ path: 'exams', version: '1' })
 @UseGuards(JwtAuthGuard)
-export class ExamsController {
+export class AttemptExamsController {
   constructor(private readonly attemptsService: AttemptsService) {}
 
   @ApiOperation({

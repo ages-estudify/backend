@@ -9,7 +9,7 @@ import { GamificationModule } from './gamification/gamification.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
-import { ExamsModule } from './exams/exams.module';
+import { AttemptExamsModule } from './exams/attempt-exams.module';
 
 @Module({
   imports: [
@@ -23,7 +23,7 @@ import { ExamsModule } from './exams/exams.module';
     SubjectModule,
     QuestionsModule,
     GamificationModule,
-    ExamsModule,
+    AttemptExamsModule,
     AttemptDaysModule,
     OnboardingModule,
   ],
