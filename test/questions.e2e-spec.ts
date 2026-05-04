@@ -18,7 +18,7 @@ describe('QuestionsController (e2e)', () => {
     // DATABASE_URL from .env.test is read here before ConfigModule ignores env files
     if (!process.env.DATABASE_URL) {
       process.env.DATABASE_URL =
-        'postgresql://postgres:postgres@localhost:5433/backend?schema=public';
+        'postgresql://postgres:postgres@localhost:5432/backend?schema=public';
     }
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -39,19 +39,21 @@ describe('QuestionsController (e2e)', () => {
   });
 
   beforeEach(async () => {
-    // Cleanup all test data before each test
-    await prisma.answer.deleteMany({});
+    // Cleanup all test data before each test (child tables first, then parents)
+    // Order: answer → attemptDay → attempt → examDay → exam → question → alternative → subject → path → user → refreshToken → studyLog → studyDay
+    await prisma.answer.deleteMany();
     await prisma.attemptDay.deleteMany();
+    await prisma.examDay.deleteMany();
     await prisma.attempt.deleteMany();
-    await prisma.refreshToken.deleteMany();
-    await prisma.studyDay.deleteMany();
-    await prisma.studyLog.deleteMany();
     await prisma.alternative.deleteMany();
     await prisma.question.deleteMany();
     await prisma.examDay.deleteMany();
     await prisma.exam.deleteMany();
     await prisma.path.deleteMany();
     await prisma.subject.deleteMany();
+    await prisma.refreshToken.deleteMany();
+    await prisma.studyLog.deleteMany();
+    await prisma.studyDay.deleteMany();
     await prisma.user.deleteMany();
 
     const email = `e2e-questions-user-${Date.now()}-${Math.random()}@email.com`;
@@ -65,6 +67,8 @@ describe('QuestionsController (e2e)', () => {
         phone_number: phoneNumber,
         birth_date: new Date('1990-01-01'),
         role: Role.USER,
+        enable: true,
+        plan_end_date: new Date(Date.now() + 1000 * 60 * 60),
       },
     });
 

@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubjectModule } from './subject/subjects.module';
 import { QuestionsModule } from './questions/questions.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { ExamModule } from './exam/exam.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
@@ -24,8 +25,10 @@ import { AttemptExamsModule } from './exams/attempt-exams.module';
     QuestionsModule,
     GamificationModule,
     AttemptExamsModule,
+    ExamModule,
     AttemptDaysModule,
     OnboardingModule,
+    ExamModule,
   ],
   controllers: [],
   providers: [PrismaService],

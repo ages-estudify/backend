@@ -31,6 +31,12 @@ enum Origin {
   EXTERNAL
 }
 
+enum ExamStatus{
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id             String         @id @default(uuid()) @db.Uuid
   full_name      String
@@ -118,6 +124,7 @@ model Exam {
   name      String
   origin    String
   image_url String?
+  status    ExamStatus @default(DRAFT)
 
   exam_days ExamDay[]
   attempts Attempt[]

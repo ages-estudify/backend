@@ -28,10 +28,11 @@ import { QuestionsService } from './questions.service';
 import { QuestionBatchDataDto } from './dto/question-batch.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 
 @ApiTags('questions')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 @ApiUnauthorizedResponse({
   description: 'Missing or invalid JWT',
   schema: { example: { success: false, message: 'Unauthorized' } },
