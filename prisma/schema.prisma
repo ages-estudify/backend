@@ -34,6 +34,11 @@ enum Origin {
 enum PlanType {
   TRIMESTRAL
   ANUAL
+
+enum ExamStatus{
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 model User {
@@ -123,6 +128,7 @@ model Exam {
   name      String
   origin    String
   image_url String?
+  status    ExamStatus @default(DRAFT)
 
   exam_days ExamDay[]
   attempts Attempt[]
