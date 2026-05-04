@@ -34,6 +34,7 @@ enum Origin {
 enum PlanType {
   TRIMESTRAL
   ANUAL
+}
 
 enum ExamStatus{
   DRAFT
