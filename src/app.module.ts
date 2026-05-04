@@ -11,6 +11,7 @@ import { ExamModule } from './exam/exam.module';
 import { AttemptDaysModule } from './attempt-days/attempt-days.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
+import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PrismaService } from './prisma.service';
     SubjectModule,
     QuestionsModule,
     GamificationModule,
+    AttemptExamsModule,
     SubscriptionsModule,
     ExamModule,
     AttemptDaysModule,

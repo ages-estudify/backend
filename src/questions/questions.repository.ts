@@ -181,4 +181,44 @@ export class QuestionsRepository {
       data,
     });
   }
+
+  async findAttemptByIdAndUser(attemptId: string, userId: string) {
+    return this.prisma.attempt.findFirst({
+      where: { id: attemptId, user_id: userId },
+    });
+  }
+
+  async findAttemptDay(attemptId: string, examDayId: string) {
+    return this.prisma.attemptDay.findFirst({
+      where: { attempt_id: attemptId, exam_day_id: examDayId },
+    });
+  }
+
+  async createAttemptDay(data: Prisma.AttemptDayUncheckedCreateInput) {
+    return this.prisma.attemptDay.create({ data });
+  }
+
+  async findExistingAnswer(attemptDayId: string, questionId: string) {
+    return this.prisma.answer.findFirst({
+      where: { attempt_day_id: attemptDayId, question_id: questionId },
+    });
+  }
+
+  async updateAnswerAlternative(answerId: string, alternativeId: string) {
+    return this.prisma.answer.update({
+      where: { id: answerId },
+      data: { alternative_id: alternativeId, answer_date: new Date() },
+    });
+  }
+
+  async updateAttemptProgress(
+    attemptId: string,
+    timeSpentSeconds: number,
+    currentQuestion: number,
+  ) {
+    return this.prisma.attempt.update({
+      where: { id: attemptId },
+      data: { time_spent_seconds: timeSpentSeconds, current_question: currentQuestion },
+    });
+  }
 }

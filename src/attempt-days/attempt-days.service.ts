@@ -75,7 +75,7 @@ export class AttemptDaysService {
       examDayId: attemptDay.exam_day_id,
       name: attemptDay.attempt.exam.name,
       day: attemptDay.exam_day.day,
-      timeSpentMinutes: attemptDay.time_spent_minutes,
+      timeSpentSeconds: attemptDay.time_spent_seconds,
       endTime: attemptDay.end_time.toISOString(),
       totalQuestions,
       answeredQuestions,

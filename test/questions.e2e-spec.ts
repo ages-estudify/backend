@@ -47,6 +47,7 @@ describe('QuestionsController (e2e)', () => {
     await prisma.attempt.deleteMany();
     await prisma.alternative.deleteMany();
     await prisma.question.deleteMany();
+    await prisma.examDay.deleteMany();
     await prisma.exam.deleteMany();
     await prisma.path.deleteMany();
     await prisma.subject.deleteMany();
