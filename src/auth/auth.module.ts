@@ -32,6 +32,6 @@ import { SubscriptionGuard } from './guards/subscription.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, SubscriptionGuard, PrismaService],
-  exports: [JwtModule, PassportModule, JwtAuthGuard, RolesGuard, SubscriptionGuard],
+  exports: [AuthService, JwtModule, PassportModule, JwtAuthGuard, RolesGuard, SubscriptionGuard],
 })
 export class AuthModule {}
