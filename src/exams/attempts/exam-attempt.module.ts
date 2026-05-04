@@ -8,4 +8,4 @@ import { AttemptsRepository } from './attempts.repository';
   controllers: [AttemptExamsController],
   providers: [AttemptsService, PrismaService, AttemptsRepository],
 })
-export class AttemptExamsModule { }
+export class AttemptExamsModule {}

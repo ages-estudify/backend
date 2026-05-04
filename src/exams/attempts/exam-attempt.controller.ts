@@ -12,7 +12,7 @@ import { UpdateAttemptDto } from './dto/update-attempt.dto';
 @Controller({ path: 'exams', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class AttemptExamsController {
-  constructor(private readonly attemptsService: AttemptsService) { }
+  constructor(private readonly attemptsService: AttemptsService) {}
 
   @ApiOperation({
     summary: 'Start an exam attempt',
