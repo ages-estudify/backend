@@ -12,6 +12,10 @@
   BadRequestException,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -23,6 +27,9 @@ import {
   ApiOperation,
   ApiBody,
   ApiOkResponse,
+  ApiQuery,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ExamsService } from './exams.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -34,6 +41,17 @@ import type { MulterFile } from '../common/types/multer-file';
 import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
 import type { JwtAuthUser } from 'src/auth/security/jwt-auth-user';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ResultGridQueryDto, ResultGridStatusFilter } from './dto/result-grid-query.dto';
+import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+
+type AuthenticatedRequest = Request & {
+  user: {
+    userId?: string;
+    id?: string;
+    sub?: string;
+    user_id?: string;
+  };
+};
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT-auth')
@@ -174,5 +192,38 @@ Rules:
     @CurrentUser() user: JwtAuthUser,
   ): Promise<ExamListingWithAttemptsByUserDto> {
     return this.examsService.findAllWithLastAttemptByUser(user.userId);
+  }
+
+  @Get(':attemptId/resultGrid')
+  @ApiOperation({
+    summary: 'Attempt result grid',
+  })
+  @ApiQuery({
+    name: 'statusFilter',
+    required: false,
+    isArray: true,
+    enum: ResultGridStatusFilter,
+    description: 'Filters questions by status. Repeat the parameter for multiple values.',
+  })
+  @ApiOkResponse({ type: ResultGridSuccessResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid attempt id',
+  })
+  @ApiNotFoundResponse({
+    description: 'Attempt not found',
+    schema: { example: { success: false, message: 'Attempt not found' } },
+  })
+  async resultGrid(
+    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @Query() query: ResultGridQueryDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ResultGridSuccessResponseDto> {
+    const userId = req.user.userId ?? req.user.id ?? req.user.sub ?? req.user.user_id;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not found in token');
+    }
+
+    return this.examsService.getResultGrid(attemptId, userId, query);
   }
 }

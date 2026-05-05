@@ -28,12 +28,44 @@ export interface CreateAlternativeData {
   question_id: string;
 }
 
+export const ATTEMPT_RESULT_GRID_INCLUDE = {
+  attempt_days: {
+    include: {
+      exam_day: {
+        select: {
+          day: true,
+        },
+      },
+      answers: {
+        include: {
+          question: {
+            include: {
+              alternatives: {
+                select: {
+                  letter: true,
+                  is_correct: true,
+                },
+              },
+            },
+          },
+          alternative: {
+            select: {
+              letter: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 @Injectable()
 export class ExamsRepository {
   constructor(private prisma: PrismaService) {}
 
   async findAllExams(take?: number, skip?: number) {
     const exams = await this.prisma.exam.findMany({
+      where: { status: 'PUBLISHED' },
       select: {
         id: true,
         origin: true,
@@ -187,6 +219,16 @@ export class ExamsRepository {
           exam_id: examId,
         },
       },
+    });
+  }
+
+  async findAttemptResultGridById(attemptId: string, userId: string) {
+    return this.prisma.attempt.findFirst({
+      where: {
+        id: attemptId,
+        user_id: userId,
+      },
+      include: ATTEMPT_RESULT_GRID_INCLUDE,
     });
   }
 

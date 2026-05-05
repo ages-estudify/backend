@@ -20,8 +20,8 @@ export class AttemptDayResultDataDto {
   @ApiProperty({ example: 1 })
   day!: number;
 
-  @ApiProperty({ example: 90 })
-  timeSpentMinutes!: number;
+  @ApiProperty({ example: 5400 })
+  timeSpentSeconds!: number;
 
   @ApiProperty({ example: '2026-03-12T18:32:10.000Z' })
   endTime!: string;

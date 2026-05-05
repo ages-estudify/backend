@@ -105,13 +105,13 @@ describe('QuestionsController (e2e)', () => {
   }
 
   describe('GET /api/v1/admin/exams', () => {
-    it('should list all exams with DRAFT status', async () => {
+    it('should list all exams with PUBLISHED status', async () => {
       const exam = await prisma.exam.create({
         data: {
           name: 'Test Exam',
           origin: 'ENEM',
           image_url: null,
-          status: 'DRAFT',
+          status: 'PUBLISHED',
         },
       });
 

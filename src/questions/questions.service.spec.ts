@@ -55,6 +55,12 @@ describe('QuestionsService', () => {
       findByPathAndType: jest.fn(),
       findQuestionById: jest.fn(),
       createAnswer: jest.fn(),
+      findAttemptByIdAndUser: jest.fn(),
+      findAttemptDay: jest.fn(),
+      createAttemptDay: jest.fn(),
+      findExistingAnswer: jest.fn(),
+      updateAnswerAlternative: jest.fn(),
+      updateAttemptProgress: jest.fn(),
     };
 
     const mockGamificationService = {

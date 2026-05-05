@@ -1706,7 +1706,7 @@ async function main() {
           user_id: user.id,
           exam_id: exam.id,
           language: Language.ENGLISH,
-          time_spent_minutes: Math.floor(Math.random() * 60) + 20,
+          time_spent_seconds: Math.floor(Math.random() * 60) + 20,
           init_time: new Date(),
           end_time: Math.random() < 0.5 ? null : new Date(),
         },
@@ -1720,7 +1720,7 @@ async function main() {
           data: {
             attempt_id: attempt.id,
             exam_day_id: examDay.id,
-            time_spent_minutes: Math.floor(Math.random() * 30) + 10,
+            time_spent_seconds: Math.floor(Math.random() * 30) + 10,
             current_question: 1,
             init_time: new Date(),
             end_time: new Date(),

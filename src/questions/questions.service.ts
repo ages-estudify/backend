@@ -86,16 +86,81 @@ export class QuestionsService {
     questionId: string,
     userId: string,
     selectedAnswer: string,
-  ): Promise<AnswerSuccessResponseDto> {
+    attemptId?: string,
+    timeSpentSeconds?: number,
+  ): Promise<any> {
     const user = await this.usersRepository.findUniqueById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     const question = await this.questionsRepository.findQuestionById(questionId);
-
     if (!question) {
       throw new NotFoundException('Question not found');
+    }
+
+    const selectedAlternative = question.alternatives.find((alt) => alt.letter === selectedAnswer);
+    if (!selectedAlternative) {
+      throw new BadRequestException('Selected answer is not a valid alternative for this question');
+    }
+
+    if (attemptId) {
+      const attempt = await this.questionsRepository.findAttemptByIdAndUser(attemptId, userId);
+
+      if (!attempt) throw new NotFoundException('Attempt not found');
+
+      if (attempt.end_time) throw new BadRequestException('Attempt already finished');
+
+      if (timeSpentSeconds !== undefined && timeSpentSeconds < attempt.time_spent_seconds) {
+        throw new BadRequestException('Time spent cannot regress');
+      }
+
+      if (!question.exam_day_id) {
+        throw new BadRequestException('Question needs exam_day_id');
+      }
+
+      let attemptDay = await this.questionsRepository.findAttemptDay(
+        attemptId,
+        question.exam_day_id,
+      );
+
+      if (!attemptDay) {
+        attemptDay = await this.questionsRepository.createAttemptDay({
+          attempt_id: attemptId,
+          exam_day_id: question.exam_day_id,
+          time_spent_seconds: 0,
+          current_question: question.number ?? 1,
+          init_time: new Date(),
+        });
+      }
+
+      const existingAnswer = await this.questionsRepository.findExistingAnswer(
+        attemptDay.id,
+        questionId,
+      );
+
+      if (existingAnswer) {
+        await this.questionsRepository.updateAnswerAlternative(
+          existingAnswer.id,
+          selectedAlternative.id,
+        );
+      } else {
+        await this.questionsRepository.createAnswer({
+          attempt_day_id: attemptDay.id,
+          question_id: questionId,
+          user_id: userId,
+          alternative_id: selectedAlternative.id,
+          answer_date: new Date(),
+        });
+      }
+
+      await this.questionsRepository.updateAttemptProgress(
+        attemptId,
+        timeSpentSeconds ?? attempt.time_spent_seconds,
+        question.number ?? attempt.current_question + 1,
+      );
+
+      return { success: true, data: { saved: true } };
     }
 
     const correctAlternative = question.alternatives.find((alt) => alt.is_correct);
@@ -104,11 +169,6 @@ export class QuestionsService {
     }
 
     const isCorrect = selectedAnswer === correctAlternative.letter;
-
-    const selectedAlternative = question.alternatives.find((alt) => alt.letter === selectedAnswer);
-    if (!selectedAlternative) {
-      throw new BadRequestException('Selected answer is not a valid alternative for this question');
-    }
 
     await this.questionsRepository.createAnswer({
       user_id: userId,

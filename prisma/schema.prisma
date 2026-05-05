@@ -31,7 +31,12 @@ enum Origin {
   EXTERNAL
 }
 
-enum ExamStatus {
+enum PlanType {
+  TRIMESTRAL
+  ANUAL
+}
+
+enum ExamStatus{
   DRAFT
   PUBLISHED
   ARCHIVED
@@ -59,8 +64,8 @@ model User {
   attempts       Attempt[]
   StudyLog       StudyLog[]
   refresh_tokens RefreshToken[]
+  subscriptions  Subscription[]
   onboarding_completed Boolean @default(false)
-
 }
 
 model RefreshToken {
@@ -146,7 +151,8 @@ model ExamDay {
 
 model Attempt {
   id                 String    @id @default(uuid()) @db.Uuid
-  time_spent_minutes Int
+  time_spent_seconds Int       @default(0)
+  current_question   Int       @default(1)
   score              Int?
   language           Language
   init_time          DateTime
@@ -162,7 +168,7 @@ model Attempt {
 
 model AttemptDay {
   id                 String    @id @default(uuid()) @db.Uuid
-  time_spent_minutes Int
+  time_spent_seconds Int       @default(0)
   current_question   Int
   init_time          DateTime
   end_time           DateTime?
@@ -223,4 +229,16 @@ model Answer {
   attempt        Attempt?     @relation(fields: [attempt_id], references: [id])
   attempt_day_id String?      @db.Uuid
   attempt_day    AttemptDay?  @relation(fields: [attempt_day_id], references: [id])
+}
+
+model Subscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan_type  PlanType
+  start_date DateTime
+  end_date   DateTime
+  created_at DateTime @default(now())
+
+  @@index([user_id])
 }

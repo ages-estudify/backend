@@ -29,7 +29,7 @@ describe('AttemptDaysService', () => {
 
   const baseAttemptDay = (overrides: Record<string, unknown> = {}) => ({
     id: attemptDayId,
-    time_spent_minutes: 90,
+    time_spent_seconds: 5990,
     current_question: 1,
     init_time: new Date('2026-03-12T10:00:00.000Z'),
     end_time: new Date('2026-03-12T18:32:10.000Z'),
@@ -178,7 +178,7 @@ describe('AttemptDaysService', () => {
       examDayId,
       name: 'Simulado ENEM - Novembro 2024',
       day: 1,
-      timeSpentMinutes: 90,
+      timeSpentSeconds: 5990,
       endTime: '2026-03-12T18:32:10.000Z',
       totalQuestions: 4,
       answeredQuestions: 2,
