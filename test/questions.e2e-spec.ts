@@ -11,7 +11,7 @@ interface ExamResponseItem {
   id: string;
 }
 
-describe('QuestionsController (e2e)', () => {
+describe('ExamsController (e2e)', () => {
   let app: INestApplication;
   let server: Server;
   let prisma: PrismaService;
@@ -40,14 +40,25 @@ describe('QuestionsController (e2e)', () => {
   });
 
   beforeEach(async () => {
-    await cleanDatabase();
+    await prisma.answer.deleteMany();
+    await prisma.alternative.deleteMany();
+    await prisma.question.deleteMany();
+    await prisma.examDay.deleteMany();
+    await prisma.attemptDay.deleteMany();
+    await prisma.attempt.deleteMany();
+    await prisma.exam.deleteMany();
+    await prisma.path.deleteMany();
+    await prisma.subject.deleteMany();
+    await prisma.user.deleteMany();
+
+    const unique = `${Date.now()}-${Math.random()}`;
 
     const admin = await prisma.user.create({
       data: {
         full_name: 'Admin Test',
-        email: `admin-${Date.now()}@test.com`,
+        email: `admin-${unique}@test.com`,
         password: 'hashed_password',
-        phone_number: `1234567890-${Date.now()}-${Math.random()}`,
+        phone_number: `phone-${unique}`,
         role: Role.ADM,
       },
     });
@@ -78,33 +89,11 @@ describe('QuestionsController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await cleanDatabase();
     await prisma.$disconnect();
     await app.close();
   });
 
-  async function cleanDatabase(): Promise<void> {
-    await prisma.answer.deleteMany();
-    await prisma.alternative.deleteMany();
-    await prisma.question.deleteMany();
-
-    await prisma.attemptDay.deleteMany();
-    await prisma.examDay.deleteMany();
-    await prisma.attempt.deleteMany();
-
-    await prisma.studyLog.deleteMany();
-    await prisma.studyDay.deleteMany();
-
-    await prisma.exam.deleteMany();
-
-    await prisma.path.deleteMany();
-    await prisma.subject.deleteMany();
-
-    await prisma.refreshToken.deleteMany();
-    await prisma.user.deleteMany();
-  }
-
-  describe('GET /api/v1/admin/exams', () => {
+  describe('GET /api/v1/exams', () => {
     it('should list all exams with PUBLISHED status', async () => {
       const exam = await prisma.exam.create({
         data: {
@@ -116,7 +105,7 @@ describe('QuestionsController (e2e)', () => {
       });
 
       const response = await request(server)
-        .get('/api/v1/admin/exams')
+        .get('/api/v1/exams')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -128,13 +117,46 @@ describe('QuestionsController (e2e)', () => {
     });
 
     it('should return 401 without JWT token', async () => {
-      const response = await request(server).get('/api/v1/admin/exams');
+      const response = await request(server).get('/api/v1/exams');
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('PUT /api/v1/admin/exams/:id', () => {
+  describe('POST /api/v1/exams/admin/import', () => {
+    it('should import exam from CSV', async () => {
+      const csvContent = `exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
+Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,2024`;
+
+      const response = await request(server)
+        .post('/api/v1/exams/admin/import')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', Buffer.from(csvContent), {
+          filename: 'test.csv',
+          contentType: 'text/csv',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('DRAFT');
+    });
+
+    it('should reject file larger than 10 MB', async () => {
+      const largeBuffer = Buffer.alloc(11 * 1024 * 1024);
+
+      const response = await request(server)
+        .post('/api/v1/exams/admin/import')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', largeBuffer, {
+          filename: 'large.csv',
+          contentType: 'text/csv',
+        });
+
+      expect(response.status).toBe(413);
+    });
+  });
+
+  describe('PUT /api/v1/exams/admin/:id', () => {
     it('should update exam title', async () => {
       const exam = await prisma.exam.create({
         data: {
@@ -145,27 +167,45 @@ describe('QuestionsController (e2e)', () => {
       });
 
       const response = await request(server)
-        .put(`/api/v1/admin/exams/${exam.id}`)
+        .put(`/api/v1/exams/admin/${exam.id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .field('title', 'Updated Title');
 
       expect(response.status).toBe(200);
       expect(response.body.data.title).toBe('Updated Title');
     });
+
+    it('should reject publish attempt without image', async () => {
+      const exam = await prisma.exam.create({
+        data: {
+          name: 'Test Exam',
+          origin: 'ENEM',
+          image_url: null,
+          status: 'DRAFT',
+        },
+      });
+
+      const response = await request(server)
+        .put(`/api/v1/exams/admin/${exam.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .field('status', 'PUBLISHED');
+
+      expect(response.status).toBe(400);
+    });
   });
 
-  describe('DELETE /api/v1/admin/exams/:id', () => {
+  describe('DELETE /api/v1/exams/admin/:id', () => {
     it('should soft delete exam (set status to ARCHIVED)', async () => {
       const exam = await prisma.exam.create({
         data: {
-          name: 'Delete Me',
+          name: 'Test Exam',
           origin: 'ENEM',
           status: 'DRAFT',
         },
       });
 
       const response = await request(server)
-        .delete(`/api/v1/admin/exams/${exam.id}`)
+        .delete(`/api/v1/exams/admin/${exam.id}`)
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(204);
