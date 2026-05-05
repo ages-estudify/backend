@@ -55,9 +55,8 @@ type AuthenticatedRequest = Request & {
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT-auth')
-@Controller('api/v1/admin/exams')
+@Controller('api/v1/exams')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADM)
 export class ExamsController {
   constructor(private examsService: ExamsService) {}
 
@@ -69,7 +68,8 @@ export class ExamsController {
     return this.examsService.listAllExams();
   }
 
-  @Post('import')
+  @Post('admin/import')
+  @Roles(Role.ADM)
   @ApiOperation({
     summary: 'Import exam from CSV',
     description: 'Uploads a CSV file to create an exam with questions, alternatives and exam days.',
@@ -117,7 +117,8 @@ Rules:
     return this.examsService.importExamFromCsv(file);
   }
 
-  @Put(':id')
+  @Put('admin/:id')
+  @Roles(Role.ADM)
   @ApiOperation({
     summary: 'Update exam',
     description: 'Updates exam data. You can optionally upload an image and/or change status.',
@@ -172,7 +173,8 @@ Rules:
     return this.examsService.updateExam(id, updates);
   }
 
-  @Delete(':id')
+  @Delete('admin/:id')
+  @Roles(Role.ADM)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 204, description: 'Exam deleted (logical soft delete)' })
@@ -183,7 +185,7 @@ Rules:
     await this.examsService.deleteExamLogical(id);
   }
 
-  @Get()
+  @Get('by-user')
   @ApiOkResponse({
     description: 'Lista de exames do usuário com progresso',
     type: ExamListingWithAttemptsByUserDto,
