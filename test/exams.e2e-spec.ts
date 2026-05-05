@@ -1,4 +1,4 @@
-import { INestApplication, VersioningType } from '@nestjs/common';
+﻿import { INestApplication, VersioningType } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { Server } from 'http';
@@ -11,7 +11,7 @@ interface ExamResponseItem {
   id: string;
 }
 
-describe('QuestionsController (e2e)', () => {
+describe('ExamsController (e2e)', () => {
   let app: INestApplication;
   let server: Server;
   let prisma: PrismaService;
@@ -36,18 +36,30 @@ describe('QuestionsController (e2e)', () => {
 
     await app.init();
 
+    // ✅ FIX principal
     server = app.getHttpServer() as Server;
   });
 
   beforeEach(async () => {
-    await cleanDatabase();
+    await prisma.answer.deleteMany();
+    await prisma.alternative.deleteMany();
+    await prisma.question.deleteMany();
+    await prisma.examDay.deleteMany();
+    await prisma.attemptDay.deleteMany();
+    await prisma.attempt.deleteMany();
+    await prisma.exam.deleteMany();
+    await prisma.path.deleteMany();
+    await prisma.subject.deleteMany();
+    await prisma.user.deleteMany();
+
+    const unique = `${Date.now()}-${Math.random()}`;
 
     const admin = await prisma.user.create({
       data: {
         full_name: 'Admin Test',
-        email: `admin-${Date.now()}@test.com`,
+        email: `admin-${unique}@test.com`,
         password: 'hashed_password',
-        phone_number: `1234567890-${Date.now()}-${Math.random()}`,
+        phone_number: `phone-${unique}`,
         role: Role.ADM,
       },
     });
@@ -78,31 +90,9 @@ describe('QuestionsController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await cleanDatabase();
     await prisma.$disconnect();
     await app.close();
   });
-
-  async function cleanDatabase(): Promise<void> {
-    await prisma.answer.deleteMany();
-    await prisma.alternative.deleteMany();
-    await prisma.question.deleteMany();
-
-    await prisma.attemptDay.deleteMany();
-    await prisma.examDay.deleteMany();
-    await prisma.attempt.deleteMany();
-
-    await prisma.studyLog.deleteMany();
-    await prisma.studyDay.deleteMany();
-
-    await prisma.exam.deleteMany();
-
-    await prisma.path.deleteMany();
-    await prisma.subject.deleteMany();
-
-    await prisma.refreshToken.deleteMany();
-    await prisma.user.deleteMany();
-  }
 
   describe('GET /api/v1/admin/exams', () => {
     it('should list all exams with PUBLISHED status', async () => {
@@ -134,6 +124,39 @@ describe('QuestionsController (e2e)', () => {
     });
   });
 
+  describe('POST /api/v1/admin/exams/import', () => {
+    it('should import exam from CSV', async () => {
+      const csvContent = `exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
+Simulado,ENEM,1,Álgebra,Equações,What is 2+2?,1,2,3,4,5,D,The answer is 4,2024`;
+
+      const response = await request(server)
+        .post('/api/v1/admin/exams/import')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', Buffer.from(csvContent), {
+          filename: 'test.csv',
+          contentType: 'text/csv',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('DRAFT');
+    });
+
+    it('should reject file larger than 10 MB', async () => {
+      const largeBuffer = Buffer.alloc(11 * 1024 * 1024);
+
+      const response = await request(server)
+        .post('/api/v1/admin/exams/import')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('file', largeBuffer, {
+          filename: 'large.csv',
+          contentType: 'text/csv',
+        });
+
+      expect(response.status).toBe(413);
+    });
+  });
+
   describe('PUT /api/v1/admin/exams/:id', () => {
     it('should update exam title', async () => {
       const exam = await prisma.exam.create({
@@ -152,13 +175,31 @@ describe('QuestionsController (e2e)', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.title).toBe('Updated Title');
     });
+
+    it('should reject publish attempt without image', async () => {
+      const exam = await prisma.exam.create({
+        data: {
+          name: 'Test Exam',
+          origin: 'ENEM',
+          image_url: null,
+          status: 'DRAFT',
+        },
+      });
+
+      const response = await request(server)
+        .put(`/api/v1/admin/exams/${exam.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .field('status', 'PUBLISHED');
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('DELETE /api/v1/admin/exams/:id', () => {
     it('should soft delete exam (set status to ARCHIVED)', async () => {
       const exam = await prisma.exam.create({
         data: {
-          name: 'Delete Me',
+          name: 'Test Exam',
           origin: 'ENEM',
           status: 'DRAFT',
         },

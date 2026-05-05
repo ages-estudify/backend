@@ -125,25 +125,28 @@ model Path {
 }
 
 model Exam {
-  id        String  @id @default(uuid()) @db.Uuid
-  name      String
-  origin    String
-  image_url String?
-  status    ExamStatus @default(DRAFT)
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String
+  origin     String
+  image_url  String?
+  status     ExamStatus @default(DRAFT)
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
 
+  attempts  Attempt[]
+  questions Question[]
   exam_days ExamDay[]
-  attempts Attempt[]
 }
 
 model ExamDay {
-  id  String @id @default(uuid()) @db.Uuid
-  day Int
-
-  exam_id String @db.Uuid
-  Exam    Exam   @relation(fields: [exam_id], references: [id])
-
-  attempts_day AttemptDay[]
+  id           String       @id @default(uuid()) @db.Uuid
+  day          Int
+  exam_id      String       @db.Uuid
+  exam         Exam         @relation(fields: [exam_id], references: [id], onDelete: Cascade)
   questions    Question[]
+  attempts_day AttemptDay[]
+
+  @@unique([exam_id, day])
 }
 
 model Attempt {
@@ -155,11 +158,12 @@ model Attempt {
   init_time          DateTime
   end_time           DateTime?
 
-  exam_id      String        @db.Uuid
-  exam         Exam          @relation(fields: [exam_id], references: [id])
-  user_id      String        @db.Uuid
-  user         User          @relation(fields: [user_id], references: [id])
+  exam_id      String       @db.Uuid
+  exam         Exam         @relation(fields: [exam_id], references: [id])
+  user_id      String       @db.Uuid
+  user         User         @relation(fields: [user_id], references: [id])
   attempt_days AttemptDay[]
+  answers      Answer[]
 }
 
 model AttemptDay {
@@ -172,7 +176,7 @@ model AttemptDay {
   attempt_id  String   @db.Uuid
   attempt     Attempt  @relation(fields: [attempt_id], references: [id])
   exam_day_id String   @db.Uuid
-  exam_day    ExamDay @relation(fields: [exam_day_id], references: [id])
+  exam_day    ExamDay  @relation(fields: [exam_day_id], references: [id])
   answers     Answer[]
 
   @@unique([attempt_id, exam_day_id])
@@ -190,10 +194,14 @@ model Question {
 
   path_id      String        @db.Uuid
   path         Path          @relation(fields: [path_id], references: [id])
+  exam_id      String?       @db.Uuid
+  exam         Exam?         @relation(fields: [exam_id], references: [id])
   exam_day_id  String?       @db.Uuid
-  exam_day     ExamDay?     @relation(fields: [exam_day_id], references: [id])
+  exam_day     ExamDay?      @relation(fields: [exam_day_id], references: [id], onDelete: SetNull)
   alternatives Alternative[]
   answers      Answer[]
+
+  @@index([exam_day_id])
 }
 
 model Alternative {
@@ -217,8 +225,10 @@ model Answer {
   question       Question     @relation(fields: [question_id], references: [id])
   alternative_id String?      @db.Uuid
   alternative    Alternative? @relation(fields: [alternative_id], references: [id])
+  attempt_id     String?      @db.Uuid
+  attempt        Attempt?     @relation(fields: [attempt_id], references: [id])
   attempt_day_id String?      @db.Uuid
-  attempt_day    AttemptDay? @relation(fields: [attempt_day_id], references: [id])
+  attempt_day    AttemptDay?  @relation(fields: [attempt_day_id], references: [id])
 }
 
 model Subscription {
