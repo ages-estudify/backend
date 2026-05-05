@@ -55,7 +55,7 @@ type AuthenticatedRequest = Request & {
 
 @ApiTags('Exams')
 @ApiBearerAuth('JWT-auth')
-@Controller('v1/exams')
+@Controller('exams')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExamsController {
   constructor(private examsService: ExamsService) { }
