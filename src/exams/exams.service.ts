@@ -319,8 +319,12 @@ export class ExamsService {
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId, userId);
 
+    const filteredAttemptDays = query?.attemptDayId
+      ? (attempt.attempt_days as any[]).filter((ad) => ad.id === query.attemptDayId)
+      : (attempt.attempt_days as any[]);
+
     const answerByQuestionId = new Map<string, AnswerWithRelations>();
-    for (const ad of attempt.attempt_days as any[]) {
+    for (const ad of filteredAttemptDays) {
       for (const ans of ad.answers ?? []) {
         answerByQuestionId.set(ans.question_id, ans as AnswerWithRelations);
       }
@@ -336,7 +340,7 @@ export class ExamsService {
       answer?: AnswerWithRelations;
     }> = [];
 
-    for (const ad of attempt.attempt_days as any[]) {
+    for (const ad of filteredAttemptDays) {
       const dayNum = ad.exam_day.day;
       for (const q of ad.exam_day.questions ?? []) {
         allQuestions.push({
