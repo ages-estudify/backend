@@ -58,6 +58,12 @@ export class AttemptsRepository {
     });
   }
 
+  async countFinishedAttemptDays(attemptId: string) {
+    return this.prisma.attemptDay.count({
+      where: { attempt_id: attemptId, end_time: { not: null } },
+    });
+  }
+
   async finishAttemptDay(attemptDayId: string, timeSpentSeconds?: number) {
     return this.prisma.attemptDay.update({
       where: { id: attemptDayId },
