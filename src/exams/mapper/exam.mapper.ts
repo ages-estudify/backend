@@ -33,6 +33,12 @@ export class ExamMapper {
 
     const answeredQuestions = days.reduce((acc, d) => acc + d.answeredQuestions, 0);
 
+    const progress = {
+      answered: answeredQuestions,
+      total: totalQuestions,
+      percentage: totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0,
+    };
+
     const isCompleted = item.isCompleted ?? false;
 
     let status: ExamDto['status'];
@@ -55,6 +61,7 @@ export class ExamMapper {
 
       totalQuestions,
       answeredQuestions,
+      progress,
 
       days,
     };

@@ -277,7 +277,7 @@ export class ExamsService {
   }
 
   async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const exams = await this.examsRepository.findAllExams();
+    const exams = await this.examsRepository.findAllPublishedExams();
     const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));

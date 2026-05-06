@@ -1,6 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsInt, IsString, IsUUID, ValidateNested, IsIn } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsString,
+  IsUUID,
+  ValidateNested,
+  IsIn,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+
+export class ProgressDto {
+  @ApiProperty({ example: 34 })
+  @IsInt()
+  answered!: number;
+
+  @ApiProperty({ example: 75 })
+  @IsInt()
+  total!: number;
+
+  @ApiProperty({ example: 45.33 })
+  @IsNumber()
+  percentage!: number;
+}
 
 export class DayDto {
   @ApiProperty({ example: 1 })
@@ -48,6 +71,11 @@ export class ExamDto {
   @ApiProperty({ example: 0 })
   @IsInt()
   answeredQuestions!: number;
+
+  @ApiProperty({ type: ProgressDto })
+  @ValidateNested()
+  @Type(() => ProgressDto)
+  progress!: ProgressDto;
 
   @ApiProperty({ example: 'https://cdn.com/image.png' })
   @IsString()

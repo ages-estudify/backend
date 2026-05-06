@@ -65,6 +65,34 @@ export class ExamsRepository {
 
   async findAllExams(take?: number, skip?: number) {
     const exams = await this.prisma.exam.findMany({
+      select: {
+        id: true,
+        origin: true,
+        status: true,
+        name: true,
+        image_url: true,
+        exam_days: {
+          select: {
+            day: true,
+            _count: {
+              select: { questions: true },
+            },
+            questions: true,
+          },
+        },
+      },
+      take,
+      skip,
+    });
+
+    return exams.map((exam) => ({
+      ...exam,
+      totalQuestions: exam.exam_days.reduce((acc, day) => acc + (day._count.questions ?? 0), 0),
+    }));
+  }
+
+  async findAllPublishedExams(take?: number, skip?: number) {
+    const exams = await this.prisma.exam.findMany({
       where: { status: 'PUBLISHED' },
       select: {
         id: true,

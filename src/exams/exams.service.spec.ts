@@ -17,6 +17,7 @@ describe('ExamsService', () => {
           provide: ExamsRepository,
           useValue: {
             findAllExams: jest.fn(),
+            findAllPublishedExams: jest.fn(),
             findAllAttemptsByUser: jest.fn(),
             findAttemptResultGridById: jest.fn(),
             findExamById: jest.fn(),
@@ -177,7 +178,7 @@ describe('ExamsService', () => {
 
   describe('findAllWithLastAttemptByUser', () => {
     it('should merge exams with attempts correctly (completed)', async () => {
-      repository.findAllExams.mockResolvedValue([
+      repository.findAllPublishedExams.mockResolvedValue([
         {
           id: '1',
           name: 'Simulado 1',
@@ -187,7 +188,7 @@ describe('ExamsService', () => {
           exam_days: [{ _count: { questions: 10 } }, { _count: { questions: 20 } }],
           totalQuestions: 30,
         },
-      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllExams']>>);
+      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllPublishedExams']>>);
 
       repository.findAllAttemptsByUser.mockResolvedValue([
         {
@@ -215,6 +216,9 @@ describe('ExamsService', () => {
 
       expect(exam.totalQuestions).toBe(30);
       expect(exam.answeredQuestions).toBe(25);
+      expect(exam.progress.answered).toBe(25);
+      expect(exam.progress.total).toBe(30);
+      expect(exam.progress.percentage).toBeCloseTo(83.33333333333333);
       expect(exam.status).toBe('completed');
     });
   });

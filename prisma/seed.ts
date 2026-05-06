@@ -1617,6 +1617,7 @@ async function main() {
     const exam = await prisma.exam.create({
       data: {
         name: `Simulado ${i + 1}`,
+        status: i < 3 ? 'PUBLISHED' : 'DRAFT',
         origin: Origin.EXTERNAL,
         image_url: `https://example.com/${i + 1}.png`,
       },
