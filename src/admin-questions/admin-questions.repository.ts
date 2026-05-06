@@ -1,21 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Language, Origin, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { CreateQuestionDto } from './dto/create-question.dto';
+
+const QUESTION_INCLUDE = {
+  alternatives: true,
+  path: true,
+  exam: true,
+} as const;
+
+export type PersistenceAlternative = { letter: string; text: string; is_correct: boolean };
+
+export type CreateQuestionPersistenceInput = {
+  discipline: string;
+  content: string;
+  bank?: string | null;
+  text: string;
+  feedback: string;
+  year: number;
+  origin: Origin;
+  path_id: string;
+  exam_id?: string | null;
+  image_url?: string | null;
+  number?: number | null;
+  language?: Language | null;
+  alternatives: PersistenceAlternative[];
+};
 
 @Injectable()
 export class AdminQuestionsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateQuestionDto) {
+  async create(dto: CreateQuestionPersistenceInput) {
     const question = await this.prisma.question.create({
       data: {
+        discipline: dto.discipline,
+        content: dto.content,
+        bank: dto.bank ?? null,
         text: dto.text,
         feedback: dto.feedback,
-        image: dto.image ?? null,
+        image_url: dto.image_url ?? null,
         number: dto.number ?? null,
         year: dto.year,
-        day: dto.day ?? null,
         language: dto.language ?? null,
         origin: dto.origin,
         path: { connect: { id: dto.path_id } },
@@ -36,7 +61,7 @@ export class AdminQuestionsRepository {
 
     return this.prisma.question.findUnique({
       where: { id: question.id },
-      include: { alternatives: true, path: true, exam: true },
+      include: QUESTION_INCLUDE,
     });
   }
 
@@ -46,8 +71,8 @@ export class AdminQuestionsRepository {
         where,
         skip,
         take,
-        include: { alternatives: true, path: true, exam: true },
-        orderBy: { year: 'desc' },
+        include: QUESTION_INCLUDE,
+        orderBy: [{ updatedAt: 'desc' }, { year: 'desc' }],
       }),
       this.prisma.question.count({ where }),
     ]);
@@ -57,7 +82,7 @@ export class AdminQuestionsRepository {
   async findById(id: string) {
     return this.prisma.question.findUnique({
       where: { id },
-      include: { alternatives: true, path: true, exam: true },
+      include: QUESTION_INCLUDE,
     });
   }
 
@@ -65,7 +90,7 @@ export class AdminQuestionsRepository {
     return this.prisma.question.update({
       where: { id },
       data,
-      include: { alternatives: true, path: true, exam: true },
+      include: QUESTION_INCLUDE,
     });
   }
 
@@ -95,6 +120,13 @@ export class AdminQuestionsRepository {
   async pathExists(id: string): Promise<boolean> {
     const path = await this.prisma.path.findUnique({ where: { id } });
     return !!path;
+  }
+
+  async getFallbackPathId(): Promise<string | null> {
+    const path = await this.prisma.path.findFirst({
+      orderBy: { schedule_position: 'asc' },
+    });
+    return path?.id ?? null;
   }
 
   async examExists(id: string): Promise<boolean> {

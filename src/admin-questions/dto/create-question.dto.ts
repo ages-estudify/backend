@@ -1,91 +1,105 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString,
-  IsInt,
-  IsUUID,
-  IsOptional,
   IsEnum,
-  IsArray,
-  ValidateNested,
-  ArrayMinSize,
-  ArrayMaxSize,
-  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Language, Origin } from '@prisma/client';
 
-export class AlternativeDto {
-  @ApiProperty({ example: 'A', description: 'Letter A-E' })
+export enum AdminQuestionType {
+  SIMPLIFIED = 'SIMPLIFIED',
+  ORIGINAL = 'ORIGINAL',
+}
+
+export class AlternativesObjectDto {
+  @ApiProperty()
   @IsString()
   @MinLength(1)
-  @MaxLength(1)
-  letter!: string;
+  A!: string;
 
-  @ApiProperty({ example: 'Option text' })
+  @ApiProperty()
   @IsString()
   @MinLength(1)
-  text!: string;
+  B!: string;
 
-  @ApiProperty({ example: false })
-  @IsBoolean()
-  is_correct!: boolean;
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  C!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  D!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  E!: string;
 }
 
 export class CreateQuestionDto {
-  @ApiProperty({ example: 'uuid-path-id' })
-  @IsUUID()
-  path_id!: string;
-
-  @ApiPropertyOptional({ example: 'uuid-exam-id' })
-  @IsOptional()
-  @IsUUID()
-  exam_id?: string;
-
-  @ApiProperty({ example: 'Quanto é 2+2?' })
+  @ApiProperty({ example: 'Mathematics' })
   @IsString()
   @MinLength(1)
-  text!: string;
+  discipline!: string;
 
-  @ApiProperty({ example: 'Soma básica.' })
+  @ApiProperty({ example: 'Plane geometry' })
   @IsString()
   @MinLength(1)
-  feedback!: string;
+  content!: string;
 
-  @ApiPropertyOptional({ example: 'data:image/png;base64,[b64]' })
-  @IsOptional()
+  @ApiProperty({ example: 'What is the area of a square with side 4?' })
   @IsString()
-  image?: string;
+  @MinLength(1)
+  question!: string;
 
-  @ApiPropertyOptional({ example: 1 })
-  @IsOptional()
-  @IsInt()
-  number?: number;
+  @ApiProperty({ type: AlternativesObjectDto })
+  @ValidateNested()
+  @Type(() => AlternativesObjectDto)
+  alternatives!: AlternativesObjectDto;
 
-  @ApiProperty({ example: 2018 })
+  @ApiProperty({ example: 'B', description: 'Letter A-E' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(1)
+  correctAnswer!: string;
+
+  @ApiProperty({ example: 'The area of a square is side times side.' })
+  @IsString()
+  @MinLength(1)
+  answerExplanation!: string;
+
+  @ApiProperty({ enum: AdminQuestionType })
+  @IsEnum(AdminQuestionType)
+  type!: AdminQuestionType;
+
+  @ApiProperty({ example: 2019 })
   @IsInt()
   year!: number;
 
-  @ApiPropertyOptional({ example: 1 })
+  @ApiPropertyOptional({
+    description:
+      'Links to a mock exam (Exam). If omitted, the question is in the general bank only.',
+  })
   @IsOptional()
-  @IsInt()
-  day?: number;
+  @IsUUID()
+  mockExamId?: string;
 
-  @ApiPropertyOptional({ enum: Language, example: 'ENGLISH' })
+  @ApiPropertyOptional({ example: 'ENEM' })
   @IsOptional()
-  @IsEnum(Language)
-  language?: Language;
+  @IsString()
+  bank?: string;
 
-  @ApiProperty({ enum: Origin, example: 'ORIGINAL' })
-  @IsEnum(Origin)
-  origin!: Origin;
-
-  @ApiProperty({ type: [AlternativeDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @ArrayMinSize(5)
-  @ArrayMaxSize(5)
-  @Type(() => AlternativeDto)
-  alternatives!: AlternativeDto[];
+  @ApiPropertyOptional({
+    description: 'Curriculum path id. If omitted, the first path by schedule order is used.',
+  })
+  @IsOptional()
+  @IsUUID()
+  pathId?: string;
 }

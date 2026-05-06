@@ -1,38 +1,55 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsInt, IsUUID, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsUUID, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Origin } from '@prisma/client';
 
 export class QueryQuestionsDto {
-  @ApiPropertyOptional({ example: 'uuid-path-id' })
-  @IsOptional()
-  @IsUUID()
-  path_id?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-exam-id' })
-  @IsOptional()
-  @IsUUID()
-  exam_id?: string;
-
-  @ApiPropertyOptional({ enum: Origin })
+  @ApiPropertyOptional({
+    description: 'Filter by discipline (case-insensitive substring match)',
+  })
   @IsOptional()
   @IsString()
-  origin?: Origin;
+  discipline?: string;
 
-  @ApiPropertyOptional({ example: 2018 })
+  @ApiPropertyOptional({
+    description: 'Filter by topic/content (case-insensitive substring match)',
+  })
+  @IsOptional()
+  @IsString()
+  content?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by question bank (e.g. ENEM)' })
+  @IsOptional()
+  @IsString()
+  bank?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by year' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   year?: number;
 
-  @ApiPropertyOptional({ example: 0, default: 0 })
+  @ApiPropertyOptional({ description: 'Filter by mock exam id (Exam)' })
+  @IsOptional()
+  @IsUUID()
+  mockExamId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'String "true" or "false" to filter by enabled; omit to return both active and soft-deleted',
+    enum: ['true', 'false'],
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  enable?: 'true' | 'false';
+
+  @ApiPropertyOptional({ example: 0, default: 0, description: 'Page index (0-based)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   page?: number = 0;
 
-  @ApiPropertyOptional({ example: 20, default: 20 })
+  @ApiPropertyOptional({ example: 20, default: 20, description: 'Page size' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

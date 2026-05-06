@@ -1,7 +1,9 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Origin } from '@prisma/client';
 import { AdminQuestionsRepository } from './admin-questions.repository';
 import { AdminQuestionsService } from './admin-questions.service';
+import { AdminQuestionType } from './dto/create-question.dto';
 
 type RepoMock = jest.Mocked<
   Pick<
@@ -16,20 +18,62 @@ type RepoMock = jest.Mocked<
     | 'findAllExams'
     | 'pathExists'
     | 'examExists'
+    | 'getFallbackPathId'
   >
 >;
+
+function mockAdminQuestion(overrides: Record<string, unknown> = {}) {
+  const alts = ['A', 'B', 'C', 'D', 'E'].map((L, i) => ({
+    id: `alt-${i}`,
+    letter: L,
+    text: L.toLowerCase(),
+    is_correct: L === 'A',
+    question_id: 'qid',
+  }));
+  return {
+    id: 'qid',
+    discipline: 'Mathematics',
+    content: 'Geometria',
+    text: 'Pergunta?',
+    feedback: 'Exp',
+    year: 2024,
+    origin: 'ORIGINAL' as Origin,
+    exam_id: null,
+    bank: null,
+    enable: true,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-02'),
+    path_id: 'path-id',
+    exam_day_id: null,
+    number: null,
+    language: null,
+    image_url: null,
+    alternatives: alts,
+    path: {
+      id: 'path-id',
+      name: 'Path',
+      text: '',
+      icon_url: '',
+      schedule_position: 1,
+      trail_position: 1,
+      subject_id: 'sub',
+    },
+    exam: null,
+    ...overrides,
+  };
+}
 
 describe('AdminQuestionsService', () => {
   let service: AdminQuestionsService;
   let repository: RepoMock;
 
-  const baseAlternatives = [
-    { letter: 'A', text: 'a', is_correct: true },
-    { letter: 'B', text: 'b', is_correct: false },
-    { letter: 'C', text: 'c', is_correct: false },
-    { letter: 'D', text: 'd', is_correct: false },
-    { letter: 'E', text: 'e', is_correct: false },
-  ];
+  const alternativesDto = {
+    A: 'a',
+    B: 'b',
+    C: 'c',
+    D: 'd',
+    E: 'e',
+  };
 
   beforeEach(async () => {
     repository = {
@@ -43,6 +87,7 @@ describe('AdminQuestionsService', () => {
       findAllExams: jest.fn(),
       pathExists: jest.fn(),
       examExists: jest.fn(),
+      getFallbackPathId: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -59,62 +104,93 @@ describe('AdminQuestionsService', () => {
     it('creates question when all validations pass', async () => {
       repository.pathExists.mockResolvedValue(true);
       repository.examExists.mockResolvedValue(true);
-      repository.create.mockResolvedValue({ id: 'qid' } as never);
+      repository.create.mockResolvedValue(mockAdminQuestion() as never);
 
       const result = await service.create({
-        text: 't',
-        feedback: 'f',
+        discipline: 'Mathematics',
+        content: 'Geo',
+        question: 'Q?',
+        alternatives: alternativesDto,
+        correctAnswer: 'A',
+        answerExplanation: 'Exp',
+        type: AdminQuestionType.ORIGINAL,
         year: 2024,
-        origin: 'ORIGINAL',
-        path_id: 'path-id',
-        alternatives: baseAlternatives,
-      } as never);
+        pathId: 'path-id',
+      });
 
-      expect(result).toEqual({ id: 'qid' });
+      expect(result).toMatchObject({
+        discipline: 'Mathematics',
+        question: 'Pergunta?',
+        correctAnswer: 'A',
+      });
       expect(repository.create).toHaveBeenCalled();
     });
 
-    it('throws BadRequestException when path does not exist', async () => {
+    it('uses fallback path when pathId omitted', async () => {
+      repository.getFallbackPathId.mockResolvedValue('fallback-path');
+      repository.create.mockResolvedValue(mockAdminQuestion({ path_id: 'fallback-path' }) as never);
+
+      await service.create({
+        discipline: 'Mathematics',
+        content: 'Geo',
+        question: 'Q?',
+        alternatives: alternativesDto,
+        correctAnswer: 'B',
+        answerExplanation: 'Exp',
+        type: AdminQuestionType.SIMPLIFIED,
+        year: 2024,
+      });
+
+      expect(repository.getFallbackPathId).toHaveBeenCalled();
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ path_id: 'fallback-path', origin: 'EXTERNAL' }),
+      );
+    });
+
+    it('throws BadRequestException when pathId is invalid', async () => {
       repository.pathExists.mockResolvedValue(false);
 
       await expect(
         service.create({
-          text: 't',
-          feedback: 'f',
+          discipline: 'Mathematics',
+          content: 'Geo',
+          question: 'Q?',
+          alternatives: alternativesDto,
+          correctAnswer: 'A',
+          answerExplanation: 'Exp',
+          type: AdminQuestionType.ORIGINAL,
           year: 2024,
-          origin: 'ORIGINAL',
-          path_id: 'path-id',
-          alternatives: baseAlternatives,
-        } as never),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
-
-    it('throws BadRequestException when alternatives are invalid', async () => {
-      repository.pathExists.mockResolvedValue(true);
-
-      const bad = baseAlternatives.map((a) => ({ ...a, is_correct: true }));
-      await expect(
-        service.create({
-          text: 't',
-          feedback: 'f',
-          year: 2024,
-          origin: 'ORIGINAL',
-          path_id: 'path-id',
-          alternatives: bad,
-        } as never),
+          pathId: 'bad-path',
+        }),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
   describe('findAll', () => {
-    it('uses defaults for page/size and applies filters', async () => {
-      repository.findMany.mockResolvedValue({ content: [], totalElements: 0 } as never);
+    it('uses defaults for page/size and does not force enable=true', async () => {
+      repository.findMany.mockResolvedValue({
+        content: [mockAdminQuestion() as never],
+        totalElements: 1,
+      });
 
-      const result = await service.findAll({ path_id: 'p' } as never);
+      const result = await service.findAll({ mockExamId: 'exam-1' } as never);
 
-      expect(result).toEqual({ content: [], page: 0, size: 20, totalElements: 0 });
+      expect(result.totalElements).toBe(1);
       expect(repository.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ enable: true, path_id: 'p' }),
+        expect.objectContaining({ exam_id: 'exam-1' }),
+        0,
+        20,
+      );
+      expect(repository.findMany.mock.calls[0][0]).not.toHaveProperty('enable');
+    });
+
+    it('filters by enable when provided', async () => {
+      repository.findMany.mockResolvedValue({ content: [], totalElements: 0 });
+
+      await service.findAll({} as never, false);
+
+      expect(repository.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ enable: false }),
         0,
         20,
       );
@@ -122,9 +198,9 @@ describe('AdminQuestionsService', () => {
   });
 
   describe('findOne', () => {
-    it('returns the question when found', async () => {
-      repository.findById.mockResolvedValue({ id: 'qid' } as never);
-      await expect(service.findOne('qid')).resolves.toEqual({ id: 'qid' });
+    it('returns mapped question when found', async () => {
+      repository.findById.mockResolvedValue(mockAdminQuestion() as never);
+      await expect(service.findOne('qid')).resolves.toMatchObject({ id: 'qid' });
     });
 
     it('throws NotFoundException when question does not exist', async () => {
@@ -135,8 +211,8 @@ describe('AdminQuestionsService', () => {
 
   describe('remove', () => {
     it('soft-deletes by setting enable=false', async () => {
-      repository.findById.mockResolvedValue({ id: 'qid' } as never);
-      repository.update.mockResolvedValue({ id: 'qid', enable: false } as never);
+      repository.findById.mockResolvedValue(mockAdminQuestion() as never);
+      repository.update.mockResolvedValue(mockAdminQuestion({ enable: false }) as never);
 
       await service.remove('qid');
 
@@ -147,11 +223,12 @@ describe('AdminQuestionsService', () => {
   describe('importCsv', () => {
     it('imports successfully when row is valid', async () => {
       repository.pathExists.mockResolvedValue(true);
-      repository.create.mockResolvedValue({ id: 'qid' } as never);
+      repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.create.mockResolvedValue(mockAdminQuestion() as never);
 
       const csv = [
-        'path_id,text,feedback,year,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer',
-        'p1,Texto,Feedback,2024,ORIGINAL,a,b,c,d,e,C',
+        'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Mat,Geo,Texto?,a,b,c,d,e,A,Exp,ORIGINAL,2024',
       ].join('\n');
 
       const result = await service.importCsv(Buffer.from(csv));
@@ -161,10 +238,25 @@ describe('AdminQuestionsService', () => {
       expect(result.errorCount).toBe(0);
     });
 
-    it('reports errors per row without stopping the import', async () => {
+    it('accepts subject column instead of discipline', async () => {
+      repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.create.mockResolvedValue(mockAdminQuestion() as never);
+
       const csv = [
-        'path_id,text,feedback,year,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer',
-        ',Texto,Feedback,2024,ORIGINAL,a,b,c,d,e,C',
+        'subject,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Mat,Geo,Texto?,a,b,c,d,e,B,Exp,SIMPLIFIED,2024',
+      ].join('\n');
+
+      const result = await service.importCsv(Buffer.from(csv));
+      expect(result.successCount).toBe(1);
+    });
+
+    it('reports errors per row without stopping the import', async () => {
+      repository.getFallbackPathId.mockResolvedValue('p1');
+
+      const csv = [
+        'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        ',Geo,Texto?,a,b,c,d,e,A,Exp,ORIGINAL,2024',
       ].join('\n');
 
       const result = await service.importCsv(Buffer.from(csv));
@@ -176,9 +268,12 @@ describe('AdminQuestionsService', () => {
     });
 
     it('reports error when correct_answer is invalid', async () => {
+      repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.create.mockResolvedValue(mockAdminQuestion() as never);
+
       const csv = [
-        'path_id,text,feedback,year,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer',
-        'p1,Texto,Feedback,2024,ORIGINAL,a,b,c,d,e,Z',
+        'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Mat,Geo,Texto?,a,b,c,d,e,Z,Exp,ORIGINAL,2024',
       ].join('\n');
 
       const result = await service.importCsv(Buffer.from(csv));

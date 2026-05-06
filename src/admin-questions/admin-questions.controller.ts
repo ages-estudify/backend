@@ -56,8 +56,7 @@ export class AdminQuestionsController {
   @ApiOperation({ summary: 'Create a question' })
   @ApiCreatedResponse({ description: 'Question created successfully' })
   async create(@Body() dto: CreateQuestionDto) {
-    const data = await this.service.create(dto);
-    return { success: true, data };
+    return this.service.create(dto);
   }
 
   @Post('import')
@@ -74,37 +73,46 @@ export class AdminQuestionsController {
     },
   })
   @ApiOkResponse({ description: 'CSV import results' })
-  @ApiBadRequestResponse({ description: 'CSV file is required' })
+  @ApiBadRequestResponse({ description: 'CSV file is required or file is not valid CSV' })
   async importCsv(@UploadedFile() file?: Express.Multer.File) {
     if (!file || !file.buffer) {
       throw new BadRequestException('CSV file is required');
     }
-    const data = await this.service.importCsv(file.buffer);
-    return { success: true, data };
+    const mime = (file.mimetype ?? '').toLowerCase();
+    if (
+      mime &&
+      /^(image\/|video\/|audio\/|application\/pdf|application\/zip|application\/x-zip)/i.test(
+        mime,
+      )
+    ) {
+      throw new BadRequestException(
+        'Only CSV uploads are allowed. Do not send images, PDFs, archives, or other binary types.',
+      );
+    }
+    return this.service.importCsv(file.buffer);
   }
 
   @Get('paths')
   @ApiOperation({ summary: 'List all paths with their subjects' })
   @ApiOkResponse({ description: 'List of paths' })
   async findAllPaths() {
-    const data = await this.service.findAllPaths();
-    return { success: true, data };
+    return this.service.findAllPaths();
   }
 
   @Get('exams')
-  @ApiOperation({ summary: 'List all exams' })
+  @ApiOperation({ summary: 'List all mock exams' })
   @ApiOkResponse({ description: 'List of exams' })
   async findAllExams() {
-    const data = await this.service.findAllExams();
-    return { success: true, data };
+    return this.service.findAllExams();
   }
 
   @Get()
   @ApiOperation({ summary: 'List questions with pagination and filters' })
   @ApiOkResponse({ description: 'Paginated list of questions' })
   async findAll(@Query() query: QueryQuestionsDto) {
-    const data = await this.service.findAll(query);
-    return { success: true, data };
+    const enableFilter =
+      query.enable === undefined ? undefined : query.enable === 'true';
+    return this.service.findAll(query, enableFilter);
   }
 
   @Get(':id')
@@ -112,8 +120,7 @@ export class AdminQuestionsController {
   @ApiOkResponse({ description: 'Question found' })
   @ApiNotFoundResponse({ description: 'Question not found' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    const data = await this.service.findOne(id);
-    return { success: true, data };
+    return this.service.findOne(id);
   }
 
   @Put(':id')
@@ -121,13 +128,12 @@ export class AdminQuestionsController {
   @ApiOkResponse({ description: 'Question updated' })
   @ApiNotFoundResponse({ description: 'Question not found' })
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateQuestionDto) {
-    const data = await this.service.update(id, dto);
-    return { success: true, data };
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a question (soft delete)' })
+  @ApiOperation({ summary: 'Delete a question (soft delete, enable=false)' })
   @ApiNotFoundResponse({ description: 'Question not found' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.service.remove(id);

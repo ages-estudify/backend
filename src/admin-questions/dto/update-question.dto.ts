@@ -5,102 +5,82 @@ import {
   IsUUID,
   IsOptional,
   IsEnum,
-  IsArray,
   ValidateNested,
-  ArrayMinSize,
-  ArrayMaxSize,
-  IsBoolean,
   MaxLength,
   MinLength,
-  ValidateIf,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Language, Origin } from '@prisma/client';
+import { AdminQuestionType, AlternativesObjectDto } from './create-question.dto';
 
-class UpdateAlternativeDto {
-  @ApiPropertyOptional({ example: 'A' })
+export class UpdateQuestionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  discipline?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  content?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  question?: string;
+
+  @ApiPropertyOptional({ type: AlternativesObjectDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AlternativesObjectDto)
+  alternatives?: AlternativesObjectDto;
+
+  @ApiPropertyOptional({ example: 'B' })
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(1)
-  letter!: string;
+  correctAnswer?: string;
 
-  @ApiPropertyOptional({ example: 'Option text' })
-  @IsString()
-  @MinLength(1)
-  text!: string;
-
-  @ApiPropertyOptional({ example: false })
-  @IsBoolean()
-  is_correct!: boolean;
-}
-
-export class UpdateQuestionDto {
-  @ApiPropertyOptional({ example: 'uuid-path-id' })
-  @IsOptional()
-  @IsUUID()
-  path_id?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-exam-id' })
-  @IsOptional()
-  @IsUUID()
-  exam_id?: string;
-
-  @ApiPropertyOptional({ example: 'Quanto é 2+2?' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MinLength(1)
-  text?: string;
+  answerExplanation?: string;
 
-  @ApiPropertyOptional({ example: 'Soma básica.' })
+  @ApiPropertyOptional({ enum: AdminQuestionType })
   @IsOptional()
-  @IsString()
-  @MinLength(1)
-  feedback?: string;
+  @IsEnum(AdminQuestionType)
+  type?: AdminQuestionType;
 
-  @ApiPropertyOptional({ example: 'https://image.url' })
-  @IsOptional()
-  @IsString()
-  image?: string | null;
-
-  @ApiPropertyOptional({ example: 1, nullable: true })
-  @IsOptional()
-  @ValidateIf((_, value) => value !== null)
-  @IsInt()
-  number?: number | null;
-
-  @ApiPropertyOptional({ example: 2018 })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
   year?: number;
 
-  @ApiPropertyOptional({ example: 1, nullable: true })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Mock exam id, or null to remove association.',
+  })
   @IsOptional()
-  @ValidateIf((_, value) => value !== null)
-  @IsInt()
-  day?: number | null;
+  @IsUUID()
+  mockExamId?: string | null;
 
-  @ApiPropertyOptional({ enum: Language, nullable: true, example: null })
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
-  @ValidateIf((_, value) => value !== null)
-  @IsEnum(Language)
-  language?: Language | null;
+  @IsString()
+  bank?: string | null;
 
-  @ApiPropertyOptional({ enum: Origin, example: 'ORIGINAL' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(Origin)
-  origin?: Origin;
+  @IsUUID()
+  pathId?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Enable/disable question' })
+  @ApiPropertyOptional({ description: 'Soft-delete / re-enable flag' })
   @IsOptional()
   @IsBoolean()
   enable?: boolean;
-
-  @ApiPropertyOptional({ type: [UpdateAlternativeDto] })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @ArrayMinSize(5)
-  @ArrayMaxSize(5)
-  @Type(() => UpdateAlternativeDto)
-  alternatives?: UpdateAlternativeDto[];
 }

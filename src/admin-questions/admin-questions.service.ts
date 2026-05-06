@@ -1,8 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Language, Origin, Prisma } from '@prisma/client';
+import { Origin, Prisma } from '@prisma/client';
 import { parse } from 'csv-parse/sync';
-import { AdminQuestionsRepository } from './admin-questions.repository';
-import { CreateQuestionDto } from './dto/create-question.dto';
+import {
+  AdminQuestionsRepository,
+  CreateQuestionPersistenceInput,
+} from './admin-questions.repository';
+import {
+  AdminQuestionType,
+  AlternativesObjectDto,
+  CreateQuestionDto,
+} from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
 
@@ -13,95 +20,164 @@ export class AdminQuestionsService {
   constructor(private readonly repository: AdminQuestionsRepository) {}
 
   async create(dto: CreateQuestionDto) {
-    await this.validateRelations(dto.path_id, dto.exam_id);
-    this.validateAlternatives(dto.alternatives);
+    const letter = dto.correctAnswer.trim().toUpperCase();
+    if (!VALID_LETTERS.includes(letter)) {
+      throw new BadRequestException('correctAnswer must be A, B, C, D or E');
+    }
 
-    return this.repository.create(dto);
+    const alternatives = this.alternativesObjectToPersistence(dto.alternatives, letter);
+    this.validateAlternativesArray(alternatives);
+
+    const pathId = await this.resolvePathId(dto.pathId);
+    await this.validateExam(dto.mockExamId);
+
+    const persistence: CreateQuestionPersistenceInput = {
+      discipline: dto.discipline,
+      content: dto.content,
+      bank: dto.bank ?? null,
+      text: dto.question,
+      feedback: dto.answerExplanation,
+      year: dto.year,
+      origin: this.adminTypeToOrigin(dto.type),
+      path_id: pathId,
+      exam_id: dto.mockExamId ?? null,
+      alternatives,
+    };
+
+    const created = await this.repository.create(persistence);
+    if (!created) {
+      throw new BadRequestException('Failed to create question');
+    }
+    return this.toAdminResponse(created);
   }
 
-  async findAll(query: QueryQuestionsDto) {
+  async findAll(query: QueryQuestionsDto, enable?: boolean) {
     const page = query.page ?? 0;
     const size = query.size ?? 20;
 
-    const where: Prisma.QuestionWhereInput = { enable: true };
-    if (query.path_id) where.path_id = query.path_id;
-    if (query.exam_id) where.exam_id = query.exam_id;
-    if (query.origin) where.origin = query.origin;
-    if (query.year) where.year = query.year;
+    const where: Prisma.QuestionWhereInput = {};
+    if (query.discipline) {
+      where.discipline = { contains: query.discipline, mode: 'insensitive' };
+    }
+    if (query.content) {
+      where.content = { contains: query.content, mode: 'insensitive' };
+    }
+    if (query.bank) {
+      where.bank = { equals: query.bank, mode: 'insensitive' };
+    }
+    if (query.year !== undefined) {
+      where.year = query.year;
+    }
+    if (query.mockExamId) {
+      where.exam_id = query.mockExamId;
+    }
+    if (enable !== undefined) {
+      where.enable = enable;
+    }
 
     const { content, totalElements } = await this.repository.findMany(where, page * size, size);
 
-    return { content, page, size, totalElements };
+    return {
+      content: content.map((q) => this.toAdminResponse(q)),
+      page,
+      size,
+      totalElements,
+    };
   }
 
   async findOne(id: string) {
     const question = await this.repository.findById(id);
     if (!question) throw new NotFoundException('Question not found');
-    return question;
+    return this.toAdminResponse(question);
   }
 
   async update(id: string, dto: UpdateQuestionDto) {
-    await this.findOne(id);
+    await this.findOneRaw(id);
 
-    if (dto.path_id) {
-      const pathExists = await this.repository.pathExists(dto.path_id);
+    if (dto.pathId) {
+      const pathExists = await this.repository.pathExists(dto.pathId);
       if (!pathExists) throw new BadRequestException('Path not found');
     }
-    if (dto.exam_id) {
-      const examExists = await this.repository.examExists(dto.exam_id);
+
+    if (dto.mockExamId && dto.mockExamId.length > 0) {
+      const examExists = await this.repository.examExists(dto.mockExamId);
       if (!examExists) throw new BadRequestException('Exam not found');
+    }
+
+    if (dto.alternatives != null && dto.correctAnswer == null) {
+      throw new BadRequestException('correctAnswer is required when alternatives are provided');
     }
 
     const updateData = this.buildUpdateData(dto);
 
-    if (dto.alternatives) {
-      this.validateAlternatives(dto.alternatives);
+    if (dto.alternatives && dto.correctAnswer) {
+      const letter = dto.correctAnswer.trim().toUpperCase();
+      if (!VALID_LETTERS.includes(letter)) {
+        throw new BadRequestException('correctAnswer must be A, B, C, D or E');
+      }
+      const alts = this.alternativesObjectToPersistence(dto.alternatives, letter);
+      this.validateAlternativesArray(alts);
       await this.repository.deleteAlternatives(id);
-      for (const alt of dto.alternatives) {
+      for (const alt of alts) {
         await this.repository.createAlternative({
           letter: alt.letter,
           text: alt.text,
           is_correct: alt.is_correct,
-          question: { connect: { id } },
+          question: { connect: { id: id } },
         });
       }
     }
 
-    return this.repository.update(id, updateData);
+    const updated = await this.repository.update(id, updateData);
+    return this.toAdminResponse(updated);
   }
 
   async remove(id: string) {
-    await this.findOne(id);
-    return this.repository.update(id, { enable: false });
+    await this.findOneRaw(id);
+    await this.repository.update(id, { enable: false });
   }
 
   async importCsv(buffer: Buffer) {
-    const records = parse(buffer, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      relax_quotes: true,
-    }); // <-- Adicione este "as"
+    let records: Record<string, string>[];
+    try {
+      records = parse(buffer, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        relax_quotes: true,
+      }) as Record<string, string>[];
+    } catch {
+      throw new BadRequestException(
+        'The file could not be read as CSV. Upload a UTF-8 file with comma-separated values and a header row.',
+      );
+    }
+
+    if (!Array.isArray(records)) {
+      throw new BadRequestException('Invalid CSV structure.');
+    }
 
     const results: { row: number; success: boolean; error?: string; id?: string }[] = [];
 
     for (let i = 0; i < records.length; i++) {
-      const row = records[i] as Record<string, string>;
+      const raw = records[i] as Record<string, string>;
+      const row = this.normalizeCsvRecord(raw);
       try {
         this.validateCsvRow(row, i + 2);
 
-        const pathExists = await this.repository.pathExists(row['path_id']);
-        if (!pathExists) throw new Error(`Path '${row['path_id']}' not found`);
-
-        if (row['exam_id']) {
-          const examExists = await this.repository.examExists(row['exam_id']);
-          if (!examExists) throw new Error(`Exam '${row['exam_id']}' not found`);
+        const pathId = await this.resolvePathId(row['path_id'] || undefined);
+        const examId = row['mock_exam_id']?.trim() || undefined;
+        if (examId) {
+          const examExists = await this.repository.examExists(examId);
+          if (!examExists) throw new Error(`Exam '${examId}' not found`);
         }
 
-        const dto = this.csvRowToDto(row);
-        const question = await this.repository.create(dto);
+        const persistence = this.csvRowToPersistence(row, pathId);
+        const question = await this.repository.create(persistence);
+        if (!question) {
+          throw new Error('Failed to create question');
+        }
 
-        results.push({ row: i + 2, success: true, id: question!.id });
+        results.push({ row: i + 2, success: true, id: question.id });
       } catch (err) {
         results.push({
           row: i + 2,
@@ -125,57 +201,141 @@ export class AdminQuestionsService {
     return this.repository.findAllExams();
   }
 
-  private buildUpdateData(dto: UpdateQuestionDto): Prisma.QuestionUpdateInput {
-    const updateData: Prisma.QuestionUpdateInput = {};
-    if (dto.text !== undefined) updateData.text = dto.text;
-    if (dto.feedback !== undefined) updateData.feedback = dto.feedback;
-    if (dto.image !== undefined) updateData.image = dto.image;
-    if (dto.number !== undefined) updateData.number = dto.number;
-    if (dto.year !== undefined) updateData.year = dto.year;
-    if (dto.day !== undefined) updateData.day = dto.day;
-    if (dto.language !== undefined) updateData.language = dto.language;
-    if (dto.origin !== undefined) updateData.origin = dto.origin;
-    if (dto.enable !== undefined) updateData.enable = dto.enable;
-    if (dto.path_id) updateData.path = { connect: { id: dto.path_id } };
-    if (dto.exam_id) updateData.exam = { connect: { id: dto.exam_id } };
-    return updateData;
+  private adminTypeToOrigin(type: AdminQuestionType): Origin {
+    return type === AdminQuestionType.SIMPLIFIED ? 'EXTERNAL' : 'ORIGINAL';
   }
 
-  private csvRowToDto(row: Record<string, string>): CreateQuestionDto {
-    const correctAnswer = row['correct_answer'].toUpperCase();
+  private originToAdminType(origin: Origin): 'SIMPLIFIED' | 'ORIGINAL' {
+    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
+  }
+
+  private toAdminResponse(
+    q: NonNullable<Awaited<ReturnType<AdminQuestionsRepository['findById']>>>,
+  ): Record<string, unknown> {
+    const byLetter = Object.fromEntries(
+      q.alternatives.map((a) => [a.letter.toUpperCase(), a.text]),
+    ) as Record<'A' | 'B' | 'C' | 'D' | 'E', string>;
+    const correctAnswer = q.alternatives.find((a) => a.is_correct)?.letter.toUpperCase() ?? '';
 
     return {
-      path_id: row['path_id'],
-      exam_id: row['exam_id'] || undefined,
-      text: row['text'],
-      feedback: row['feedback'],
-      number: row['number'] ? parseInt(row['number'], 10) : undefined,
+      id: q.id,
+      discipline: q.discipline,
+      content: q.content,
+      question: q.text,
+      alternatives: {
+        A: byLetter.A,
+        B: byLetter.B,
+        C: byLetter.C,
+        D: byLetter.D,
+        E: byLetter.E,
+      },
+      correctAnswer,
+      answerExplanation: q.feedback,
+      type: this.originToAdminType(q.origin),
+      year: q.year,
+      mockExamId: q.exam_id,
+      bank: q.bank,
+      enable: q.enable,
+      createdAt: q.createdAt,
+      updatedAt: q.updatedAt,
+    };
+  }
+
+  private async findOneRaw(id: string) {
+    const question = await this.repository.findById(id);
+    if (!question) throw new NotFoundException('Question not found');
+    return question;
+  }
+
+  private buildUpdateData(dto: UpdateQuestionDto): Prisma.QuestionUpdateInput {
+    const u: Prisma.QuestionUpdateInput = {};
+    if (dto.discipline !== undefined) u.discipline = dto.discipline;
+    if (dto.content !== undefined) u.content = dto.content;
+    if (dto.bank !== undefined) u.bank = dto.bank;
+    if (dto.question !== undefined) u.text = dto.question;
+    if (dto.answerExplanation !== undefined) u.feedback = dto.answerExplanation;
+    if (dto.year !== undefined) u.year = dto.year;
+    if (dto.type !== undefined) u.origin = this.adminTypeToOrigin(dto.type);
+    if (dto.enable !== undefined) u.enable = dto.enable;
+    if (dto.pathId) u.path = { connect: { id: dto.pathId } };
+
+    if (dto.mockExamId === null) {
+      u.exam = { disconnect: true };
+    } else if (dto.mockExamId) {
+      u.exam = { connect: { id: dto.mockExamId } };
+    }
+
+    return u;
+  }
+
+  private alternativesObjectToPersistence(
+    alt: AlternativesObjectDto,
+    correctLetter: string,
+  ): { letter: string; text: string; is_correct: boolean }[] {
+    return VALID_LETTERS.map((L) => ({
+      letter: L,
+      text: alt[L as keyof AlternativesObjectDto],
+      is_correct: L === correctLetter,
+    }));
+  }
+
+  private csvRowToPersistence(
+    row: Record<string, string>,
+    pathId: string,
+  ): CreateQuestionPersistenceInput {
+    const discipline = row['discipline'] || row['subject'] || '';
+    const correctAnswer = row['correct_answer'].toUpperCase();
+    const type = this.parseAdminType(row['type']);
+
+    return {
+      discipline,
+      content: row['content'],
+      bank: row['bank']?.trim() || null,
+      text: row['question'],
+      feedback: row['answer_explanation'],
       year: parseInt(row['year'], 10),
-      day: row['day'] ? parseInt(row['day'], 10) : undefined,
-      language: row['language'] ? (row['language'] as Language) : undefined,
-      origin: row['origin'] as Origin,
-      alternatives: VALID_LETTERS.map((letter) => ({
-        letter,
-        text: row[`alternative_${letter.toLowerCase()}`],
-        is_correct: letter === correctAnswer,
+      origin: this.adminTypeToOrigin(type),
+      path_id: pathId,
+      exam_id: row['mock_exam_id']?.trim() || null,
+      alternatives: VALID_LETTERS.map((L) => ({
+        letter: L,
+        text: row[`alternative_${L.toLowerCase()}`],
+        is_correct: L === correctAnswer,
       })),
     };
   }
 
+  private normalizeCsvRecord(row: Record<string, string>): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(row)) {
+      const key = k
+        .replace(/^\ufeff/g, '')
+        .trim()
+        .toLowerCase();
+      out[key] = String(v ?? '').trim();
+    }
+    return out;
+  }
+
   private validateCsvRow(row: Record<string, string>, rowNumber: number) {
+    const disc = row['discipline'] || row['subject'];
     const required = [
-      'path_id',
-      'text',
-      'feedback',
-      'year',
-      'origin',
+      'content',
+      'question',
       'alternative_a',
       'alternative_b',
       'alternative_c',
       'alternative_d',
       'alternative_e',
       'correct_answer',
+      'answer_explanation',
+      'type',
+      'year',
     ];
+
+    if (!disc?.trim()) {
+      throw new Error(`Row ${rowNumber}: missing required column 'discipline' or 'subject'`);
+    }
 
     for (const col of required) {
       if (!row[col]?.trim()) {
@@ -190,21 +350,7 @@ export class AdminQuestionsService {
       );
     }
 
-    const origin = row['origin'].toUpperCase();
-    if (!['ORIGINAL', 'EXTERNAL'].includes(origin)) {
-      throw new Error(
-        `Row ${rowNumber}: origin must be ORIGINAL or EXTERNAL, got '${row['origin']}'`,
-      );
-    }
-
-    if (row['language']?.trim()) {
-      const lang = row['language'].toUpperCase();
-      if (!['ENGLISH', 'SPANISH'].includes(lang)) {
-        throw new Error(
-          `Row ${rowNumber}: language must be ENGLISH or SPANISH, got '${row['language']}'`,
-        );
-      }
-    }
+    this.parseAdminType(row['type'], rowNumber);
 
     const year = parseInt(row['year'], 10);
     if (isNaN(year)) {
@@ -212,17 +358,40 @@ export class AdminQuestionsService {
     }
   }
 
-  private async validateRelations(pathId: string, examId?: string) {
-    const pathExists = await this.repository.pathExists(pathId);
-    if (!pathExists) throw new BadRequestException('Path not found');
-
-    if (examId) {
-      const examExists = await this.repository.examExists(examId);
-      if (!examExists) throw new BadRequestException('Exam not found');
+  private parseAdminType(raw: string, rowNumber?: number): AdminQuestionType {
+    const t = raw.trim().toUpperCase();
+    if (t === 'SIMPLIFIED') {
+      return AdminQuestionType.SIMPLIFIED;
     }
+    if (t === 'ORIGINAL') {
+      return AdminQuestionType.ORIGINAL;
+    }
+    const prefix = rowNumber != null ? `Row ${rowNumber}: ` : '';
+    throw new Error(`${prefix}type must be SIMPLIFIED or ORIGINAL, got '${raw}'`);
   }
 
-  private validateAlternatives(alternatives: { letter: string; is_correct: boolean }[]) {
+  private async resolvePathId(pathId?: string): Promise<string> {
+    if (pathId) {
+      const exists = await this.repository.pathExists(pathId);
+      if (!exists) throw new BadRequestException('Path not found');
+      return pathId;
+    }
+    const fallback = await this.repository.getFallbackPathId();
+    if (!fallback) {
+      throw new BadRequestException(
+        'No path available; create a path or send pathId in the request',
+      );
+    }
+    return fallback;
+  }
+
+  private async validateExam(mockExamId?: string) {
+    if (!mockExamId) return;
+    const examExists = await this.repository.examExists(mockExamId);
+    if (!examExists) throw new BadRequestException('Exam not found');
+  }
+
+  private validateAlternativesArray(alternatives: { letter: string; is_correct: boolean }[]) {
     const letters = alternatives.map((a) => a.letter.toUpperCase()).sort();
     if (letters.join('') !== 'ABCDE') {
       throw new BadRequestException('Alternatives must have exactly letters A, B, C, D, E');
