@@ -102,11 +102,12 @@ export class ExamsRepository {
         image_url: true,
         exam_days: {
           select: {
+            id: true,
             day: true,
             _count: {
               select: { questions: true },
             },
-            questions: true,
+            questions: { select: { language: true } },
           },
         },
       },
