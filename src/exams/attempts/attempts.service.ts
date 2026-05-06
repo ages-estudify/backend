@@ -53,8 +53,8 @@ export class AttemptsService {
     return { success: true, data: { attempt: updatedAttempt } };
   }
 
-  async findLast(userId: string, examId: string) {
-    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId);
+  async findLast(userId: string, examId: string, examDayId?: string) {
+    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId, examDayId);
 
     if (!attempt) throw new NotFoundException('No active attempt found');
 
@@ -81,7 +81,7 @@ export class AttemptsService {
     };
   }
 
-  async finish(id: string, userId: string) {
+  async finish(id: string, userId: string, examDayId?: string) {
     const attempt = await this.attemptsRepository.findAttemptForFinish(id, userId);
 
     if (!attempt) throw new NotFoundException('Attempt not found');
@@ -94,10 +94,23 @@ export class AttemptsService {
       score: totalScore.score,
     });
 
+    let attemptDayId: string | undefined;
+
+    if (examDayId) {
+      const attemptDay = await this.attemptsRepository.findAttemptDay(id, examDayId);
+      if (attemptDay) {
+        if (!attemptDay.end_time) {
+          await this.attemptsRepository.finishAttemptDay(attemptDay.id);
+        }
+        attemptDayId = attemptDay.id;
+      }
+    }
+
     return {
       success: true,
       data: {
         attemptId: updated.id,
+        attemptDayId,
         examId: updated.exam_id,
         timeSpentSeconds: updated.time_spent_seconds,
         endTime: updated.end_time,

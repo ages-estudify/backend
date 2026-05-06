@@ -113,6 +113,11 @@ export class AttemptExamsController {
   @ApiOperation({
     summary: 'Get current active attempt for a specific exam',
   })
+  @ApiQuery({
+    name: 'examDayId',
+    required: false,
+    description: 'When provided, filters returned questions to that exam day only',
+  })
   @ApiResponse({
     status: 200,
     description: 'Return attempt or null',
@@ -120,9 +125,11 @@ export class AttemptExamsController {
   @Get(':examId/attempts/latest')
   async findLast(
     @Param('examId', new ParseUUIDPipe({ version: '4' })) examId: string,
+    @Query('examDayId', new ParseUUIDPipe({ version: '4', optional: true }))
+    examDayId: string | undefined,
     @CurrentUser() user: JwtAuthUser,
   ) {
-    return await this.attemptsService.findLast(user.userId, examId);
+    return await this.attemptsService.findLast(user.userId, examId, examDayId);
   }
 
   @ApiResponse({
@@ -146,6 +153,6 @@ export class AttemptExamsController {
     if (body.timeSpentSeconds !== undefined) {
       await this.attemptsService.update(attemptId, body, user.userId);
     }
-    return await this.attemptsService.finish(attemptId, user.userId);
+    return await this.attemptsService.finish(attemptId, user.userId, body.examDayId);
   }
 }
