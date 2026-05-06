@@ -34,6 +34,18 @@ export const ATTEMPT_RESULT_GRID_INCLUDE = {
       exam_day: {
         select: {
           day: true,
+          questions: {
+            select: {
+              id: true,
+              number: true,
+              alternatives: {
+                select: {
+                  letter: true,
+                  is_correct: true,
+                },
+              },
+            },
+          },
         },
       },
       answers: {

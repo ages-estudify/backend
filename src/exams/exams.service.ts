@@ -319,12 +319,46 @@ export class ExamsService {
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId, userId);
 
-    const answers = this.getOrderedAnswers(attempt.attempt_days as AttemptDayWithAnswers[]);
+    const answerByQuestionId = new Map<string, AnswerWithRelations>();
+    for (const ad of attempt.attempt_days as any[]) {
+      for (const ans of ad.answers ?? []) {
+        answerByQuestionId.set(ans.question_id, ans as AnswerWithRelations);
+      }
+    }
 
-    const gridWithoutFilter = answers.map(({ answer }, index) => ({
-      questionId: answer.question_id,
+    const allQuestions: Array<{
+      examDayDay: number;
+      question: {
+        id: string;
+        number: number | null;
+        alternatives: { letter: string; is_correct: boolean }[];
+      };
+      answer?: AnswerWithRelations;
+    }> = [];
+
+    for (const ad of attempt.attempt_days as any[]) {
+      const dayNum = ad.exam_day.day;
+      for (const q of ad.exam_day.questions ?? []) {
+        allQuestions.push({
+          examDayDay: dayNum,
+          question: q,
+          answer: answerByQuestionId.get(q.id),
+        });
+      }
+    }
+
+    allQuestions.sort((a, b) => {
+      if (a.examDayDay !== b.examDayDay) return a.examDayDay - b.examDayDay;
+      const an = a.question.number ?? Number.MAX_SAFE_INTEGER;
+      const bn = b.question.number ?? Number.MAX_SAFE_INTEGER;
+      if (an !== bn) return an - bn;
+      return a.question.id.localeCompare(b.question.id);
+    });
+
+    const gridWithoutFilter = allQuestions.map((item, index) => ({
+      questionId: item.question.id,
       number: index + 1,
-      status: this.getQuestionStatus(answer),
+      status: this.getQuestionStatus(item.answer, item.question.alternatives),
     }));
 
     const grid = this.filterGridByStatus(gridWithoutFilter, query?.statusFilter);
@@ -399,14 +433,15 @@ export class ExamsService {
     return grid.filter((item) => statusFilter.includes(item.status));
   }
 
-  private getQuestionStatus(answer: AnswerWithRelations): ResultGridItemStatus {
-    if (!answer.alternative) {
+  private getQuestionStatus(
+    answer: AnswerWithRelations | undefined,
+    alternatives: { letter: string; is_correct: boolean }[],
+  ): ResultGridItemStatus {
+    if (!answer || !answer.alternative) {
       return 'BLANK';
     }
 
-    const correctAlternative = answer.question.alternatives.find(
-      (alternative) => alternative.is_correct,
-    );
+    const correctAlternative = alternatives.find((alternative) => alternative.is_correct);
 
     if (answer.alternative.letter === correctAlternative?.letter) {
       return 'CORRECT';

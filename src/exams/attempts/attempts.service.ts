@@ -100,7 +100,7 @@ export class AttemptsService {
       const attemptDay = await this.attemptsRepository.findAttemptDay(id, examDayId);
       if (attemptDay) {
         if (!attemptDay.end_time) {
-          await this.attemptsRepository.finishAttemptDay(attemptDay.id);
+          await this.attemptsRepository.finishAttemptDay(attemptDay.id, updated.time_spent_seconds);
         }
         attemptDayId = attemptDay.id;
       }
