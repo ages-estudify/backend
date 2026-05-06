@@ -81,9 +81,7 @@ export class AdminQuestionsController {
     const mime = (file.mimetype ?? '').toLowerCase();
     if (
       mime &&
-      /^(image\/|video\/|audio\/|application\/pdf|application\/zip|application\/x-zip)/i.test(
-        mime,
-      )
+      /^(image\/|video\/|audio\/|application\/pdf|application\/zip|application\/x-zip)/i.test(mime)
     ) {
       throw new BadRequestException(
         'Only CSV uploads are allowed. Do not send images, PDFs, archives, or other binary types.',
@@ -110,8 +108,7 @@ export class AdminQuestionsController {
   @ApiOperation({ summary: 'List questions with pagination and filters' })
   @ApiOkResponse({ description: 'Paginated list of questions' })
   async findAll(@Query() query: QueryQuestionsDto) {
-    const enableFilter =
-      query.enable === undefined ? undefined : query.enable === 'true';
+    const enableFilter = query.enable === undefined ? undefined : query.enable === 'true';
     return this.service.findAll(query, enableFilter);
   }
 

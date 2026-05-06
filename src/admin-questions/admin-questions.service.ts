@@ -145,7 +145,7 @@ export class AdminQuestionsService {
         skip_empty_lines: true,
         trim: true,
         relax_quotes: true,
-      }) as Record<string, string>[];
+      });
     } catch {
       throw new BadRequestException(
         'The file could not be read as CSV. Upload a UTF-8 file with comma-separated values and a header row.',
@@ -159,7 +159,7 @@ export class AdminQuestionsService {
     const results: { row: number; success: boolean; error?: string; id?: string }[] = [];
 
     for (let i = 0; i < records.length; i++) {
-      const raw = records[i] as Record<string, string>;
+      const raw = records[i];
       const row = this.normalizeCsvRecord(raw);
       try {
         this.validateCsvRow(row, i + 2);
