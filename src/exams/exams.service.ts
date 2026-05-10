@@ -48,13 +48,6 @@ type AnswerWithRelations = {
   } | null;
 };
 
-type AttemptDayWithAnswers = {
-  exam_day: {
-    day: number;
-  };
-  answers: AnswerWithRelations[];
-};
-
 @Injectable()
 export class ExamsService {
   private readonly maxFileSize = 10 * 1024 * 1024;
@@ -277,7 +270,7 @@ export class ExamsService {
   }
 
   async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const exams = await this.examsRepository.findAllPublishedExams();
+    const exams = await this.examsRepository.findAllExams();
     const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));
@@ -385,45 +378,6 @@ export class ExamsService {
     }
 
     return attempt;
-  }
-
-  private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
-    return attemptDays
-      .flatMap((attemptDay) =>
-        attemptDay.answers.map((answer) => ({
-          examDayDay: attemptDay.exam_day.day,
-          answer,
-        })),
-      )
-      .sort((a, b) => this.sortAnswers(a, b));
-  }
-
-  private sortAnswers(
-    a: { examDayDay: number; answer: AnswerWithRelations },
-    b: { examDayDay: number; answer: AnswerWithRelations },
-  ) {
-    const dayDifference = a.examDayDay - b.examDayDay;
-
-    if (dayDifference !== 0) {
-      return dayDifference;
-    }
-
-    const questionNumberA = a.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-    const questionNumberB = b.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-
-    const questionDifference = questionNumberA - questionNumberB;
-
-    if (questionDifference !== 0) {
-      return questionDifference;
-    }
-
-    const dateDifference = a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
-
-    if (dateDifference !== 0) {
-      return dateDifference;
-    }
-
-    return a.answer.question_id.localeCompare(b.answer.question_id);
   }
 
   private filterGridByStatus(

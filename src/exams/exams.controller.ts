@@ -12,6 +12,10 @@
   BadRequestException,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,6 +26,10 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiBody,
+  ApiOkResponse,
+  ApiQuery,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { ExamsService } from './exams.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,12 +38,25 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ListExamsResponseDto, UpdateExamResponseDto } from './dto';
 import type { MulterFile } from '../common/types/multer-file';
+import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsByUser.dto';
+import type { JwtAuthUser } from 'src/auth/security/jwt-auth-user';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ResultGridQueryDto, ResultGridStatusFilter } from './dto/result-grid-query.dto';
+import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+
+type AuthenticatedRequest = Request & {
+  user: {
+    userId?: string;
+    id?: string;
+    sub?: string;
+    user_id?: string;
+  };
+};
 
 @ApiTags('Exams (Admin)')
 @ApiBearerAuth('JWT-auth')
-@Controller('admin/exams')
+@Controller('api/v1/exams')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADM)
 export class ExamsController {
   constructor(private examsService: ExamsService) {}
 
@@ -47,7 +68,8 @@ export class ExamsController {
     return this.examsService.listAllExams();
   }
 
-  @Post('import')
+  @Post('admin/import')
+  @Roles(Role.ADM)
   @ApiOperation({
     summary: 'Import exam from CSV',
     description: 'Uploads a CSV file to create an exam with questions, alternatives and exam days.',
@@ -95,7 +117,8 @@ Rules:
     return this.examsService.importExamFromCsv(file);
   }
 
-  @Put(':id')
+  @Put('admin/:id')
+  @Roles(Role.ADM)
   @ApiOperation({
     summary: 'Update exam',
     description: 'Updates exam data. You can optionally upload an image and/or change status.',
@@ -150,7 +173,8 @@ Rules:
     return this.examsService.updateExam(id, updates);
   }
 
-  @Delete(':id')
+  @Delete('admin/:id')
+  @Roles(Role.ADM)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 204, description: 'Exam deleted (logical soft delete)' })
@@ -159,5 +183,49 @@ Rules:
   @ApiResponse({ status: 404, description: 'Exam not found' })
   async deleteExam(@Param('id') id: string): Promise<void> {
     await this.examsService.deleteExamLogical(id);
+  }
+
+  @Get('by-user')
+  @ApiOkResponse({
+    description: 'Lista de exames do usuário com progresso',
+    type: ExamListingWithAttemptsByUserDto,
+  })
+  async examListingWithAttemptsByUser(
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
+    return this.examsService.findAllWithLastAttemptByUser(user.userId);
+  }
+
+  @Get(':attemptId/resultGrid')
+  @ApiOperation({
+    summary: 'Attempt result grid',
+  })
+  @ApiQuery({
+    name: 'statusFilter',
+    required: false,
+    isArray: true,
+    enum: ResultGridStatusFilter,
+    description: 'Filters questions by status. Repeat the parameter for multiple values.',
+  })
+  @ApiOkResponse({ type: ResultGridSuccessResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid attempt id',
+  })
+  @ApiNotFoundResponse({
+    description: 'Attempt not found',
+    schema: { example: { success: false, message: 'Attempt not found' } },
+  })
+  async resultGrid(
+    @Param('attemptId', new ParseUUIDPipe({ version: '4' })) attemptId: string,
+    @Query() query: ResultGridQueryDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ResultGridSuccessResponseDto> {
+    const userId = req.user.userId ?? req.user.id ?? req.user.sub ?? req.user.user_id;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not found in token');
+    }
+
+    return this.examsService.getResultGrid(attemptId, userId, query);
   }
 }

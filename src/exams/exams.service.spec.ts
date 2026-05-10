@@ -17,7 +17,6 @@ describe('ExamsService', () => {
           provide: ExamsRepository,
           useValue: {
             findAllExams: jest.fn(),
-            findAllPublishedExams: jest.fn(),
             findAllAttemptsByUser: jest.fn(),
             findAttemptResultGridById: jest.fn(),
             findExamById: jest.fn(),
@@ -178,7 +177,7 @@ describe('ExamsService', () => {
 
   describe('findAllWithLastAttemptByUser', () => {
     it('should merge exams with attempts correctly (completed)', async () => {
-      repository.findAllPublishedExams.mockResolvedValue([
+      repository.findAllExams.mockResolvedValue([
         {
           id: '1',
           name: 'Simulado 1',
@@ -191,7 +190,7 @@ describe('ExamsService', () => {
           ],
           totalQuestions: 30,
         },
-      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllPublishedExams']>>);
+      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllExams']>>);
 
       repository.findAllAttemptsByUser.mockResolvedValue([
         {
