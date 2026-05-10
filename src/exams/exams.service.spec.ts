@@ -185,7 +185,10 @@ describe('ExamsService', () => {
           image_url: 'img',
           origin: 'EXTERNAL',
           status: 'DRAFT',
-          exam_days: [{ _count: { questions: 10 } }, { _count: { questions: 20 } }],
+          exam_days: [
+            { id: 'd1', day: 1, _count: { questions: 10 }, questions: [] },
+            { id: 'd2', day: 2, _count: { questions: 20 }, questions: [] },
+          ],
           totalQuestions: 30,
         },
       ] as unknown as Awaited<ReturnType<ExamsRepository['findAllPublishedExams']>>);
