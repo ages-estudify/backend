@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Origin, ExamStatus } from '@prisma/client';
+import { Origin, ExamStatus, Role } from '@prisma/client';
 
 export interface CreateExamData {
   name: string;
@@ -75,9 +75,11 @@ export const ATTEMPT_RESULT_GRID_INCLUDE = {
 export class ExamsRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findAllExams(take?: number, skip?: number) {
+  async findAllExamsByRole(userRole: Role, take?: number, skip?: number) {
+    const where = userRole === Role.ADM ? {} : { status: ExamStatus.PUBLISHED };
+
     const exams = await this.prisma.exam.findMany({
-      where: { status: 'PUBLISHED' },
+      where,
       select: {
         id: true,
         origin: true,

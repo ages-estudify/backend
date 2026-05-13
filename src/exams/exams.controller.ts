@@ -64,8 +64,8 @@ export class ExamsController {
   @ApiResponse({ status: 200, type: ListExamsResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Not ADM' })
-  async listAllExams(): Promise<ListExamsResponseDto> {
-    return this.examsService.listAllExams();
+  async listAllExams(@CurrentUser() viewer: JwtAuthUser): Promise<ListExamsResponseDto> {
+    return this.examsService.listAllExams(viewer.role);
   }
 
   @Post('admin/import')

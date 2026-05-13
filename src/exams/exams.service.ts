@@ -14,6 +14,7 @@ import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsB
 import { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.dto';
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+import { Role } from '@prisma/client';
 
 interface ParsedRow {
   exam_title: string;
@@ -75,8 +76,8 @@ export class ExamsService {
     private prisma: PrismaService,
   ) {}
 
-  async listAllExams(): Promise<ListExamsResponseDto> {
-    const exams = await this.examsRepository.findAllExams();
+  async listAllExams(userRole: Role): Promise<ListExamsResponseDto> {
+    const exams = this.examsRepository.findAllExamsByRole(userRole);
 
     const data: ListExamItemDto[] = await Promise.all(
       exams.map(async (exam) => ({
