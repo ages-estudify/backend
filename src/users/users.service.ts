@@ -5,7 +5,8 @@ import { UserResponse, UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly users: UsersRepository) {}
+
+  constructor(private readonly users: UsersRepository) { }
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -34,4 +35,16 @@ export class UsersService {
     }
     return user.coins ?? 0;
   }
+
+
+  async getStats(userId: string) {
+
+    const questionsStats = await this.users.getQuestionsAnsweredByUser(userId)
+
+    const level = 0
+
+    return { questionsStats, level }
+
+  }
+
 }

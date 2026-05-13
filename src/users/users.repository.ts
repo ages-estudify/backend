@@ -6,7 +6,7 @@ export type UserResponse = Omit<User, 'password'>;
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -51,4 +51,32 @@ export class UsersRepository {
       select: { coins: true },
     });
   }
+
+  async getQuestionsAnsweredByUser(id: string) {
+
+    const correctAnswer = await this.prisma.answer.count({
+      where: {
+        user_id: id,
+        attempt_day_id: null,
+        alternative: {
+          is: {
+            is_correct: true,
+          },
+        },
+      },
+    })
+
+    const total = await this.prisma.answer.count({
+      where: {
+        user_id: id,
+        attempt_day_id: null,
+      },
+    })
+
+    const percentage = ((correctAnswer / Math.max(total, 1)) * 100)
+
+    return { correctAnswer, total, percentage }
+
+  }
+
 }

@@ -26,7 +26,7 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 })
 @Controller({ path: 'users', version: '1' })
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -35,6 +35,15 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('stats')
+  @ApiForbiddenResponse({ description: 'Cannot access another user stats' })
+  async getStats(@CurrentUser() user: JwtAuthUser) {
+
+    const stats = await this.usersService.getStats(user.userId);
+
+    return stats
   }
 
   @Get(':id')
@@ -59,4 +68,7 @@ export class UsersController {
       data: { coins },
     };
   }
+
+
+
 }
