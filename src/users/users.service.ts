@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Role } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
+import { getLevel } from './utils/levels';
 
 @Injectable()
 export class UsersService {
@@ -41,9 +42,12 @@ export class UsersService {
 
     const questionsStats = await this.users.getQuestionsAnsweredByUser(userId)
 
-    const level = 0
+    const level = getLevel(questionsStats.correctAnswer)
+    const starsStats = await this.users.getStarsAndStreakByUser(userId)
 
-    return { questionsStats, level }
+    const lastAttepts = await this.users.getLastAttetpsByUser(userId, 5)
+
+    return { questionsStats, level, starsStats }
 
   }
 

@@ -73,10 +73,52 @@ export class UsersRepository {
       },
     })
 
-    const percentage = ((correctAnswer / Math.max(total, 1)) * 100)
+    const p = ((correctAnswer / Math.max(total, 1)) * 100)
+    const percentage = Number(p.toFixed(1))
+
 
     return { correctAnswer, total, percentage }
 
   }
+
+  async getStarsAndStreakByUser(id: string) {
+
+    const starsStats = await this.prisma.user.findUnique({
+      where: {
+        id: id,
+      }, select: {
+        streak: true,
+        coins: true,
+      }
+    })
+
+    return starsStats
+
+  }
+
+  async getLastAttetpsByUser(id: string, quant: number) {
+    const lastAttempts = await this.prisma.attempt.findMany({
+      where: {
+        user_id: id,
+      },
+      orderBy: {
+        init_time: 'desc',
+      },
+      take: quant, select: {
+        id: true,
+        init_time: true,
+        exam: true,
+        attempt_days: true
+
+      }
+    })
+
+    console.log(lastAttempts)
+
+    return lastAttempts
+  }
+
+
+
 
 }
