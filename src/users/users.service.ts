@@ -45,9 +45,12 @@ export class UsersService {
     const level = getLevel(questionsStats.correctAnswer)
     const starsStats = await this.users.getStarsAndStreakByUser(userId)
 
+    const topics = await this.users.getCompletedTopicsByUser(userId)
+    const subject = await this.users.getSubjectStatsByUser(userId)
+
     const lastAttepts = await this.users.getLastAttetpsByUser(userId, 5)
 
-    return { questionsStats, level, starsStats }
+    return { questionsStats, level, starsStats, topics, subject }
 
   }
 
