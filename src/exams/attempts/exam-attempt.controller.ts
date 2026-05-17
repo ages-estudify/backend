@@ -30,6 +30,8 @@ import { ExamListingWithAttemptsByUserDto } from '../dto/examListingWithAttempts
 import { ResultGridQueryDto, ResultGridStatusFilter } from '../dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from '../dto/result-grid-response.dto';
 import { ExamsService } from '../exams.service';
+import { ExamHistoryResponseDto } from './dto/exam-history-response.dto';
+import { SubscriptionGuard } from '../../auth/guards/subscription.guard';
 
 type AuthenticatedRequest = Request & {
   user: {
@@ -147,5 +149,32 @@ export class AttemptExamsController {
       await this.attemptsService.update(attemptId, body, user.userId);
     }
     return await this.attemptsService.finish(attemptId, user.userId);
+  }
+  @Get(':examId/history')
+  @UseGuards(SubscriptionGuard)
+  @ApiOperation({ summary: 'Get completed attempt history for a specific exam' })
+  @ApiOkResponse({
+    description: 'Exam history with summary and completed attempt days',
+    type: ExamHistoryResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: { example: { message: 'Unauthorized' } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Subscription required',
+    schema: { example: { message: 'Subscription required' } },
+  })
+  @ApiNotFoundResponse({
+    description: 'Exam not found',
+    schema: { example: { message: 'Exam not found' } },
+  })
+  async getExamHistory(
+    @Param('examId', new ParseUUIDPipe({ version: '4' })) examId: string,
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<ExamHistoryResponseDto> {
+    return this.attemptsService.getExamHistory(examId, user.userId);
   }
 }
