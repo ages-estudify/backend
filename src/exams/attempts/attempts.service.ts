@@ -3,6 +3,7 @@ import { UpdateAttemptDto } from '././dto/update-attempt.dto';
 import { AttemptResponseDto } from '././dto/attempt-response.dto';
 import { AttemptsRepository } from './attempts.repository';
 import { Language } from '@prisma/client';
+import { ExamHistoryResponseDto, ExamHistoryItemDto } from './dto/exam-history-response.dto';
 
 @Injectable()
 export class AttemptsService {
@@ -103,6 +104,57 @@ export class AttemptsService {
         endTime: updated.end_time,
         score: totalScore.score,
         ...totalScore.data,
+      },
+    };
+  }
+  async getExamHistory(examId: string, userId: string): Promise<ExamHistoryResponseDto> {
+    const exam = await this.attemptsRepository.findExamById(examId);
+
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+
+    const attemptDays = await this.attemptsRepository.findHistoryByExamAndUser(examId, userId);
+
+    const history: ExamHistoryItemDto[] = attemptDays.map((ad) => {
+      const totalQuestions = ad.exam_day._count.questions;
+      const answeredQuestions = ad.answers.filter((a) => a.alternative_id !== null).length;
+      const correctAnswers = ad.answers.filter((a) => a.alternative?.is_correct === true).length;
+
+      return {
+        attemptDayId: ad.id,
+        day: ad.exam_day.day,
+        totalQuestions,
+        answeredQuestions,
+        correctAnswers,
+        timeSpentSeconds: ad.time_spent_seconds,
+        completedAt: ad.end_time!.toISOString(),
+      };
+    });
+
+    const totalCompleted = history.length;
+
+    let averageScore = 0;
+    if (totalCompleted > 0) {
+      const scoreSum = history.reduce((acc, item) => {
+        if (item.totalQuestions === 0) return acc;
+        return acc + (item.correctAnswers / item.totalQuestions) * 1000;
+      }, 0);
+      averageScore = Math.round(scoreSum / totalCompleted);
+    }
+
+    return {
+      data: {
+        exam: {
+          id: exam.id,
+          name: exam.name,
+          origin: exam.origin,
+        },
+        summary: {
+          averageScore,
+          totalCompleted,
+        },
+        history,
       },
     };
   }
