@@ -1,19 +1,37 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { User } from '@prisma/client';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Role } from '@prisma/client';
+import { JwtAuthUser } from '../auth/security/jwt-auth-user';
+import { UserResponse, UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
+  constructor(private readonly users: UsersRepository) {}
 
-  constructor(private prisma: PrismaService) {}
-
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+  async findAll(): Promise<UserResponse[]> {
+    return this.users.findMany();
   }
 
-  async findOne(id: number): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-    });
+  async findOne(viewer: JwtAuthUser, id: string): Promise<UserResponse> {
+    this.ensureSelfOrAdmin(viewer, id);
+    const user = await this.users.findUniqueById(id);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    return user;
+  }
+
+  private ensureSelfOrAdmin(viewer: JwtAuthUser, targetUserId: string): void {
+    if (viewer.role === Role.ADM || viewer.userId === targetUserId) {
+      return;
+    }
+    throw new ForbiddenException();
+  }
+
+  async getCoins(userId: string): Promise<number> {
+    const user = await this.users.findUniqueById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.coins ?? 0;
   }
 }

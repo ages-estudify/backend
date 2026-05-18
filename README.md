@@ -10,6 +10,10 @@ Este projeto é uma API backend desenvolvida com **NestJS**, utilizando **Postgr
 - PostgreSQL
 - Docker / Docker Compose (apenas para o Postgres)
 - Swagger (documentação da API)
+- Husky (Git hooks)
+- lint-staged (linting em arquivos staged)
+- Prettier (formatação de código)
+- ESLint (linting de código)
 
 ---
 
@@ -43,6 +47,61 @@ backend/
 
 ---
 
+## Git Hooks e Convenções
+
+O projeto utiliza **Husky** para configurar Git hooks que garantem a qualidade do código e padronização dos commits.
+
+### Hooks configurados
+
+- **pre-commit:** Executa `lint-staged` para rodar ESLint e Prettier nos arquivos modificados antes de cada commit.
+- **commit-msg:** Valida o formato da mensagem de commit.
+- **pre-push:** Verifica se o nome da branch segue o padrão definido antes de fazer push.
+
+### Convenção de mensagens de commit
+
+As mensagens de commit devem seguir o formato:
+
+```
+tipo(id_clickup): descrição da mudança
+```
+
+**Exemplos válidos:**
+
+- `feature(86ag34u4q): add suporte a dark mode`
+- `fix(abc123): corrige erro de validação`
+- `chore(123def): atualiza dependências`
+
+**Tipos permitidos:** `feature`, `fix`, `hotfix`, `chore`, `refactor`, `arch`, `docs`, `test`
+
+**Regras:**
+
+- O ID do ClickUp deve estar entre parênteses e ser alfanumérico.
+- Deve haver um espaço após os dois pontos.
+- A descrição deve ter pelo menos 5 caracteres.
+
+### Convenção de nomes de branch
+
+Os nomes de branches devem seguir o padrão:
+
+```
+tipo(id_clickup)/nome-da-branch
+```
+
+**Exemplos válidos:**
+
+- `feature(86ag34u4q)/add-dark-mode`
+- `fix(abc123)/fix-validation-error`
+- `chore(123def)/update-dependencies`
+
+Branches principais: `develop`, `main`
+
+**Regras:**
+
+- O nome deve ser em minúsculas, com hífens separando palavras.
+- Deve começar com o tipo e ID entre parênteses, seguido de barra e nome descritivo.
+
+---
+
 ## API – prefixo e versionamento
 
 - **Prefixo global:** `/api`
@@ -62,67 +121,65 @@ A documentação interativa da API está em:
 
 ---
 
-## Comandos do Prisma
+## Prisma e comandos
 
-O projeto utiliza **Prisma** como ORM. Aqui estão os principais comandos:
+O projeto utiliza **Prisma** como ORM. A configuração fica em `prisma.config.ts` (schema, migrações e seed). O seed é executado via comando em `prisma.config.ts` (`npx ts-node --transpile-only prisma/seed.ts`), o que funciona em qualquer máquina sem depender de permissões no ficheiro.
 
 ### Gerar o cliente Prisma
-Gera o cliente TypeScript baseado no schema definido em `prisma/schema.prisma`:
+
+Gera o cliente TypeScript a partir de `prisma/schema.prisma`. Roda automaticamente no `postinstall`:
 
 ```bash
 npx prisma generate
 ```
 
-### Executar migrações (Desenvolvimento)
-Aplica mudanças no schema do banco de dados e gera uma nova migração:
+### Migrações
+
+Aplicar mudanças no schema e criar uma nova migração:
 
 ```bash
 npx prisma migrate dev --name <nome-da-migracao>
 ```
 
-Exemplo:
-```bash
-npx prisma migrate dev --name add-user-table
-```
+Exemplo: `npx prisma migrate dev --name add-user-table`
 
-### Visualizar dados no Prisma Studio
-Abre uma interface gráfica para visualizar e editar dados do banco:
-
-```bash
-npx prisma studio
-```
-
-O Studio estará disponível em **http://localhost:5555**
-
-### Resetar banco de dados (Desenvolvimento)
-Remove todas as migrações e dados, recriando o banco do zero:
-
-```bash
-npx prisma migrate reset
-```
-
-### Verificar status das migrações
-Verifica se há migrações pendentes ou diferenças entre o schema e o banco:
+Verificar estado das migrações:
 
 ```bash
 npx prisma migrate status
 ```
 
-### Seed do banco (Opcional)
-Se houver um arquivo de seed configurado, execute:
+Resetar o banco (apaga dados e reaplica migrações):
+
+```bash
+npx prisma migrate reset
+```
+
+### Seed do banco
+
+Popular o banco com dados iniciais (limpa a tabela `User` e insere dados de exemplo):
+
+```bash
+npm run db:seed
+```
+
+ou:
 
 ```bash
 npx prisma db seed
 ```
 
-**Nota:** Para configurar o seed, adicione no `package.json`:
-```json
-{
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
-  }
-}
+O script de seed está em `prisma/seed.ts`.
+
+### Prisma Studio
+
+Interface gráfica para ver e editar dados:
+
+```bash
+npx prisma studio
 ```
+
+Disponível em **http://localhost:5555**
 
 ---
 
@@ -130,7 +187,7 @@ npx prisma db seed
 
 - Node.js
 - npm
-- Docker e Docker Compose (para subir apenas o Postgres)
+- Docker e Docker Compose (apenas para o Postgres)
 
 Verifique as instalações:
 
@@ -143,51 +200,55 @@ docker-compose --version
 
 ---
 
-## Configuração do projeto
+## Configuração (setup)
 
-O projeto utiliza variáveis de ambiente definidas em um arquivo `.env`. Use o `.env.example` como base:
+**1. Variáveis de ambiente**
+
+Crie um ficheiro `.env` na raiz do projeto (use `.env.example` como base). O Prisma usa uma única string de conexão:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/backend?schema=public"
 ```
 
-**Nota:** O Prisma utiliza uma única string de conexão `DATABASE_URL` ao invés de múltiplas variáveis como no TypeORM.
-
----
-
-## Rodando a aplicação
-
-**1. Subir apenas o Postgres (ignorar o backend no compose):**
-
-```bash
-docker-compose up -d postgres
-```
-
-**2. Instalar dependências:**
+**2. Instalar dependências**
 
 ```bash
 npm install
 ```
 
-**3. Gerar o cliente Prisma:**
+O `postinstall` roda automaticamente `prisma generate`, por isso o cliente Prisma fica gerado após o install.
+
+**3. Base de dados e migrações**
+
+Suba o Postgres:
 
 ```bash
-npx prisma generate
+docker-compose up
 ```
 
-**4. Executar migrações do banco:**
+Aplique as migrações (na primeira vez ou após alterações no schema):
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
 
-**5. Rodar o Nest em modo desenvolvimento:**
+Adicione os dados de teste no banco:
+
+```bash
+npm run db:seed
+```
+
+**4. Rodar a aplicação**
+
+Em desenvolvimento:
 
 ```bash
 npm run start:dev
 ```
 
-A API estará disponível em **http://localhost:3000** (porta 3000).
+O script `start:dev` sobe o Postgres (se ainda não estiver a correr) e inicia o Nest em modo watch.
+
+A API fica disponível em **http://localhost:3000** (porta 3000).
 
 ---
 
