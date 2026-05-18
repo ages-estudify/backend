@@ -1,7 +1,7 @@
 # ==========================================
 # Estágio 1: Build
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Instala openssl para o Prisma funcionar no Alpine
 RUN apk add --no-cache openssl
@@ -23,7 +23,7 @@ RUN npm run build
 # ==========================================
 # Estágio 2: Produção
 # ==========================================
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Repete o openssl aqui porque esta é uma imagem nova, do zero
 RUN apk add --no-cache openssl
