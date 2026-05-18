@@ -7,7 +7,7 @@ on:
 env:
   AWS_REGION: us-east-2
   ECR_REPOSITORY: estudify/backend
-  ECS_SERVICE: estudify-backend-service
+  ECS_SERVICE: estudify-cluster
   ECS_CLUSTER: estudify-cluster
   ECS_TASK_DEFINITION: .aws/task-definition.json
   CONTAINER_NAME: estudify-backend
