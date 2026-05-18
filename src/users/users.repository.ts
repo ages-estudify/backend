@@ -145,88 +145,82 @@ export class UsersRepository {
 
   async getSubjectStatsByUser(id: string) {
 
-    const [answers, questions] = await Promise.all([
-      this.prisma.answer.findMany({
-        where: {
-          user_id: id,
-          attempt_day_id: null,
-        },
-        select: {
-          question: {
-            select: {
-              path: {
-                select: {
-                  subject: {
-                    select: {
-                      id: true,
-                      name: true
-                    }
+    const answers = await this.prisma.answer.findMany({
+      where: {
+        user_id: id,
+        attempt_day_id: null,
+      },
 
-                  }
+      select: {
+        alternative: {
+          select: {
+            is_correct: true,
+          },
+        },
+
+        question: {
+          select: {
+            path: {
+              select: {
+                subject: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
                 },
               },
             },
           },
         },
-      }),
-
-      this.prisma.question.findMany({
-        where: {
-          exam_day_id: null,
-        },
-        select: {
-          path: {
-            select: {
-              subject: {
-                select: {
-                  id: true,
-                  name: true
-                }
-
-              }
-            },
-          },
-        },
-      }),
-    ])
-
-    const answerBySubject: Record<string, number> = {}
+      },
+    })
+    const correctBySubject: Record<string, number> = {}
     const totalBySubject: Record<string, number> = {}
 
     for (const a of answers) {
       const topic = a.question.path.subject.name
-      answerBySubject[topic] = (answerBySubject[topic] ?? 0) + 1
-    }
 
-    for (const q of questions) {
-      const topic = q.path.subject.name
       totalBySubject[topic] = (totalBySubject[topic] ?? 0) + 1
+
+      if (a.alternative?.is_correct) {
+        correctBySubject[topic] = (correctBySubject[topic] ?? 0) + 1
+      }
+
+
     }
 
     type Res = {
       id: string
       name: string
-      answered: number
+      correct: number
       total: number
     }
 
 
     const response: Res[] = []
 
-
     const subjects = new Map<string, { id: string; name: string }>()
 
-    for (const q of questions) {
-      const s = q.path.subject
+    for (const a of answers) {
+      const s = a.question.path.subject
+
       subjects.set(s.id, s)
     }
 
     for (const [id, subject] of subjects) {
+      const correct = correctBySubject[subject.name] ?? 0
+      const total = totalBySubject[subject.name] ?? 0
+
+      if (total === 0) continue
+
       response.push({
         id,
+
         name: subject.name,
-        answered: answerBySubject[subject.name] ?? 0,
-        total: totalBySubject[subject.name] ?? 0,
+
+        correct,
+
+        total,
       })
     }
 
@@ -250,25 +244,65 @@ export class UsersRepository {
 
 
   async getLastAttetpsByUser(id: string, quant: number) {
+
     const lastAttempts = await this.prisma.attempt.findMany({
       where: {
         user_id: id,
+        end_time: {
+          not: null
+        }
       },
-      orderBy: {
-        init_time: 'desc',
-      },
+
+      orderBy: { end_time: 'desc', },
+
       take: quant, select: {
         id: true,
-        init_time: true,
-        exam: true,
-        attempt_days: true
+        end_time: true,
+        exam: {
+          select: {
+            name: true
 
-      }
+          }
+        },
+        attempt_days: {
+          select: { id: true, exam_day: { select: { day: true } }, answers: { select: { alternative: { select: { is_correct: true } } } }, },
+        },
+      },
     })
 
-    // console.log(lastAttempts)
+    const formatted = lastAttempts.map(attempt => ({
+      attemptId: attempt.id,
 
-    return lastAttempts
+      examName: attempt.exam.name,
+
+      date: attempt.end_time?.toISOString().split('T')[0] ?? null,
+
+      days: attempt.attempt_days.map(day => {
+        const total = day.answers.length
+
+        const correct = day.answers.filter(
+          answer => answer.alternative?.is_correct
+        ).length
+
+        const scorePercentage = Number(
+          ((correct / total) * 100).toFixed(1)
+        )
+
+        return {
+          day: day.exam_day.day,
+
+          label: `Dia ${day.exam_day.day}`,
+
+          correct,
+
+          total,
+
+          scorePercentage,
+        }
+      }),
+    }))
+
+    return formatted
   }
 
 

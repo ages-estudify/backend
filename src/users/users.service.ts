@@ -3,6 +3,8 @@ import { Role } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
+import { UserStatsMapper } from './mapper/user-stats-mapper';
+import { UserStatsDto } from './dto/user-stats.dto';
 
 @Injectable()
 export class UsersService {
@@ -38,19 +40,18 @@ export class UsersService {
   }
 
 
-  async getStats(userId: string) {
+  async getStats(userId: string): Promise<UserStatsDto> {
 
     const questionsStats = await this.users.getQuestionsAnsweredByUser(userId)
-
     const level = getLevel(questionsStats.correctAnswer)
     const starsStats = await this.users.getStarsAndStreakByUser(userId)
-
     const topics = await this.users.getCompletedTopicsByUser(userId)
     const subject = await this.users.getSubjectStatsByUser(userId)
-
     const lastAttepts = await this.users.getLastAttetpsByUser(userId, 5)
 
-    return { questionsStats, level, starsStats, topics, subject }
+    const response = UserStatsMapper.toDto(questionsStats, level, starsStats, topics, subject, lastAttepts)
+
+    return response
 
   }
 
