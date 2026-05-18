@@ -146,7 +146,7 @@ export class QuestionsRepository {
     return {
       id: question.id,
       text: question.text,
-      image_url: question.image_url,
+      image_url: question.image,
       origin: question.origin,
       subjectName: question.path.subject.name,
       topicName: question.path.name,
