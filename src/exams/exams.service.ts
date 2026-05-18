@@ -77,7 +77,7 @@ export class ExamsService {
   ) {}
 
   async listAllExams(userRole: Role): Promise<ListExamsResponseDto> {
-    const exams = this.examsRepository.findAllExamsByRole(userRole);
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
 
     const data: ListExamItemDto[] = await Promise.all(
       exams.map(async (exam) => ({
@@ -270,8 +270,11 @@ export class ExamsService {
     await this.examsRepository.deleteExamLogical(id);
   }
 
-  async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const exams = await this.examsRepository.findAllExams();
+  async findAllWithLastAttemptByUser(
+    userRole: Role,
+    userId: string,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
     const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));

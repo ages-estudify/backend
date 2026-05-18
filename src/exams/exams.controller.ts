@@ -193,7 +193,7 @@ Rules:
   async examListingWithAttemptsByUser(
     @CurrentUser() user: JwtAuthUser,
   ): Promise<ExamListingWithAttemptsByUserDto> {
-    return this.examsService.findAllWithLastAttemptByUser(user.userId);
+    return this.examsService.findAllWithLastAttemptByUser(user.role, user.userId);
   }
 
   @Get(':attemptId/resultGrid')
