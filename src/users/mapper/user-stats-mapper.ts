@@ -1,4 +1,5 @@
 import { AccuracyBySubjectDto, CompletedTopicsDto, LevelDto, OverviewDto, SimuladoDto, UserStatsDto } from "../dto/user-stats.dto"
+import { getMaxLevel } from "../utils/levels"
 
 export class UserStatsMapper {
     static toDto(questionStats, Level: number, starsStats, topics, subject, lastAttempts): UserStatsDto {
@@ -35,7 +36,7 @@ export class UserStatsMapper {
     private static toLevelDto(Level: number): LevelDto {
         return {
             current: Level,
-            max: 10,
+            max: getMaxLevel(),
         }
     }
 

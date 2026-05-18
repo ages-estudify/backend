@@ -12,6 +12,13 @@ const levels = [
     { min: 450, max: Infinity, level: 10 },
 ]
 
+export function getMaxLevel() {
+    return (
+        levels.find(
+            ({ min, max }) => Infinity >= min && Infinity <= max
+        )?.level ?? 1
+    )
+}
 export function getLevel(value: number): number {
     return (
         levels.find(
