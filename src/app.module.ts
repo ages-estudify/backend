@@ -15,6 +15,7 @@ import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
 import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
 import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { StreakModule } from './streak/streak.module';
 
 @Module({
   imports: [
@@ -36,9 +37,10 @@ import { ScheduleModule } from './schedule/schedule.module';
     ScheduleModule,
     AdminQuestionsModule,
     StorageModule,
+    StreakModule,
   ],
   controllers: [],
   providers: [PrismaService],
   exports: [PrismaService],
 })
-export class AppModule {}
+export class AppModule { }

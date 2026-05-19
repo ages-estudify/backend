@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SelectedAnswer } from './dto/answer-question.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
+import { StreakService } from '../streak/streak.service';
 import { Role } from '@prisma/client';
 import { QuestionMediaService } from '../storage/question-media.service';
 
@@ -79,6 +80,10 @@ describe('QuestionsService', () => {
         .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys.map(() => null))),
     };
 
+    const mockStreakService = {
+      registerAnswer: jest.fn().mockResolvedValue({ streakDays: 1, streakActive: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
@@ -97,6 +102,10 @@ describe('QuestionsService', () => {
         {
           provide: QuestionMediaService,
           useValue: mockQuestionMedia,
+        },
+        {
+          provide: StreakService,
+          useValue: mockStreakService,
         },
       ],
     }).compile();
