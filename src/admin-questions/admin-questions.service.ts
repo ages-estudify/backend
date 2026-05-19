@@ -12,12 +12,16 @@ import {
 } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 const VALID_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 @Injectable()
 export class AdminQuestionsService {
-  constructor(private readonly repository: AdminQuestionsRepository) {}
+  constructor(
+    private readonly repository: AdminQuestionsRepository,
+    private readonly questionMedia: QuestionMediaService,
+  ) {}
 
   async create(dto: CreateQuestionDto) {
     const letter = dto.correctAnswer.trim().toUpperCase();
@@ -48,7 +52,8 @@ export class AdminQuestionsService {
     if (!created) {
       throw new BadRequestException('Failed to create question');
     }
-    return this.toAdminResponse(created);
+
+    return await this.toAdminResponse(created);
   }
 
   async findAll(query: QueryQuestionsDto, enable?: boolean) {
@@ -78,7 +83,7 @@ export class AdminQuestionsService {
     const { content, totalElements } = await this.repository.findMany(where, page * size, size);
 
     return {
-      content: content.map((q) => this.toAdminResponse(q)),
+      content: await Promise.all(content.map((q) => this.toAdminResponse(q))),
       page,
       size,
       totalElements,
@@ -88,7 +93,7 @@ export class AdminQuestionsService {
   async findOne(id: string) {
     const question = await this.repository.findById(id);
     if (!question) throw new NotFoundException('Question not found');
-    return this.toAdminResponse(question);
+    return await this.toAdminResponse(question);
   }
 
   async update(id: string, dto: UpdateQuestionDto) {
@@ -129,12 +134,33 @@ export class AdminQuestionsService {
     }
 
     const updated = await this.repository.update(id, updateData);
-    return this.toAdminResponse(updated);
+    return await this.toAdminResponse(updated);
   }
 
   async remove(id: string) {
     await this.findOneRaw(id);
     await this.repository.update(id, { enable: false });
+  }
+
+  async uploadImage(id: string, file: Express.Multer.File) {
+    await this.findOneRaw(id);
+
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    return this.saveQuestionImage(id, file);
+  }
+
+  private async saveQuestionImage(id: string, file: Express.Multer.File) {
+    const mediaKey = await this.questionMedia.uploadQuestionImage(
+      id,
+      file.buffer,
+      file.mimetype ?? 'application/octet-stream',
+    );
+
+    const updated = await this.repository.update(id, { media_key: mediaKey });
+    return await this.toAdminResponse(updated);
   }
 
   async importCsv(buffer: Buffer) {
@@ -209,13 +235,15 @@ export class AdminQuestionsService {
     return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
   }
 
-  private toAdminResponse(
+  private async toAdminResponse(
     q: NonNullable<Awaited<ReturnType<AdminQuestionsRepository['findById']>>>,
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
     const byLetter = Object.fromEntries(
       q.alternatives.map((a) => [a.letter.toUpperCase(), a.text]),
     ) as Record<'A' | 'B' | 'C' | 'D' | 'E', string>;
     const correctAnswer = q.alternatives.find((a) => a.is_correct)?.letter.toUpperCase() ?? '';
+
+    const imageUrl = await this.questionMedia.resolveSignedUrl(q.media_key);
 
     return {
       id: q.id,
@@ -235,6 +263,7 @@ export class AdminQuestionsService {
       year: q.year,
       mockExamId: q.exam_id,
       bank: q.bank,
+      imageUrl,
       enable: q.enable,
       createdAt: q.createdAt,
       updatedAt: q.updatedAt,

@@ -120,6 +120,28 @@ export class AdminQuestionsController {
     return this.service.findOne(id);
   }
 
+  @Post(':id/image')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload question image to S3' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Image uploaded; returns question with imageUrl (presigned)' })
+  @ApiNotFoundResponse({ description: 'Question not found' })
+  async uploadImage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.uploadImage(id, file!);
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update a question' })
   @ApiOkResponse({ description: 'Question updated' })

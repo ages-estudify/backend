@@ -70,7 +70,7 @@ export class ExamsRepository {
         origin: true,
         status: true,
         name: true,
-        image_url: true,
+        media_key: true,
         exam_days: {
           select: {
             day: true,
@@ -99,7 +99,7 @@ export class ExamsRepository {
         origin: true,
         status: true,
         name: true,
-        image_url: true,
+        media_key: true,
         exam_days: {
           select: {
             day: true,
@@ -138,7 +138,7 @@ export class ExamsRepository {
       data: {
         name: data.name,
         origin: data.origin,
-        image_url: null,
+        media_key: null,
         status: 'DRAFT',
       },
     });
@@ -182,7 +182,7 @@ export class ExamsRepository {
     data: {
       name?: string;
       origin?: string;
-      image_url?: string | null;
+      media_key?: string | null;
       status?: ExamStatus;
     },
   ) {

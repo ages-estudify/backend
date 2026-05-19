@@ -3,10 +3,14 @@ import { UpdateAttemptDto } from '././dto/update-attempt.dto';
 import { AttemptResponseDto } from '././dto/attempt-response.dto';
 import { AttemptsRepository } from './attempts.repository';
 import { Language } from '@prisma/client';
+import { QuestionMediaService } from '../../storage/question-media.service';
 
 @Injectable()
 export class AttemptsService {
-  constructor(private readonly attemptsRepository: AttemptsRepository) {}
+  constructor(
+    private readonly attemptsRepository: AttemptsRepository,
+    private readonly questionMedia: QuestionMediaService,
+  ) {}
 
   async create(examId: string, userId: string, language: string) {
     const existingAttempt = await this.attemptsRepository.findActive(userId, examId);
@@ -60,7 +64,10 @@ export class AttemptsService {
 
     const userAnswers = await this.attemptsRepository.findAnswersByAttemptId(attempt.id);
 
-    const questions = this.formatQuestionsWithAnswers(attempt.exam.exam_days, userAnswers);
+    const questions = await this.formatQuestionsWithAnswers(
+      attempt.exam.exam_days,
+      userAnswers,
+    );
 
     const attemptResponse: AttemptResponseDto = {
       id: attempt.id,
@@ -107,26 +114,33 @@ export class AttemptsService {
     };
   }
 
-  private formatQuestionsWithAnswers(examDays: any[], userAnswers: any[]) {
-    return examDays
-      .flatMap((day) =>
-        day.questions.map((q: any) => {
-          const answer = userAnswers.find((a: any) => a.question_id === q.id);
-          return {
-            id: q.id,
-            number: q.number,
-            text: q.text,
-            imageUrl: q.image_url,
-            day: day.day,
-            alternatives: q.alternatives.map((alt: any) => ({
-              id: alt.id,
-              letter: alt.letter,
-              text: alt.text,
-            })),
-            selectedAlternativeId: answer?.alternative_id ?? null,
-          };
-        }),
-      )
+  private async formatQuestionsWithAnswers(examDays: any[], userAnswers: any[]) {
+    const flatQuestions = examDays.flatMap((day) =>
+      day.questions.map((q: any) => ({ q, day })),
+    );
+
+    const signedUrls = await this.questionMedia.resolveSignedUrls(
+      flatQuestions.map(({ q }) => q.media_key),
+    );
+
+    return flatQuestions
+      .map(({ q, day }, index) => {
+        const answer = userAnswers.find((a: any) => a.question_id === q.id);
+        const imageUrl = signedUrls[index];
+        return {
+          id: q.id,
+          number: q.number,
+          text: q.text,
+          imageUrl,
+          day: day.day,
+          alternatives: q.alternatives.map((alt: any) => ({
+            id: alt.id,
+            letter: alt.letter,
+            text: alt.text,
+          })),
+          selectedAlternativeId: answer?.alternative_id ?? null,
+        };
+      })
       .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
   }
 

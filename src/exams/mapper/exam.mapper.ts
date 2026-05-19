@@ -54,7 +54,7 @@ export class ExamMapper {
     return {
       id: item.id,
       name: item.name,
-      image_url: item.image_url,
+      imageUrl: item.imageUrl ?? null,
       origin: item.origin,
 
       status,

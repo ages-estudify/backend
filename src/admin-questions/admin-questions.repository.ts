@@ -20,7 +20,7 @@ export type CreateQuestionPersistenceInput = {
   origin: Origin;
   path_id: string;
   exam_id?: string | null;
-  image_url?: string | null;
+  media_key?: string | null;
   number?: number | null;
   language?: Language | null;
   alternatives: PersistenceAlternative[];
@@ -38,7 +38,7 @@ export class AdminQuestionsRepository {
         bank: dto.bank ?? null,
         text: dto.text,
         feedback: dto.feedback,
-        image_url: dto.image_url ?? null,
+        media_key: dto.media_key ?? null,
         number: dto.number ?? null,
         year: dto.year,
         language: dto.language ?? null,

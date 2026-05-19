@@ -14,6 +14,7 @@ import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsB
 import { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.dto';
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+import { ExamMediaService } from '../storage/exam-media.service';
 
 interface ParsedRow {
   exam_title: string;
@@ -97,17 +98,20 @@ export class ExamsService {
   constructor(
     private examsRepository: ExamsRepository,
     private prisma: PrismaService,
+    private examMedia: ExamMediaService,
   ) {}
 
   async listAllExams(): Promise<ListExamsResponseDto> {
     const exams = await this.examsRepository.findAllExams();
 
+    const signedUrls = await this.examMedia.resolveSignedUrls(exams.map((e) => e.media_key));
+
     const data: ListExamItemDto[] = await Promise.all(
-      exams.map(async (exam) => ({
+      exams.map(async (exam, index) => ({
         id: exam.id,
         title: exam.name,
         origin: exam.origin,
-        imageUrl: exam.image_url,
+        imageUrl: signedUrls[index],
         totalQuestions: await this.examsRepository.countQuestionsByExam(exam.id),
         status: exam.status,
         days: exam.exam_days.map((day) => ({
@@ -150,7 +154,7 @@ export class ExamsService {
         data: {
           name: metadata.examTitle!,
           origin: metadata.bank!,
-          image_url: null,
+          media_key: null,
           status: 'DRAFT',
         },
       });
@@ -251,26 +255,30 @@ export class ExamsService {
     const updateData: Partial<{
       name: string;
       origin: string;
-      image_url: string | null;
+      media_key: string | null;
       status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     }> = {};
 
     if (updates.title) updateData.name = updates.title;
     if (updates.origin) updateData.origin = updates.origin;
 
-    if (updates.image) {
-      const imageUrl = this.uploadImageToS3(updates.image, id);
-      updateData.image_url = imageUrl;
+    if (updates.image?.buffer?.length) {
+      updateData.media_key = await this.examMedia.uploadExamImage(
+        id,
+        updates.image.buffer,
+        updates.image.mimetype,
+      );
       updateData.status = updates.status ?? 'PUBLISHED';
     } else if (updates.status) {
       updateData.status = updates.status;
     }
 
-    if (updateData.status === 'PUBLISHED' && !updateData.image_url && !exam.image_url) {
+    if (updateData.status === 'PUBLISHED' && !updateData.media_key && !exam.media_key) {
       throw new BadRequestException('Cannot publish exam without image');
     }
 
     const updated = await this.examsRepository.updateExam(id, updateData);
+    const imageUrl = await this.examMedia.resolveSignedUrl(updated.media_key);
 
     return {
       success: true,
@@ -278,7 +286,7 @@ export class ExamsService {
         id: updated.id,
         title: updated.name,
         origin: updated.origin,
-        imageUrl: updated.image_url,
+        imageUrl,
         status: updated.status,
       },
     };
@@ -299,11 +307,14 @@ export class ExamsService {
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));
 
-    const result = exams.map((exam) => {
+    const signedUrls = await this.examMedia.resolveSignedUrls(exams.map((e) => e.media_key));
+
+    const result = exams.map((exam, index) => {
       const attempt = attemptByExamId.get(exam.id);
 
       return {
         ...exam,
+        imageUrl: signedUrls[index],
         hasAttempt: !!attempt,
         isCompleted: attempt?.isCompleted ?? false,
         totalAnswers: attempt?.totalAnswers ?? 0,
@@ -460,7 +471,4 @@ export class ExamsService {
     return { validRows, invalidRows };
   }
 
-  private uploadImageToS3(file: MulterFile, examId: string): string {
-    return `https://s3.amazonaws.com/bucket/exam-${examId}.png`;
-  }
 }
