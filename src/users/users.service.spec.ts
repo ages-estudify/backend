@@ -33,7 +33,16 @@ const createUserWithoutCoins = () => createUserBuilder({ coins: null });
 
 describe('UsersService', () => {
   let service: UsersService;
-  let usersRepo: jest.Mocked<UsersRepository>;
+  let usersRepo: {
+    findMany: jest.Mock;
+    findUniqueById: jest.Mock;
+
+    getAnswerOverviewByUser: jest.Mock;
+    getStarsAndStreakByUser: jest.Mock;
+    getCompletedTopicsByUser: jest.Mock;
+    getSubjectStatsByUser: jest.Mock;
+    getLastAttemptsByUser: jest.Mock;
+  };
 
   beforeEach(async () => {
     usersRepo = {
@@ -45,7 +54,7 @@ describe('UsersService', () => {
       getCompletedTopicsByUser: jest.fn(),
       getSubjectStatsByUser: jest.fn(),
       getLastAttemptsByUser: jest.fn(),
-    } as any;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [UsersService, { provide: UsersRepository, useValue: usersRepo }],
