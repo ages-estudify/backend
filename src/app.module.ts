@@ -13,6 +13,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
 import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
 import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
     AttemptDaysModule,
     OnboardingModule,
     AdminQuestionsModule,
+    StorageModule,
   ],
   controllers: [],
   providers: [PrismaService],
