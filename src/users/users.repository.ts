@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { AccuracyBySubjectDto, CompletedTopicsDto, OverviewDto, SimuladoDto } from './dto/user-stats.dto';
 
 export type UserResponse = Omit<User, 'password'>;
 
@@ -52,36 +53,35 @@ export class UsersRepository {
     });
   }
 
-  async getQuestionsAnsweredByUser(id: string) {
+  async getAnswerOverviewByUser(id: string): Promise<OverviewDto> {
 
-    const correctAnswer = await this.prisma.answer.count({
-      where: {
-        user_id: id,
-        attempt_day_id: null,
-        alternative: {
-          is: {
-            is_correct: true,
+    const [correctAnswer, total] = await Promise.all([
+      this.prisma.answer.count({
+        where: {
+          user_id: id,
+          attempt_day_id: null,
+          alternative: {
+            is: {
+              is_correct: true,
+            },
           },
         },
-      },
-    })
+      }),
 
-    const total = await this.prisma.answer.count({
-      where: {
-        user_id: id,
-        attempt_day_id: null,
-      },
-    })
+      this.prisma.answer.count({
+        where: {
+          user_id: id,
+          attempt_day_id: null,
+        },
+      }),
+    ])
+    const percentage = Number(((correctAnswer / Math.max(total, 1)) * 100).toFixed(1))
 
-    const p = ((correctAnswer / Math.max(total, 1)) * 100)
-    const percentage = Number(p.toFixed(1))
-
-
-    return { correctAnswer, total, percentage }
+    return { totalAnswered: total, totalCorrect: correctAnswer, accuracyPercentage: percentage, }
 
   }
 
-  async getCompletedTopicsByUser(id: string) {
+  async getCompletedTopicsByUser(id: string): Promise<CompletedTopicsDto> {
     const [answers, questions] = await Promise.all([
       this.prisma.answer.findMany({
         where: {
@@ -115,35 +115,36 @@ export class UsersRepository {
       }),
     ])
 
-    const answerByTopic: Record<string, number> = {}
-    const totalByTopic: Record<string, number> = {}
-
-    for (const a of answers) {
-      const topic = a.question.path.name
-      answerByTopic[topic] = (answerByTopic[topic] ?? 0) + 1
-    }
+    const stats: Record<string, { answered: number; total: number }> = {}
 
     for (const q of questions) {
       const topic = q.path.name
-      totalByTopic[topic] = (totalByTopic[topic] ?? 0) + 1
+
+      stats[topic] ??= { answered: 0, total: 0 }
+      stats[topic].total++
     }
 
-    let completedTopics = 0
-    const topics = Object.keys(totalByTopic)
+    for (const a of answers) {
+      const topic = a.question.path.name
 
-    for (const topic of topics) {
-      if (totalByTopic[topic] === (answerByTopic[topic] ?? 0)) {
-        completedTopics++
-      }
+      stats[topic] ??= { answered: 0, total: 0 }
+      stats[topic].answered++
     }
+
+    const values = Object.values(stats)
+
+    const completed = values.filter(
+      s => s.answered === s.total
+    ).length
+
 
     return {
-      completed: completedTopics,
-      totalTopics: topics.length,
+      completed,
+      total: values.length,
     }
   }
 
-  async getSubjectStatsByUser(id: string) {
+  async getSubjectStatsByUser(id: string): Promise<AccuracyBySubjectDto[]> {
 
     const answers = await this.prisma.answer.findMany({
       where: {
@@ -174,76 +175,56 @@ export class UsersRepository {
         },
       },
     })
-    const correctBySubject: Record<string, number> = {}
-    const totalBySubject: Record<string, number> = {}
+    const stats: Record<
+      string,
+      {
+        id: string
+        name: string
+        correct: number
+        total: number
+      }
+    > = {}
 
     for (const a of answers) {
-      const topic = a.question.path.subject.name
+      const subject = a.question.path.subject
 
-      totalBySubject[topic] = (totalBySubject[topic] ?? 0) + 1
-
-      if (a.alternative?.is_correct) {
-        correctBySubject[topic] = (correctBySubject[topic] ?? 0) + 1
+      stats[subject.id] ??= {
+        id: subject.id,
+        name: subject.name,
+        correct: 0,
+        total: 0,
       }
 
+      stats[subject.id].total++
 
-    }
-
-    type Res = {
-      id: string
-      name: string
-      correct: number
-      total: number
+      if (a.alternative?.is_correct) {
+        stats[subject.id].correct++
+      }
     }
 
 
-    const response: Res[] = []
+    return Object.values(stats).map(subject => ({
+      subjectId: subject.id,
+      subjectName: subject.name,
+      correct: subject.correct,
+      totalAnswered: subject.total,
+    }))
 
-    const subjects = new Map<string, { id: string; name: string }>()
-
-    for (const a of answers) {
-      const s = a.question.path.subject
-
-      subjects.set(s.id, s)
-    }
-
-    for (const [id, subject] of subjects) {
-      const correct = correctBySubject[subject.name] ?? 0
-      const total = totalBySubject[subject.name] ?? 0
-
-      if (total === 0) continue
-
-      response.push({
-        id,
-
-        name: subject.name,
-
-        correct,
-
-        total,
-      })
-    }
-
-    return response
   }
 
   async getStarsAndStreakByUser(id: string) {
 
-    const starsStats = await this.prisma.user.findUnique({
-      where: {
-        id: id,
-      }, select: {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
         streak: true,
         coins: true,
-      }
+      },
     })
-
-    return starsStats
 
   }
 
-
-  async getLastAttetpsByUser(id: string, quant: number) {
+  async getLastAttemptsByUser(id: string, quant: number): Promise<SimuladoDto[]> {
 
     const lastAttempts = await this.prisma.attempt.findMany({
       where: {

@@ -4,7 +4,7 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
 import { UserStatsMapper } from './mapper/user-stats-mapper';
-import { UserStatsDto } from './dto/user-stats.dto';
+import { CompletedTopicsDto, LevelDto, OverviewDto, UserStatsDto, AccuracyBySubjectDto, SimuladoDto } from './dto/user-stats.dto';
 
 @Injectable()
 export class UsersService {
@@ -42,14 +42,14 @@ export class UsersService {
 
   async getStats(userId: string): Promise<UserStatsDto> {
 
-    const questionsStats = await this.users.getQuestionsAnsweredByUser(userId)
-    const level = getLevel(questionsStats.correctAnswer)
+    const questionsStats: OverviewDto = await this.users.getAnswerOverviewByUser(userId)
+    const level: LevelDto = getLevel(questionsStats.totalCorrect)
     const starsStats = await this.users.getStarsAndStreakByUser(userId)
-    const topics = await this.users.getCompletedTopicsByUser(userId)
-    const subject = await this.users.getSubjectStatsByUser(userId)
-    const lastAttepts = await this.users.getLastAttetpsByUser(userId, 5)
+    const topics: CompletedTopicsDto = await this.users.getCompletedTopicsByUser(userId)
+    const subject: AccuracyBySubjectDto[] = await this.users.getSubjectStatsByUser(userId)
+    const lastAttepts: SimuladoDto[] = await this.users.getLastAttemptsByUser(userId, 5)
 
-    const response = UserStatsMapper.toDto(questionsStats, level, starsStats, topics, subject, lastAttepts)
+    const response: UserStatsDto = UserStatsMapper.toDto(questionsStats, level, starsStats, topics, subject, lastAttepts)
 
     return response
 

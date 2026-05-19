@@ -1,40 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
 
-export class UserStatsDto {
-    @ApiProperty({ type: () => UserStatsDataDto })
-    data: UserStatsDataDto
-}
-
-export class UserStatsDataDto {
-    @ApiProperty({ type: () => OverviewDto })
-    overview: OverviewDto
-
-    @ApiProperty({ type: () => LevelDto })
-    level: LevelDto
-
-    @ApiProperty({ type: () => CompletedTopicsDto })
-    completedTopics: CompletedTopicsDto
-
-    @ApiProperty({
-        example: 156,
-    })
-    stars: number
-
-    @ApiProperty({
-        example: 10,
-    })
-    streak: number
-
-    @ApiProperty({
-        type: () => [SimuladoDto],
-    })
-    simulados: SimuladoDto[]
-
-    @ApiProperty({
-        type: () => [AccuracyBySubjectDto],
-    })
-    accuracyBySubject: AccuracyBySubjectDto[]
-}
 
 export class OverviewDto {
     @ApiProperty({
@@ -52,6 +17,9 @@ export class OverviewDto {
     })
     accuracyPercentage: number
 }
+
+
+
 
 export class LevelDto {
     @ApiProperty({
@@ -147,4 +115,41 @@ export class AccuracyBySubjectDto {
         example: 24,
     })
     totalAnswered: number
+}
+
+
+export class UserStatsDataDto {
+    @ApiProperty({ type: () => OverviewDto })
+    overview: OverviewDto
+
+    @ApiProperty({ type: () => LevelDto })
+    level: LevelDto
+
+    @ApiProperty({ type: () => CompletedTopicsDto })
+    completedTopics: CompletedTopicsDto
+
+    @ApiProperty({
+        example: 156,
+    })
+    stars: number
+
+    @ApiProperty({
+        example: 10,
+    })
+    streak: number
+
+    @ApiProperty({
+        type: () => [SimuladoDto],
+    })
+    simulados: SimuladoDto[]
+
+    @ApiProperty({
+        type: () => [AccuracyBySubjectDto],
+    })
+    accuracyBySubject: AccuracyBySubjectDto[]
+}
+
+export class UserStatsDto {
+    @ApiProperty({ type: () => UserStatsDataDto })
+    data: UserStatsDataDto
 }

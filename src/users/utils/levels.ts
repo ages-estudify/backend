@@ -1,3 +1,4 @@
+import { LevelDto } from "../dto/user-stats.dto"
 
 const levels = [
     { min: 0, max: 9, level: 1 },
@@ -12,17 +13,17 @@ const levels = [
     { min: 450, max: Infinity, level: 10 },
 ]
 
-export function getMaxLevel() {
-    return (
-        levels.find(
-            ({ min, max }) => Infinity >= min && Infinity <= max
-        )?.level ?? 1
-    )
+export function getMaxLevel(): number {
+    return levels.at(-1)?.level ?? 1
 }
-export function getLevel(value: number): number {
-    return (
-        levels.find(
-            ({ min, max }) => value >= min && value <= max
-        )?.level ?? 1
-    )
+
+export function getLevel(value: number): LevelDto {
+    return {
+        current:
+            levels.find(
+                ({ min, max }) => value >= min && value <= max
+            )?.level ?? 1,
+
+        max: getMaxLevel(),
+    }
 }

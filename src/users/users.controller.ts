@@ -38,13 +38,14 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('stats')
-  @ApiForbiddenResponse({ description: 'Cannot access another user stats' })
+  @ApiOkResponse({ type: UserStatsDto })
+  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   async getStats(@CurrentUser() user: JwtAuthUser): Promise<UserStatsDto> {
 
-    const stats = await this.usersService.getStats(user.userId);
-
-    return stats
+    return await this.usersService.getStats(user.userId);
 
   }
 
