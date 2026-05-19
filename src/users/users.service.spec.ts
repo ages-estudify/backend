@@ -127,28 +127,28 @@ describe('UsersService', () => {
   });
 
   it('should return full user stats', async () => {
-    const userId = 'user-id'
+    const userId = 'user-id';
 
     const overview = {
       totalAnswered: 100,
       totalCorrect: 50,
       accuracyPercentage: 50,
-    }
+    };
 
     const level = {
       current: 3,
       max: 10,
-    }
+    };
 
     const stars = {
       coins: 10,
       streak: 5,
-    }
+    };
 
     const topics = {
       completed: 2,
       total: 10,
-    }
+    };
 
     const subject = [
       {
@@ -157,7 +157,7 @@ describe('UsersService', () => {
         correct: 10,
         totalAnswered: 20,
       },
-    ]
+    ];
 
     const attempts = [
       {
@@ -166,51 +166,49 @@ describe('UsersService', () => {
         date: new Date().toISOString(),
         days: [],
       },
-    ]
+    ];
 
-    usersRepo.getAnswerOverviewByUser.mockResolvedValue(overview as any)
-    usersRepo.getStarsAndStreakByUser.mockResolvedValue(stars as any)
-    usersRepo.getCompletedTopicsByUser.mockResolvedValue(topics as any)
-    usersRepo.getSubjectStatsByUser.mockResolvedValue(subject as any)
-    usersRepo.getLastAttemptsByUser.mockResolvedValue(attempts as any)
+    usersRepo.getAnswerOverviewByUser.mockResolvedValue(overview as any);
+    usersRepo.getStarsAndStreakByUser.mockResolvedValue(stars as any);
+    usersRepo.getCompletedTopicsByUser.mockResolvedValue(topics as any);
+    usersRepo.getSubjectStatsByUser.mockResolvedValue(subject as any);
+    usersRepo.getLastAttemptsByUser.mockResolvedValue(attempts as any);
 
-    const result = await service.getStats(userId)
+    const result = await service.getStats(userId);
 
-    expect(result.data.overview).toEqual(overview)
-    expect(result.data.level).toEqual(level)
-    expect(result.data.stars).toBe(10)
-    expect(result.data.streak).toBe(5)
-    expect(result.data.simulados).toEqual(attempts)
-    expect(result.data.accuracyBySubject).toEqual(subject)
-  })
+    expect(result.data.overview).toEqual(overview);
+    expect(result.data.level).toEqual(level);
+    expect(result.data.stars).toBe(10);
+    expect(result.data.streak).toBe(5);
+    expect(result.data.simulados).toEqual(attempts);
+    expect(result.data.accuracyBySubject).toEqual(subject);
+  });
 
   it('should return empty stats for new user', async () => {
     usersRepo.getAnswerOverviewByUser.mockResolvedValue({
       totalAnswered: 0,
       totalCorrect: 0,
       accuracyPercentage: 0,
-    } as any)
+    } as any);
 
     usersRepo.getStarsAndStreakByUser.mockResolvedValue({
       coins: 0,
       streak: 0,
-    } as any)
+    } as any);
 
     usersRepo.getCompletedTopicsByUser.mockResolvedValue({
       completed: 0,
       total: 0,
-    } as any)
+    } as any);
 
-    usersRepo.getSubjectStatsByUser.mockResolvedValue([])
-    usersRepo.getLastAttemptsByUser.mockResolvedValue([])
+    usersRepo.getSubjectStatsByUser.mockResolvedValue([]);
+    usersRepo.getLastAttemptsByUser.mockResolvedValue([]);
 
-    const result = await service.getStats('user-id')
+    const result = await service.getStats('user-id');
 
-    expect(result.data.overview.totalAnswered).toBe(0)
-    expect(result.data.stars).toBe(0)
-    expect(result.data.simulados).toEqual([])
-    expect(result.data.accuracyBySubject).toEqual([])
-  })
+    expect(result.data.overview.totalAnswered).toBe(0);
+    expect(result.data.stars).toBe(0);
+    expect(result.data.simulados).toEqual([]);
+    expect(result.data.accuracyBySubject).toEqual([]);
+  });
 });
-
-

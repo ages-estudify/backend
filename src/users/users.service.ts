@@ -4,12 +4,18 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
 import { UserStatsMapper } from './mapper/user-stats-mapper';
-import { CompletedTopicsDto, LevelDto, OverviewDto, UserStatsDto, AccuracyBySubjectDto, SimuladoDto } from './dto/user-stats.dto';
+import {
+  CompletedTopicsDto,
+  LevelDto,
+  OverviewDto,
+  UserStatsDto,
+  AccuracyBySubjectDto,
+  SimuladoDto,
+} from './dto/user-stats.dto';
 
 @Injectable()
 export class UsersService {
-
-  constructor(private readonly users: UsersRepository) { }
+  constructor(private readonly users: UsersRepository) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -39,20 +45,23 @@ export class UsersService {
     return user.coins ?? 0;
   }
 
-
   async getStats(userId: string): Promise<UserStatsDto> {
+    const questionsStats: OverviewDto = await this.users.getAnswerOverviewByUser(userId);
+    const level: LevelDto = getLevel(questionsStats.totalCorrect);
+    const starsStats = await this.users.getStarsAndStreakByUser(userId);
+    const topics: CompletedTopicsDto = await this.users.getCompletedTopicsByUser(userId);
+    const subject: AccuracyBySubjectDto[] = await this.users.getSubjectStatsByUser(userId);
+    const lastAttepts: SimuladoDto[] = await this.users.getLastAttemptsByUser(userId, 5);
 
-    const questionsStats: OverviewDto = await this.users.getAnswerOverviewByUser(userId)
-    const level: LevelDto = getLevel(questionsStats.totalCorrect)
-    const starsStats = await this.users.getStarsAndStreakByUser(userId)
-    const topics: CompletedTopicsDto = await this.users.getCompletedTopicsByUser(userId)
-    const subject: AccuracyBySubjectDto[] = await this.users.getSubjectStatsByUser(userId)
-    const lastAttepts: SimuladoDto[] = await this.users.getLastAttemptsByUser(userId, 5)
+    const response: UserStatsDto = UserStatsMapper.toDto(
+      questionsStats,
+      level,
+      starsStats,
+      topics,
+      subject,
+      lastAttepts,
+    );
 
-    const response: UserStatsDto = UserStatsMapper.toDto(questionsStats, level, starsStats, topics, subject, lastAttepts)
-
-    return response
-
+    return response;
   }
-
 }

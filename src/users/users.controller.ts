@@ -27,7 +27,7 @@ import { UserStatsDto } from './dto/user-stats.dto';
 })
 @Controller({ path: 'users', version: '1' })
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -44,9 +44,7 @@ export class UsersController {
   @ApiOkResponse({ type: UserStatsDto })
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   async getStats(@CurrentUser() user: JwtAuthUser): Promise<UserStatsDto> {
-
     return await this.usersService.getStats(user.userId);
-
   }
 
   @Get(':id')
@@ -71,7 +69,4 @@ export class UsersController {
       data: { coins },
     };
   }
-
-
-
 }
