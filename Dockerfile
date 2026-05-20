@@ -35,6 +35,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.js ./
 
 # Em vez de rodar npm ci de novo (que pode dar erro de script), 
 # nós apenas limpamos os pacotes de desenvolvimento que sobraram
