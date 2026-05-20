@@ -60,12 +60,12 @@ describe('AttemptDaysService', () => {
         {
           provide: QuestionMediaService,
           useValue: {
-            resolveSignedUrl: jest.fn().mockImplementation((key: string | null) =>
-              Promise.resolve(key),
-            ),
-            resolveSignedUrls: jest.fn().mockImplementation((keys: (string | null)[]) =>
-              Promise.resolve(keys),
-            ),
+            resolveSignedUrl: jest
+              .fn()
+              .mockImplementation((key: string | null) => Promise.resolve(key)),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys)),
           },
         },
       ],

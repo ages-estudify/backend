@@ -99,9 +99,11 @@ describe('AdminQuestionsService', () => {
           provide: QuestionMediaService,
           useValue: {
             resolveSignedUrl: jest.fn().mockResolvedValue(null),
-            resolveSignedUrls: jest.fn().mockImplementation((keys: (string | null)[]) =>
-              Promise.resolve(keys.map(() => null)),
-            ),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) =>
+                Promise.resolve(keys.map(() => null)),
+              ),
             uploadQuestionImage: jest.fn().mockResolvedValue('questions/qid/photo.png'),
           },
         },

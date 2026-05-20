@@ -74,9 +74,9 @@ describe('QuestionsService', () => {
 
     const mockQuestionMedia = {
       resolveSignedUrl: jest.fn().mockResolvedValue(null),
-      resolveSignedUrls: jest.fn().mockImplementation((keys: (string | null)[]) =>
-        Promise.resolve(keys.map(() => null)),
-      ),
+      resolveSignedUrls: jest
+        .fn()
+        .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys.map(() => null))),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -18,11 +18,7 @@ export class QuestionMediaService {
     return `questions/${questionId}/${randomUUID()}.${extension}`;
   }
 
-  async uploadQuestionImage(
-    questionId: string,
-    buffer: Buffer,
-    mimeType: string,
-  ): Promise<string> {
+  async uploadQuestionImage(questionId: string, buffer: Buffer, mimeType: string): Promise<string> {
     const extension = ALLOWED_MIME_TYPES[mimeType.toLowerCase()];
     if (!extension) {
       throw new BadRequestException(
@@ -45,9 +41,7 @@ export class QuestionMediaService {
     return this.s3.getSignedGetUrl(mediaKey);
   }
 
-  async resolveSignedUrls(
-    mediaKeys: (string | null | undefined)[],
-  ): Promise<(string | null)[]> {
+  async resolveSignedUrls(mediaKeys: (string | null | undefined)[]): Promise<(string | null)[]> {
     return Promise.all(mediaKeys.map((key) => this.resolveSignedUrl(key)));
   }
 }

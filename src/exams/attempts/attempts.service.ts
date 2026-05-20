@@ -64,10 +64,7 @@ export class AttemptsService {
 
     const userAnswers = await this.attemptsRepository.findAnswersByAttemptId(attempt.id);
 
-    const questions = await this.formatQuestionsWithAnswers(
-      attempt.exam.exam_days,
-      userAnswers,
-    );
+    const questions = await this.formatQuestionsWithAnswers(attempt.exam.exam_days, userAnswers);
 
     const attemptResponse: AttemptResponseDto = {
       id: attempt.id,
@@ -115,13 +112,12 @@ export class AttemptsService {
   }
 
   private async formatQuestionsWithAnswers(examDays: any[], userAnswers: any[]) {
-    const flatQuestions = examDays.flatMap((day) =>
-      day.questions.map((q: any) => ({ q, day })),
-    );
+    const flatQuestions = examDays.flatMap((day) => day.questions.map((q: any) => ({ q, day })));
 
-    const signedUrls = await this.questionMedia.resolveSignedUrls(
-      flatQuestions.map(({ q }) => q.media_key),
+    const mediaKeys = flatQuestions.map(
+      ({ q }: { q: { media_key?: string | null } }) => q.media_key,
     );
+    const signedUrls = await this.questionMedia.resolveSignedUrls(mediaKeys);
 
     return flatQuestions
       .map(({ q, day }, index) => {

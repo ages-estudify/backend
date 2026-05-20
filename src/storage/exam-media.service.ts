@@ -41,9 +41,7 @@ export class ExamMediaService {
     return this.s3.getSignedGetUrl(mediaKey);
   }
 
-  async resolveSignedUrls(
-    mediaKeys: (string | null | undefined)[],
-  ): Promise<(string | null)[]> {
+  async resolveSignedUrls(mediaKeys: (string | null | undefined)[]): Promise<(string | null)[]> {
     return Promise.all(mediaKeys.map((key) => this.resolveSignedUrl(key)));
   }
 }

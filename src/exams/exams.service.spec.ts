@@ -9,7 +9,11 @@ import { ExamMediaService } from '../storage/exam-media.service';
 describe('ExamsService', () => {
   let service: ExamsService;
   let repository: jest.Mocked<ExamsRepository>;
-  let examMedia: jest.Mocked<ExamMediaService>;
+  const examMediaMocks = {
+    uploadExamImage: jest.fn(),
+    resolveSignedUrl: jest.fn(),
+    resolveSignedUrls: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -37,22 +41,17 @@ describe('ExamsService', () => {
         },
         {
           provide: ExamMediaService,
-          useValue: {
-            uploadExamImage: jest.fn(),
-            resolveSignedUrl: jest.fn(),
-            resolveSignedUrls: jest.fn(),
-          },
+          useValue: examMediaMocks,
         },
       ],
     }).compile();
 
     service = module.get(ExamsService);
     repository = module.get(ExamsRepository);
-    examMedia = module.get(ExamMediaService);
 
-    examMedia.uploadExamImage.mockResolvedValue('exams/exam1/cover.png');
-    examMedia.resolveSignedUrl.mockImplementation((key) => Promise.resolve(key));
-    examMedia.resolveSignedUrls.mockImplementation((keys) => Promise.resolve(keys));
+    examMediaMocks.uploadExamImage.mockResolvedValue('exams/exam1/cover.png');
+    examMediaMocks.resolveSignedUrl.mockImplementation((key) => Promise.resolve(key));
+    examMediaMocks.resolveSignedUrls.mockImplementation((keys) => Promise.resolve(keys));
   });
 
   afterEach(() => {
@@ -164,7 +163,7 @@ describe('ExamsService', () => {
     });
 
     it('should upload cover image to S3 when base64 image is provided', async () => {
-      examMedia.resolveSignedUrl.mockResolvedValueOnce('https://signed.example/cover.png');
+      examMediaMocks.resolveSignedUrl.mockResolvedValueOnce('https://signed.example/cover.png');
 
       repository.findExamById.mockResolvedValue({
         id: 'exam1',
@@ -191,15 +190,15 @@ describe('ExamsService', () => {
 
       const result = await service.updateExam('exam1', { image: imageBase64 });
 
-      expect(examMedia.uploadExamImage).toHaveBeenCalledWith(
+      expect(examMediaMocks.uploadExamImage).toHaveBeenCalledWith(
         'exam1',
         expect.any(Buffer),
         'image/png',
       );
-      expect(repository.updateExam).toHaveBeenCalledWith(
+      expect(repository.updateExam.mock.calls[0]).toEqual([
         'exam1',
         expect.objectContaining({ media_key: 'exams/exam1/cover.png', status: 'PUBLISHED' }),
-      );
+      ]);
       expect(result.data.imageUrl).toBe('https://signed.example/cover.png');
     });
   });
