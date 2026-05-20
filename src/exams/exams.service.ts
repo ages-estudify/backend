@@ -15,6 +15,7 @@ import { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
 import { ExamMediaService } from '../storage/exam-media.service';
+import { decodeBase64Image } from '../storage/base64-image.util';
 
 interface ParsedRow {
   exam_title: string;
@@ -239,7 +240,7 @@ export class ExamsService {
     updates: {
       title?: string;
       origin?: string;
-      image?: MulterFile;
+      image?: string;
       status?: 'DRAFT' | 'PUBLISHED';
     },
   ) {
@@ -262,12 +263,9 @@ export class ExamsService {
     if (updates.title) updateData.name = updates.title;
     if (updates.origin) updateData.origin = updates.origin;
 
-    if (updates.image?.buffer?.length) {
-      updateData.media_key = await this.examMedia.uploadExamImage(
-        id,
-        updates.image.buffer,
-        updates.image.mimetype,
-      );
+    if (updates.image?.trim()) {
+      const { buffer, mimeType } = decodeBase64Image(updates.image);
+      updateData.media_key = await this.examMedia.uploadExamImage(id, buffer, mimeType);
       updateData.status = updates.status ?? 'PUBLISHED';
     } else if (updates.status) {
       updateData.status = updates.status;

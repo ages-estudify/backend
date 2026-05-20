@@ -163,7 +163,7 @@ describe('ExamsService', () => {
       );
     });
 
-    it('should upload cover image to S3 when image file is provided', async () => {
+    it('should upload cover image to S3 when base64 image is provided', async () => {
       examMedia.resolveSignedUrl.mockResolvedValueOnce('https://signed.example/cover.png');
 
       repository.findExamById.mockResolvedValue({
@@ -186,16 +186,14 @@ describe('ExamsService', () => {
         updated_at: new Date(),
       } as unknown as Awaited<ReturnType<ExamsRepository['updateExam']>>);
 
-      const file = {
-        buffer: Buffer.from('fake'),
-        mimetype: 'image/png',
-      } as import('../common/types/multer-file').MulterFile;
+      const imageBase64 =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
-      const result = await service.updateExam('exam1', { image: file });
+      const result = await service.updateExam('exam1', { image: imageBase64 });
 
       expect(examMedia.uploadExamImage).toHaveBeenCalledWith(
         'exam1',
-        file.buffer,
+        expect.any(Buffer),
         'image/png',
       );
       expect(repository.updateExam).toHaveBeenCalledWith(

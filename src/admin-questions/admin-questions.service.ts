@@ -13,6 +13,7 @@ import {
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
 import { QuestionMediaService } from '../storage/question-media.service';
+import { decodeBase64Image } from '../storage/base64-image.util';
 
 const VALID_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -51,6 +52,10 @@ export class AdminQuestionsService {
     const created = await this.repository.create(persistence);
     if (!created) {
       throw new BadRequestException('Failed to create question');
+    }
+
+    if (dto.image?.trim()) {
+      return this.saveQuestionImageFromBase64(created.id, dto.image);
     }
 
     return await this.toAdminResponse(created);
@@ -134,6 +139,11 @@ export class AdminQuestionsService {
     }
 
     const updated = await this.repository.update(id, updateData);
+
+    if (dto.image?.trim()) {
+      return this.saveQuestionImageFromBase64(id, dto.image);
+    }
+
     return await this.toAdminResponse(updated);
   }
 
@@ -142,24 +152,10 @@ export class AdminQuestionsService {
     await this.repository.update(id, { enable: false });
   }
 
-  async uploadImage(id: string, file: Express.Multer.File) {
-    await this.findOneRaw(id);
-
-    if (!file?.buffer?.length) {
-      throw new BadRequestException('Image file is required');
-    }
-
-    return this.saveQuestionImage(id, file);
-  }
-
-  private async saveQuestionImage(id: string, file: Express.Multer.File) {
-    const mediaKey = await this.questionMedia.uploadQuestionImage(
-      id,
-      file.buffer,
-      file.mimetype ?? 'application/octet-stream',
-    );
-
-    const updated = await this.repository.update(id, { media_key: mediaKey });
+  private async saveQuestionImageFromBase64(questionId: string, imageBase64: string) {
+    const { buffer, mimeType } = decodeBase64Image(imageBase64);
+    const mediaKey = await this.questionMedia.uploadQuestionImage(questionId, buffer, mimeType);
+    const updated = await this.repository.update(questionId, { media_key: mediaKey });
     return await this.toAdminResponse(updated);
   }
 
