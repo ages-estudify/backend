@@ -2,6 +2,10 @@
 /dist
 /node_modules
 /build
+prisma.config.js
+prisma.config.js.map
+prisma.config.d.ts
+*.tsbuildinfo
 
 # Logs
 logs
