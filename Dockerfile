@@ -10,6 +10,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./prisma.config.ts
 
 # Instalamos tudo para poder buildar, mas ignoramos os scripts do Husky
 RUN npm ci --ignore-scripts
@@ -35,6 +36,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.js ./
 
 # Em vez de rodar npm ci de novo (que pode dar erro de script), 
 # nós apenas limpamos os pacotes de desenvolvimento que sobraram
@@ -42,4 +44,5 @@ RUN npm prune --production
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Executa as migrations, roda o seed-prod direto via ts-node e inicia o servidor
+CMD npx prisma migrate deploy && npx ts-node prisma/seed-prod.ts && node dist/main.js
