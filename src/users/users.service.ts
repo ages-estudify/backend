@@ -15,6 +15,8 @@ import {
 
 @Injectable()
 export class UsersService {
+  amountOfAttempts: number = 5;
+
   constructor(private readonly users: UsersRepository) {}
 
   async findAll(): Promise<UserResponse[]> {
@@ -51,7 +53,10 @@ export class UsersService {
     const starsStats = await this.users.getStarsAndStreakByUser(userId);
     const topics: CompletedTopicsDto = await this.users.getCompletedTopicsByUser(userId);
     const subject: AccuracyBySubjectDto[] = await this.users.getSubjectStatsByUser(userId);
-    const lastAttepts: SimuladoDto[] = await this.users.getLastAttemptsByUser(userId, 5);
+    const lastAttepts: SimuladoDto[] = await this.users.getLastAttemptsByUser(
+      userId,
+      this.amountOfAttempts,
+    );
 
     const response: UserStatsDto = UserStatsMapper.toDto(
       questionsStats,

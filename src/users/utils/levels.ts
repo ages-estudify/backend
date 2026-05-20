@@ -14,12 +14,18 @@ const levels = [
 ];
 
 export function getMaxLevel(): number {
-  return levels.at(-1)?.level ?? 1;
+  const lastLevel = levels[levels.length - 1];
+
+  if (lastLevel) {
+    return lastLevel.level;
+  }
+
+  return 1;
 }
 
-export function getLevel(value: number): LevelDto {
+export function getLevel(totalCorrect: number): LevelDto {
   return {
-    current: levels.find(({ min, max }) => value >= min && value <= max)?.level ?? 1,
+    current: levels.find(({ min, max }) => totalCorrect >= min && totalCorrect <= max)?.level ?? 1,
 
     max: getMaxLevel(),
   };
