@@ -32,23 +32,18 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 async function main() {
-  // LIMPA BANCO
   await prisma.answer.deleteMany();
   await prisma.attemptDay.deleteMany();
   await prisma.attempt.deleteMany();
-
   await prisma.alternative.deleteMany();
   await prisma.question.deleteMany();
-
   await prisma.examDay.deleteMany();
   await prisma.exam.deleteMany();
-
   await prisma.studyLog.deleteMany();
   await prisma.studyDay.deleteMany();
-
+  await prisma.subscription.deleteMany();
   await prisma.path.deleteMany();
   await prisma.subject.deleteMany();
-
   await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
 
