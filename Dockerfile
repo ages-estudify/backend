@@ -42,4 +42,5 @@ RUN npm prune --production
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Executa as migrations, roda o seed-prod direto via ts-node e inicia o servidor
+CMD npx prisma migrate deploy && npx ts-node prisma/seed-prod.ts && node dist/main.js
