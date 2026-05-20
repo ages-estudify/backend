@@ -1,7 +1,10 @@
 const { PrismaClient, Role } = require('@prisma/client');
 const bcrypt = require('bcrypt');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
-const prisma = new PrismaClient();
+const connectionString = `${process.env.DATABASE_URL}`;
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const passwordHash = await bcrypt.hash('Estudify@Admin2026', 10);
