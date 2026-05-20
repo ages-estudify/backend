@@ -15,7 +15,7 @@ import {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly users: UsersRepository) { }
+  constructor(private readonly users: UsersRepository) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
