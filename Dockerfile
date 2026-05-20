@@ -21,6 +21,8 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
+RUN npx tsc prisma/seed-prod.ts --outDir dist/prisma --skipLibCheck --module commonjs --target es2022
+
 # ==========================================
 # Estágio 2: Produção
 # ==========================================
