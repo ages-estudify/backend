@@ -3,6 +3,5 @@ dist
 .git
 .env
 *.tsbuildinfo
-prisma.config.js
 prisma.config.js.map
 prisma.config.d.ts

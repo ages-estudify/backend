@@ -10,7 +10,6 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-COPY prisma.config.ts ./prisma.config.ts
 
 # Instalamos tudo para poder buildar, mas ignoramos os scripts do Husky
 RUN npm ci --ignore-scripts
