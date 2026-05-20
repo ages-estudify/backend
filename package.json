@@ -39,6 +39,7 @@
     "class-validator": "^0.14.4",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "csv-parse": "^6.2.1",
     "pg": "^8.20.0",
     "prisma": "^7.5.0",
     "reflect-metadata": "^0.2.2",
