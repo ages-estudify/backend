@@ -37,7 +37,7 @@ describe('ExamsService', () => {
     }).compile();
 
     service = module.get(ExamsService);
-    repository = module.get(ExamsRepository);
+    repository = module.get<jest.Mocked<ExamsRepository>>(ExamsRepository);
   });
 
   afterEach(() => {
@@ -162,7 +162,7 @@ describe('ExamsService', () => {
       } as unknown as Awaited<ReturnType<ExamsRepository['findExamById']>>);
 
       const spy = jest.spyOn(repository, 'deleteExamLogical');
-      spy.mockResolvedValue(undefined);
+      spy.mockResolvedValue(undefined as never);
 
       await service.deleteExamLogical('exam1');
 
