@@ -36,7 +36,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.js ./
+COPY prisma.config.ts ./
 
 # Em vez de rodar npm ci de novo (que pode dar erro de script), 
 # nós apenas limpamos os pacotes de desenvolvimento que sobraram
@@ -45,4 +45,4 @@ RUN npm prune --production
 EXPOSE 3000
 
 # Executa as migrations, roda o seed-prod direto via ts-node e inicia o servidor
-CMD npx prisma migrate deploy && npx ts-node prisma/seed-prod.ts && node dist/main.js
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/prisma/seed-prod.js && node dist/main.js"]
