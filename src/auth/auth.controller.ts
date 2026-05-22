@@ -41,6 +41,27 @@ export class AuthController {
     return { success: true as const, data };
   }
 
+  @Post('register-admin')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new admin user (temporary open endpoint)' })
+  @ApiCreatedResponse({ type: RegisterSuccessResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Validation failed',
+    schema: {
+      example: { success: false, message: 'birthDate must be a valid YYYY-MM-DD date' },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Email or phone already registered',
+    schema: {
+      example: { success: false, message: 'Email is already registered' },
+    },
+  })
+  async registerAdmin(@Body() body: RegisterRequestDto) {
+    const data = await this.auth.registerAdmin(body);
+    return { success: true as const, data };
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate with email and password' })

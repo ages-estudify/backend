@@ -34,6 +34,14 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterRequestDto): Promise<RegisterResult> {
+    return this.registerWithRole(dto, Role.USER);
+  }
+
+  async registerAdmin(dto: RegisterRequestDto): Promise<RegisterResult> {
+    return this.registerWithRole(dto, Role.ADM);
+  }
+
+  private async registerWithRole(dto: RegisterRequestDto, role: Role): Promise<RegisterResult> {
     const email = dto.email.trim().toLowerCase();
     const phone = dto.phone.trim();
 
@@ -53,7 +61,7 @@ export class AuthService {
       email,
       password: passwordHash,
       phone_number: phone,
-      role: Role.USER,
+      role,
       birth_date: birthDate,
     });
 
