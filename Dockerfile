@@ -42,6 +42,8 @@ COPY prisma.config.ts ./
 # nós apenas limpamos os pacotes de desenvolvimento que sobraram
 RUN npm prune --production
 
+RUN npx prisma generate
+
 EXPOSE 3000
 
 # Executa as migrations, roda o seed-prod direto via ts-node e inicia o servidor
