@@ -118,8 +118,8 @@ export class AttemptsService {
 
     const history: ExamHistoryItemDto[] = attemptDays.map((ad) => {
       const totalQuestions = ad.exam_day._count.questions;
-      const answeredQuestions = ad.answers.filter((a) => a.alternative_id !== null).length;
-      const correctAnswers = ad.answers.filter((a) => a.alternative?.is_correct === true).length;
+      const answeredQuestions = ad._count.answers;
+      const correctAnswers = ad.answers.length;
 
       return {
         attemptDayId: ad.id,

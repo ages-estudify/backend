@@ -87,13 +87,16 @@ export class AttemptsRepository {
             _count: { select: { questions: true } },
           },
         },
-        answers: {
-          include: {
-            alternative: {
-              select: { is_correct: true },
-            },
+        _count: {
+          select: {
+            answers: { where: { alternative_id: { not: null } } },
           },
         },
+        answers: {
+          where: { alternative: { is_correct: true } },
+          select: { id: true },
+        },
+
         attempt: {
           include: {
             exam: {

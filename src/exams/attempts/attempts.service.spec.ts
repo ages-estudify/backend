@@ -218,20 +218,9 @@ describe('AttemptsService', () => {
         time_spent_seconds: timeSpent,
         end_time: endTime,
         exam_day: { day, _count: { questions: questionCount } },
-        answers: [
-          ...Array.from({ length: correctCount }, (_, i) => ({
-            alternative_id: `alt-correct-${i}`,
-            alternative: { is_correct: true },
-          })),
-          ...Array.from({ length: answeredCount - correctCount }, (_, i) => ({
-            alternative_id: `alt-wrong-${i}`,
-            alternative: { is_correct: false },
-          })),
-          ...Array.from({ length: questionCount - answeredCount }, () => ({
-            alternative_id: null,
-            alternative: null,
-          })),
-        ],
+        _count: { answers: answeredCount },
+        answers: Array.from({ length: correctCount }, (_, i) => ({ id: `ans-${i}` })),
+
         attempt: { exam: mockExam },
       };
     };
