@@ -30,6 +30,18 @@ export class AnswerResponseDto {
     example: 47,
   })
   totalCoins!: number;
+
+  @ApiProperty({
+    description: 'Quantidade de dias consecutivos do streak do usuario',
+    example: 8,
+  })
+  streakDays!: number;
+
+  @ApiProperty({
+    description: 'Indica se o usuario ja manteve o streak hoje',
+    example: true,
+  })
+  streakActive!: boolean;
 }
 
 export class AnswerSuccessResponseDto {

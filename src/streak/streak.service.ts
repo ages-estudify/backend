@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../users/users.repository';
 import { StreakDataDto } from './dto/streak-response.dto';
 
+const TIME_ZONE = 'America/Sao_Paulo';
+
 @Injectable()
 export class StreakService {
   constructor(private readonly users: UsersRepository) {}
@@ -66,7 +68,16 @@ export class StreakService {
   }
 
   private startOfDay(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const year = Number(parts.find((p) => p.type === 'year')!.value);
+    const month = Number(parts.find((p) => p.type === 'month')!.value);
+    const day = Number(parts.find((p) => p.type === 'day')!.value);
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
   private daysBetween(from: Date, to: Date): number {

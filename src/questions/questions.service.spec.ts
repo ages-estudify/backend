@@ -222,6 +222,8 @@ describe('QuestionsService', () => {
           explanation: 'Explanation',
           coinsEarned: 1,
           totalCoins: 11,
+          streakDays: 1,
+          streakActive: true,
         },
       });
       expect(repository.createAnswer).toHaveBeenCalledWith({
@@ -254,6 +256,8 @@ describe('QuestionsService', () => {
           explanation: 'Explanation',
           coinsEarned: 0,
           totalCoins: 10,
+          streakDays: 1,
+          streakActive: true,
         },
       });
       expect(gamificationService.earnCoins).toHaveBeenCalledWith({

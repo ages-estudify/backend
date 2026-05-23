@@ -185,7 +185,7 @@ export class QuestionsService {
       answer_date: new Date(),
     });
 
-    await this.streakService.registerAnswer(userId);
+    const streakResult = await this.streakService.registerAnswer(userId);
 
     const gamificationResult = await this.gamificationService.earnCoins({
       userId,
@@ -201,6 +201,8 @@ export class QuestionsService {
         explanation: question.feedback,
         coinsEarned: gamificationResult.coinsEarned,
         totalCoins: gamificationResult.totalCoins,
+        streakDays: streakResult.streakDays,
+        streakActive: streakResult.streakActive,
       },
     } as AnswerSuccessResponseDto;
   }
