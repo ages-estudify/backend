@@ -17,6 +17,7 @@ import {
   ApiOkResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
+
 import { AttemptsService } from './attempts.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -92,6 +93,7 @@ export class AttemptExamsController {
     if (body.timeSpentSeconds !== undefined) {
       await this.attemptsService.update(attemptId, body, user.userId);
     }
+    return await this.attemptsService.finish(attemptId, user.userId, body.examDayId);
     return await this.attemptsService.finish(attemptId, user.userId, body.examDayId);
   }
   @Get(':examId/history')

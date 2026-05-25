@@ -146,6 +146,7 @@ export class AttemptsService {
       },
     };
   }
+
   async getExamHistory(examId: string, userId: string): Promise<ExamHistoryResponseDto> {
     const exam = await this.attemptsRepository.findExamById(examId);
 
