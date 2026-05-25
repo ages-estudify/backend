@@ -28,6 +28,7 @@ function makeAlternatives(correctLetter: string) {
 }
 
 const connectionString = `${process.env.DATABASE_URL}`;
+const ICON_BASE_URL = '/icons/topics';
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
@@ -216,7 +217,7 @@ async function main() {
       trail_position: 1,
       subject_id: historia.id,
       text: 'Estude a história da antiguidade.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/historia-antiguidade.png`,
     },
   });
   const historiaIdadeMedia = await prisma.path.create({
@@ -226,7 +227,7 @@ async function main() {
       trail_position: 2,
       subject_id: historia.id,
       text: 'Estude a história da Idade Média.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/historia-idade-media.png`,
     },
   });
   const historiaRenascimento = await prisma.path.create({
@@ -236,7 +237,7 @@ async function main() {
       trail_position: 3,
       subject_id: historia.id,
       text: 'Estude o Renascimento.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/historia-renascimento.png`,
     },
   });
   const historiaEraModerna = await prisma.path.create({
@@ -246,7 +247,7 @@ async function main() {
       trail_position: 4,
       subject_id: historia.id,
       text: 'Estude a Era Moderna.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/historia-era-moderna.png`,
     },
   });
   const historiaEraContemporanea = await prisma.path.create({
@@ -256,7 +257,7 @@ async function main() {
       trail_position: 5,
       subject_id: historia.id,
       text: 'Estude a Era Contemporânea.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/historia-era-contemporanea.png`,
     },
   });
 
@@ -268,7 +269,7 @@ async function main() {
       trail_position: 1,
       subject_id: matematica.id,
       text: 'Estude os conceitos básicos de matemática.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/matematica-basica.png`,
     },
   });
   const matematicaAlgebra = await prisma.path.create({
@@ -278,7 +279,7 @@ async function main() {
       trail_position: 2,
       subject_id: matematica.id,
       text: 'Estude Álgebra.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/matematica-algebra.png`,
     },
   });
   const matematicaGeometria = await prisma.path.create({
@@ -288,7 +289,7 @@ async function main() {
       trail_position: 3,
       subject_id: matematica.id,
       text: 'Estude Geometria.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/matematica-geometria.png`,
     },
   });
   const matematicaTrigonometria = await prisma.path.create({
@@ -298,7 +299,7 @@ async function main() {
       trail_position: 4,
       subject_id: matematica.id,
       text: 'Estude Trigonometria.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/matematica-trigonometria.png`,
     },
   });
   const matematicaEstatistica = await prisma.path.create({
@@ -308,7 +309,7 @@ async function main() {
       trail_position: 5,
       subject_id: matematica.id,
       text: 'Estude Estatística.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/matematica-estatistica.png`,
     },
   });
 
@@ -320,7 +321,7 @@ async function main() {
       trail_position: 1,
       subject_id: portugues.id,
       text: 'Estude interpretação de textos.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/portugues-interpretacao-de-texto.png`,
     },
   });
   const portuguesGramaticaAvancada = await prisma.path.create({
@@ -330,7 +331,7 @@ async function main() {
       trail_position: 2,
       subject_id: portugues.id,
       text: 'Estude gramática avançada.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/portugues-gramatica-avancada.png`,
     },
   });
   const portuguesRedacao = await prisma.path.create({
@@ -340,27 +341,27 @@ async function main() {
       trail_position: 3,
       subject_id: portugues.id,
       text: 'Estude técnicas de redação.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/portugues-redacao.png`,
     },
   });
-  const portuguesLiteraturaBrasileira = await prisma.path.create({
+  const portuguesCrase = await prisma.path.create({
     data: {
-      name: 'Literatura Brasileira',
+      name: 'Crase',
       schedule_position: 14,
       trail_position: 4,
       subject_id: portugues.id,
-      text: 'Estude literatura brasileira.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      text: 'Estude o uso da crase.',
+      icon_url: `${ICON_BASE_URL}/portugues-crase.png`,
     },
   });
-  const portuguesLiteraturaPortuguesa = await prisma.path.create({
+  const portuguesPorques = await prisma.path.create({
     data: {
-      name: 'Literatura Portuguesa',
+      name: 'Porquês',
       schedule_position: 15,
       trail_position: 5,
       subject_id: portugues.id,
-      text: 'Estude literatura portuguesa.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      text: 'Estude o uso dos porquês.',
+      icon_url: `${ICON_BASE_URL}/portugues-porques.png`,
     },
   });
 
@@ -372,7 +373,7 @@ async function main() {
       trail_position: 1,
       subject_id: geografia.id,
       text: 'Estude cartografia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/geografia-cartografia.png`,
     },
   });
   const geografiaFisica = await prisma.path.create({
@@ -382,7 +383,7 @@ async function main() {
       trail_position: 2,
       subject_id: geografia.id,
       text: 'Estude geografia física.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/geografia-fisica.png`,
     },
   });
   const geografiaHumana = await prisma.path.create({
@@ -392,7 +393,7 @@ async function main() {
       trail_position: 3,
       subject_id: geografia.id,
       text: 'Estude geografia humana.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/geografia-humana.png`,
     },
   });
   const geografiaClimatologia = await prisma.path.create({
@@ -402,7 +403,7 @@ async function main() {
       trail_position: 4,
       subject_id: geografia.id,
       text: 'Estude climatologia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/geografia-climatologia.png`,
     },
   });
   const geografiaGeomorfologia = await prisma.path.create({
@@ -412,7 +413,7 @@ async function main() {
       trail_position: 5,
       subject_id: geografia.id,
       text: 'Estude geomorfologia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/geografia-geomorfologia.png`,
     },
   });
 
@@ -424,7 +425,7 @@ async function main() {
       trail_position: 1,
       subject_id: fisica.id,
       text: 'Estude mecânica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/fisica-mecanica.png`,
     },
   });
   const fisicaTermodinamica = await prisma.path.create({
@@ -434,7 +435,7 @@ async function main() {
       trail_position: 2,
       subject_id: fisica.id,
       text: 'Estude termodinâmica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/fisica-termodinamica.png`,
     },
   });
   const fisicaOndulatoria = await prisma.path.create({
@@ -444,7 +445,7 @@ async function main() {
       trail_position: 3,
       subject_id: fisica.id,
       text: 'Estude ondulatória.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/fisica-ondulatoria.png`,
     },
   });
   const fisicaEletromagnetismo = await prisma.path.create({
@@ -454,7 +455,7 @@ async function main() {
       trail_position: 4,
       subject_id: fisica.id,
       text: 'Estude eletromagnetismo.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/fisica-eletromagnetismo.png`,
     },
   });
   const fisicaOptica = await prisma.path.create({
@@ -464,7 +465,7 @@ async function main() {
       trail_position: 5,
       subject_id: fisica.id,
       text: 'Estude óptica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/fisica-optica.png`,
     },
   });
 
@@ -476,7 +477,7 @@ async function main() {
       trail_position: 1,
       subject_id: quimica.id,
       text: 'Estude modelos atômicos.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/quimica-modelos-atomicos.png`,
     },
   });
   const quimicaLigacoes = await prisma.path.create({
@@ -486,7 +487,7 @@ async function main() {
       trail_position: 2,
       subject_id: quimica.id,
       text: 'Estude ligações químicas.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/quimica-ligacoes-quimicas.png`,
     },
   });
   const quimicaTermoquimica = await prisma.path.create({
@@ -496,7 +497,7 @@ async function main() {
       trail_position: 3,
       subject_id: quimica.id,
       text: 'Estude termoquímica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/quimica-termoquimica.png`,
     },
   });
   const quimicaCinetica = await prisma.path.create({
@@ -506,7 +507,7 @@ async function main() {
       trail_position: 4,
       subject_id: quimica.id,
       text: 'Estude cinética química.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/quimica-cinetica-quimica.png`,
     },
   });
   const quimicaOrganica = await prisma.path.create({
@@ -516,7 +517,7 @@ async function main() {
       trail_position: 5,
       subject_id: quimica.id,
       text: 'Estude química orgânica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/quimica-organica.png`,
     },
   });
 
@@ -528,7 +529,7 @@ async function main() {
       trail_position: 1,
       subject_id: biologia.id,
       text: 'Estude bioquímica.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/biologia-bioquimica.png`,
     },
   });
   const biologiaGenetica = await prisma.path.create({
@@ -538,7 +539,7 @@ async function main() {
       trail_position: 2,
       subject_id: biologia.id,
       text: 'Estude genética.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/biologia-genetica.png`,
     },
   });
   const biologiaEcologia = await prisma.path.create({
@@ -548,7 +549,7 @@ async function main() {
       trail_position: 3,
       subject_id: biologia.id,
       text: 'Estude ecologia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/biologia-ecologia.png`,
     },
   });
   const biologiaMicrobiologia = await prisma.path.create({
@@ -558,7 +559,7 @@ async function main() {
       trail_position: 4,
       subject_id: biologia.id,
       text: 'Estude microbiologia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/biologia-microbiologia.png`,
     },
   });
   const biologiaZoologia = await prisma.path.create({
@@ -568,7 +569,7 @@ async function main() {
       trail_position: 5,
       subject_id: biologia.id,
       text: 'Estude zoologia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/biologia-zoologia.png`,
     },
   });
 
@@ -580,7 +581,7 @@ async function main() {
       trail_position: 1,
       subject_id: filosofia.id,
       text: 'Estude filosofia antiga.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/filosofia-antiga.png`,
     },
   });
   const filosofiaMedieval = await prisma.path.create({
@@ -590,7 +591,7 @@ async function main() {
       trail_position: 2,
       subject_id: filosofia.id,
       text: 'Estude filosofia medieval.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/filosofia-medieval.png`,
     },
   });
   const filosofiaModerna = await prisma.path.create({
@@ -600,7 +601,7 @@ async function main() {
       trail_position: 3,
       subject_id: filosofia.id,
       text: 'Estude filosofia moderna.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/filosofia-moderna.png`,
     },
   });
   const filosofiaContemporanea = await prisma.path.create({
@@ -610,7 +611,7 @@ async function main() {
       trail_position: 4,
       subject_id: filosofia.id,
       text: 'Estude filosofia contemporânea.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/filosofia-contemporanea.png`,
     },
   });
   const filosofiaEtica = await prisma.path.create({
@@ -620,7 +621,7 @@ async function main() {
       trail_position: 5,
       subject_id: filosofia.id,
       text: 'Estude ética.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/filosofia-etica.png`,
     },
   });
 
@@ -632,7 +633,7 @@ async function main() {
       trail_position: 1,
       subject_id: sociologia.id,
       text: 'Estude cultura.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/sociologia-cultura.png`,
     },
   });
   const sociologiaEstrutura = await prisma.path.create({
@@ -642,7 +643,7 @@ async function main() {
       trail_position: 2,
       subject_id: sociologia.id,
       text: 'Estude estrutura social.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/sociologia-estrutura-social.png`,
     },
   });
   const sociologiaMovimentos = await prisma.path.create({
@@ -652,7 +653,7 @@ async function main() {
       trail_position: 3,
       subject_id: sociologia.id,
       text: 'Estude movimentos sociais.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/sociologia-movimentos-sociais.png`,
     },
   });
   const sociologiaInstituicoes = await prisma.path.create({
@@ -662,7 +663,7 @@ async function main() {
       trail_position: 4,
       subject_id: sociologia.id,
       text: 'Estude instituições.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/sociologia-instituicoes.png`,
     },
   });
   const sociologiaGlobalizacao = await prisma.path.create({
@@ -672,7 +673,7 @@ async function main() {
       trail_position: 5,
       subject_id: sociologia.id,
       text: 'Estude globalização.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/sociologia-globalizacao.png`,
     },
   });
 
@@ -684,7 +685,7 @@ async function main() {
       trail_position: 1,
       subject_id: literatura.id,
       text: 'Estude escolas literárias.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/literatura-escolas-literarias.png`,
     },
   });
   const literaturaPoesia = await prisma.path.create({
@@ -694,7 +695,7 @@ async function main() {
       trail_position: 2,
       subject_id: literatura.id,
       text: 'Estude poesia.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/literatura-poesia.png`,
     },
   });
   const literaturaProsa = await prisma.path.create({
@@ -704,7 +705,7 @@ async function main() {
       trail_position: 3,
       subject_id: literatura.id,
       text: 'Estude prosa.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/literatura-prosa.png`,
     },
   });
   const literaturaTeatro = await prisma.path.create({
@@ -714,7 +715,7 @@ async function main() {
       trail_position: 4,
       subject_id: literatura.id,
       text: 'Estude teatro.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/literatura-teatro.png`,
     },
   });
   const literaturaCritica = await prisma.path.create({
@@ -724,7 +725,7 @@ async function main() {
       trail_position: 5,
       subject_id: literatura.id,
       text: 'Estude crítica literária.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/literatura-critica-literaria.png`,
     },
   });
 
@@ -736,7 +737,7 @@ async function main() {
       trail_position: 1,
       subject_id: ingles.id,
       text: 'Estude gramática básica em inglês.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/ingles-gramatica-basica.png`,
     },
   });
   const inglesVocabulário = await prisma.path.create({
@@ -746,7 +747,7 @@ async function main() {
       trail_position: 2,
       subject_id: ingles.id,
       text: 'Estude vocabulário em inglês.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/ingles-vocabulario.png`,
     },
   });
   const inglesLeitura = await prisma.path.create({
@@ -756,7 +757,7 @@ async function main() {
       trail_position: 3,
       subject_id: ingles.id,
       text: 'Estude leitura e interpretação em inglês.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/ingles-leitura-e-interpretacao.png`,
     },
   });
   const inglesConversacao = await prisma.path.create({
@@ -766,7 +767,7 @@ async function main() {
       trail_position: 4,
       subject_id: ingles.id,
       text: 'Pratique conversação em inglês.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/ingles-conversacao.png`,
     },
   });
   const inglesEscrita = await prisma.path.create({
@@ -776,7 +777,7 @@ async function main() {
       trail_position: 5,
       subject_id: ingles.id,
       text: 'Pratique escrita em inglês.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/ingles-escrita.png`,
     },
   });
 
@@ -788,7 +789,7 @@ async function main() {
       trail_position: 1,
       subject_id: espanhol.id,
       text: 'Estude gramática básica em espanhol.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/espanhol-gramatica-basica.png`,
     },
   });
   const espanholVocabulário = await prisma.path.create({
@@ -798,7 +799,7 @@ async function main() {
       trail_position: 2,
       subject_id: espanhol.id,
       text: 'Estude vocabulário em espanhol.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/espanhol-vocabulario.png`,
     },
   });
   const espanholLeitura = await prisma.path.create({
@@ -808,7 +809,7 @@ async function main() {
       trail_position: 3,
       subject_id: espanhol.id,
       text: 'Estude leitura e interpretação em espanhol.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/espanhol-leitura-e-interpretacao.png`,
     },
   });
   const espanholConversacao = await prisma.path.create({
@@ -818,7 +819,7 @@ async function main() {
       trail_position: 4,
       subject_id: espanhol.id,
       text: 'Pratique conversação em espanhol.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/espanhol-conversacao.png`,
     },
   });
   const espanholEscrita = await prisma.path.create({
@@ -828,7 +829,7 @@ async function main() {
       trail_position: 5,
       subject_id: espanhol.id,
       text: 'Pratique escrita em espanhol.',
-      icon_url: 'https://cdn.com/default-path-icon.png',
+      icon_url: `${ICON_BASE_URL}/espanhol-escrita.png`,
     },
   });
 
@@ -853,8 +854,8 @@ async function main() {
     portuguesInterpretacao,
     portuguesGramaticaAvancada,
     portuguesRedacao,
-    portuguesLiteraturaBrasileira,
-    portuguesLiteraturaPortuguesa,
+    portuguesCrase,
+    portuguesPorques,
     // Geografia
     geografiaCartografia,
     geografiaFisica,
