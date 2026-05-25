@@ -11,7 +11,7 @@ export class StreakService {
   async registerAnswer(userId: string): Promise<StreakDataDto> {
     const user = await this.users.findUniqueById(userId);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const today = this.startOfDay(new Date());
@@ -42,7 +42,7 @@ export class StreakService {
   async getStreak(userId: string): Promise<StreakDataDto> {
     const user = await this.users.findUniqueById(userId);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const today = this.startOfDay(new Date());

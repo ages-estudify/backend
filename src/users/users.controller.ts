@@ -71,8 +71,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user streak (consecutive active days)' })
   @ApiOkResponse({ type: StreakDataDto })
   @ApiNotFoundResponse({
-    description: 'Usuário não encontrado',
-    schema: { example: { message: 'Usuário não encontrado' } },
+    description: 'User not found',
+    schema: { example: { message: 'User not found' } },
   })
   async getStreak(@CurrentUser() user: JwtAuthUser): Promise<StreakDataDto> {
     return this.streakService.getStreak(user.userId);
