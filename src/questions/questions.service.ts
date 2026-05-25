@@ -4,6 +4,7 @@ import { QuestionResponse, QuestionsRepository } from './questions.repository';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 @Injectable()
 export class QuestionsService {
@@ -11,6 +12,7 @@ export class QuestionsService {
     private questionsRepository: QuestionsRepository,
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
+    private questionMedia: QuestionMediaService,
   ) {}
 
   async getQuestionBatch(
@@ -42,7 +44,7 @@ export class QuestionsService {
     }
 
     return {
-      data: this.buildResponseData(questions, current, total),
+      data: await this.buildResponseData(questions, current, total),
     };
   }
 
@@ -53,13 +55,17 @@ export class QuestionsService {
     };
   }
 
-  private buildResponseData(
+  private async buildResponseData(
     questions: QuestionResponse[],
     current: number,
     total: number,
-  ): QuestionBatchDataDto['data'] {
+  ): Promise<QuestionBatchDataDto['data']> {
+    const signedUrls = await this.questionMedia.resolveSignedUrls(
+      questions.map((q) => q.media_key),
+    );
+
     return {
-      questions: questions.map((q) => this.transformQuestion(q)),
+      questions: questions.map((q, index) => this.transformQuestion(q, signedUrls[index])),
       sessionProgress: {
         current,
         total,
@@ -67,11 +73,11 @@ export class QuestionsService {
     };
   }
 
-  private transformQuestion(question: QuestionResponse) {
+  private transformQuestion(question: QuestionResponse, imageUrl: string | null) {
     return {
       id: question.id,
       text: question.text,
-      imageUrl: question.image_url,
+      imageUrl,
       origin: this.mapOrigin(question.origin),
       subjectName: question.subjectName,
       topicName: question.topicName,

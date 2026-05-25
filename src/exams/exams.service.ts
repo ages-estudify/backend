@@ -14,6 +14,9 @@ import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsB
 import { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.dto';
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+import { Role } from '@prisma/client';
+import { ExamMediaService } from '../storage/exam-media.service';
+import { decodeBase64Image } from '../storage/base64-image.util';
 
 interface ParsedRow {
   exam_title: string;
@@ -48,30 +51,6 @@ type AnswerWithRelations = {
   } | null;
 };
 
-type AttemptDayWithAnswers = {
-  exam_day: {
-    day: number;
-  };
-  answers: AnswerWithRelations[];
-};
-
-interface ParsedRow {
-  exam_title: string;
-  bank: string;
-  exam_day: string;
-  discipline: string;
-  content: string;
-  question: string;
-  alternative_a: string;
-  alternative_b: string;
-  alternative_c: string;
-  alternative_d: string;
-  alternative_e: string;
-  correct_answer: string;
-  answer_explanation: string;
-  year: string;
-}
-
 @Injectable()
 export class ExamsService {
   private readonly maxFileSize = 10 * 1024 * 1024;
@@ -97,17 +76,20 @@ export class ExamsService {
   constructor(
     private examsRepository: ExamsRepository,
     private prisma: PrismaService,
+    private examMedia: ExamMediaService,
   ) {}
 
-  async listAllExams(): Promise<ListExamsResponseDto> {
-    const exams = await this.examsRepository.findAllExams();
+  async listAllExams(userRole: Role): Promise<ListExamsResponseDto> {
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
+
+    const signedUrls = await this.examMedia.resolveSignedUrls(exams.map((e) => e.media_key));
 
     const data: ListExamItemDto[] = await Promise.all(
-      exams.map(async (exam) => ({
+      exams.map(async (exam, index) => ({
         id: exam.id,
         title: exam.name,
         origin: exam.origin,
-        imageUrl: exam.image_url,
+        imageUrl: signedUrls[index],
         totalQuestions: await this.examsRepository.countQuestionsByExam(exam.id),
         status: exam.status,
         days: exam.exam_days.map((day) => ({
@@ -150,7 +132,7 @@ export class ExamsService {
         data: {
           name: metadata.examTitle!,
           origin: metadata.bank!,
-          image_url: null,
+          media_key: null,
           status: 'DRAFT',
         },
       });
@@ -235,7 +217,7 @@ export class ExamsService {
     updates: {
       title?: string;
       origin?: string;
-      image?: MulterFile;
+      image?: string;
       status?: 'DRAFT' | 'PUBLISHED';
     },
   ) {
@@ -251,26 +233,27 @@ export class ExamsService {
     const updateData: Partial<{
       name: string;
       origin: string;
-      image_url: string | null;
+      media_key: string | null;
       status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     }> = {};
 
     if (updates.title) updateData.name = updates.title;
     if (updates.origin) updateData.origin = updates.origin;
 
-    if (updates.image) {
-      const imageUrl = this.uploadImageToS3(updates.image, id);
-      updateData.image_url = imageUrl;
+    if (updates.image?.trim()) {
+      const { buffer, mimeType } = decodeBase64Image(updates.image);
+      updateData.media_key = await this.examMedia.uploadExamImage(id, buffer, mimeType);
       updateData.status = updates.status ?? 'PUBLISHED';
     } else if (updates.status) {
       updateData.status = updates.status;
     }
 
-    if (updateData.status === 'PUBLISHED' && !updateData.image_url && !exam.image_url) {
+    if (updateData.status === 'PUBLISHED' && !updateData.media_key && !exam.media_key) {
       throw new BadRequestException('Cannot publish exam without image');
     }
 
     const updated = await this.examsRepository.updateExam(id, updateData);
+    const imageUrl = await this.examMedia.resolveSignedUrl(updated.media_key);
 
     return {
       success: true,
@@ -278,7 +261,7 @@ export class ExamsService {
         id: updated.id,
         title: updated.name,
         origin: updated.origin,
-        imageUrl: updated.image_url,
+        imageUrl,
         status: updated.status,
       },
     };
@@ -293,17 +276,23 @@ export class ExamsService {
     await this.examsRepository.deleteExamLogical(id);
   }
 
-  async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const exams = await this.examsRepository.findAllPublishedExams();
+  async findAllWithLastAttemptByUser(
+    userRole: Role,
+    userId: string,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
     const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));
 
-    const result = exams.map((exam) => {
+    const signedUrls = await this.examMedia.resolveSignedUrls(exams.map((e) => e.media_key));
+
+    const result = exams.map((exam, index) => {
       const attempt = attemptByExamId.get(exam.id);
 
       return {
         ...exam,
+        imageUrl: signedUrls[index],
         hasAttempt: !!attempt,
         isCompleted: attempt?.isCompleted ?? false,
         totalAnswers: attempt?.totalAnswers ?? 0,
@@ -336,12 +325,50 @@ export class ExamsService {
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId, userId);
 
-    const answers = this.getOrderedAnswers(attempt.attempt_days as AttemptDayWithAnswers[]);
+    const filteredAttemptDays = query?.attemptDayId
+      ? (attempt.attempt_days as any[]).filter((ad) => ad.id === query.attemptDayId)
+      : (attempt.attempt_days as any[]);
 
-    const gridWithoutFilter = answers.map(({ answer }, index) => ({
-      questionId: answer.question_id,
+    const answerByQuestionId = new Map<string, AnswerWithRelations>();
+    for (const ad of filteredAttemptDays) {
+      for (const ans of ad.answers ?? []) {
+        answerByQuestionId.set(ans.question_id, ans as AnswerWithRelations);
+      }
+    }
+
+    const allQuestions: Array<{
+      examDayDay: number;
+      question: {
+        id: string;
+        number: number | null;
+        alternatives: { letter: string; is_correct: boolean }[];
+      };
+      answer?: AnswerWithRelations;
+    }> = [];
+
+    for (const ad of filteredAttemptDays) {
+      const dayNum = ad.exam_day.day;
+      for (const q of ad.exam_day.questions ?? []) {
+        allQuestions.push({
+          examDayDay: dayNum,
+          question: q,
+          answer: answerByQuestionId.get(q.id),
+        });
+      }
+    }
+
+    allQuestions.sort((a, b) => {
+      if (a.examDayDay !== b.examDayDay) return a.examDayDay - b.examDayDay;
+      const an = a.question.number ?? Number.MAX_SAFE_INTEGER;
+      const bn = b.question.number ?? Number.MAX_SAFE_INTEGER;
+      if (an !== bn) return an - bn;
+      return a.question.id.localeCompare(b.question.id);
+    });
+
+    const gridWithoutFilter = allQuestions.map((item, index) => ({
+      questionId: item.question.id,
       number: index + 1,
-      status: this.getQuestionStatus(answer),
+      status: this.getQuestionStatus(item.answer, item.question.alternatives),
     }));
 
     const grid = this.filterGridByStatus(gridWithoutFilter, query?.statusFilter);
@@ -366,45 +393,6 @@ export class ExamsService {
     return attempt;
   }
 
-  private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
-    return attemptDays
-      .flatMap((attemptDay) =>
-        attemptDay.answers.map((answer) => ({
-          examDayDay: attemptDay.exam_day.day,
-          answer,
-        })),
-      )
-      .sort((a, b) => this.sortAnswers(a, b));
-  }
-
-  private sortAnswers(
-    a: { examDayDay: number; answer: AnswerWithRelations },
-    b: { examDayDay: number; answer: AnswerWithRelations },
-  ) {
-    const dayDifference = a.examDayDay - b.examDayDay;
-
-    if (dayDifference !== 0) {
-      return dayDifference;
-    }
-
-    const questionNumberA = a.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-    const questionNumberB = b.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-
-    const questionDifference = questionNumberA - questionNumberB;
-
-    if (questionDifference !== 0) {
-      return questionDifference;
-    }
-
-    const dateDifference = a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
-
-    if (dateDifference !== 0) {
-      return dateDifference;
-    }
-
-    return a.answer.question_id.localeCompare(b.answer.question_id);
-  }
-
   private filterGridByStatus(
     grid: ResultGridItemDto[],
     statusFilter?: ResultGridItemStatus[],
@@ -416,14 +404,15 @@ export class ExamsService {
     return grid.filter((item) => statusFilter.includes(item.status));
   }
 
-  private getQuestionStatus(answer: AnswerWithRelations): ResultGridItemStatus {
-    if (!answer.alternative) {
+  private getQuestionStatus(
+    answer: AnswerWithRelations | undefined,
+    alternatives: { letter: string; is_correct: boolean }[],
+  ): ResultGridItemStatus {
+    if (!answer || !answer.alternative) {
       return 'BLANK';
     }
 
-    const correctAlternative = answer.question.alternatives.find(
-      (alternative) => alternative.is_correct,
-    );
+    const correctAlternative = alternatives.find((alternative) => alternative.is_correct);
 
     if (answer.alternative.letter === correctAlternative?.letter) {
       return 'CORRECT';
@@ -458,9 +447,5 @@ export class ExamsService {
     }
 
     return { validRows, invalidRows };
-  }
-
-  private uploadImageToS3(file: MulterFile, examId: string): string {
-    return `https://s3.amazonaws.com/bucket/exam-${examId}.png`;
   }
 }

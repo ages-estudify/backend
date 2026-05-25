@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptsService } from './attempts.service';
 import { AttemptsRepository } from './attempts.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { QuestionMediaService } from '../../storage/question-media.service';
 
 const mockAttemptsRepository = {
   create: jest.fn(),
@@ -13,6 +14,9 @@ const mockAttemptsRepository = {
   findAttemptForFinish: jest.fn(),
   findExamById: jest.fn(),
   findHistoryByExamAndUser: jest.fn(),
+  findAttemptDay: jest.fn(),
+  finishAttemptDay: jest.fn(),
+  countFinishedAttemptDays: jest.fn(),
 };
 
 describe('AttemptsService', () => {
@@ -26,6 +30,17 @@ describe('AttemptsService', () => {
         {
           provide: AttemptsRepository,
           useValue: mockAttemptsRepository,
+        },
+        {
+          provide: QuestionMediaService,
+          useValue: {
+            resolveSignedUrl: jest.fn().mockResolvedValue(null),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) =>
+                Promise.resolve(keys.map(() => null)),
+              ),
+          },
         },
       ],
     }).compile();
@@ -134,6 +149,7 @@ describe('AttemptsService', () => {
 
       repository.findAttemptForFinish.mockResolvedValue(mockAttempt);
       repository.findAnswersByAttemptId.mockResolvedValue(mockAnswers);
+      repository.countFinishedAttemptDays.mockResolvedValue(1);
       repository.update.mockResolvedValue({
         id: 'att-1',
         exam_id: 'exam-1',

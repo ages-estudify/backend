@@ -4,16 +4,20 @@ import { AttemptResponseDto } from '././dto/attempt-response.dto';
 import { AttemptsRepository } from './attempts.repository';
 import { Language } from '@prisma/client';
 import { ExamHistoryResponseDto, ExamHistoryItemDto } from './dto/exam-history-response.dto';
+import { QuestionMediaService } from '../../storage/question-media.service';
 
 @Injectable()
 export class AttemptsService {
-  constructor(private readonly attemptsRepository: AttemptsRepository) {}
+  constructor(
+    private readonly attemptsRepository: AttemptsRepository,
+    private readonly questionMedia: QuestionMediaService,
+  ) {}
 
   async create(examId: string, userId: string, language: string) {
     const existingAttempt = await this.attemptsRepository.findActive(userId, examId);
 
     if (existingAttempt) {
-      await this.finish(existingAttempt.id, userId);
+      return { success: true, data: { attempt: existingAttempt } };
     }
 
     const attempt = await this.attemptsRepository.create({
@@ -54,14 +58,14 @@ export class AttemptsService {
     return { success: true, data: { attempt: updatedAttempt } };
   }
 
-  async findLast(userId: string, examId: string) {
-    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId);
+  async findLast(userId: string, examId: string, examDayId?: string) {
+    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId, examDayId);
 
     if (!attempt) throw new NotFoundException('No active attempt found');
 
     const userAnswers = await this.attemptsRepository.findAnswersByAttemptId(attempt.id);
 
-    const questions = this.formatQuestionsWithAnswers(attempt.exam.exam_days, userAnswers);
+    const questions = await this.formatQuestionsWithAnswers(attempt.exam.exam_days, userAnswers);
 
     const attemptResponse: AttemptResponseDto = {
       id: attempt.id,
@@ -82,28 +86,63 @@ export class AttemptsService {
     };
   }
 
-  async finish(id: string, userId: string) {
+  async finish(id: string, userId: string, examDayId?: string) {
     const attempt = await this.attemptsRepository.findAttemptForFinish(id, userId);
 
     if (!attempt) throw new NotFoundException('Attempt not found');
-    if (attempt.end_time) throw new BadRequestException('Attempt already finished');
 
-    const totalScore = await this.calculateAttemptScore(attempt, attempt.id);
+    let attemptDayId: string | undefined;
 
-    const updated = await this.attemptsRepository.update(id, {
-      end_time: new Date(),
-      score: totalScore.score,
-    });
+    if (examDayId) {
+      const attemptDay = await this.attemptsRepository.findAttemptDay(id, examDayId);
+      if (attemptDay) {
+        attemptDayId = attemptDay.id;
+        if (!attemptDay.end_time) {
+          await this.attemptsRepository.finishAttemptDay(attemptDay.id, attempt.time_spent_seconds);
+        }
+      }
+    }
+
+    const totalDays = attempt.exam.exam_days.length;
+    const finishedDays = await this.attemptsRepository.countFinishedAttemptDays(id);
+    const allDaysFinished = totalDays > 0 && finishedDays >= totalDays;
+
+    if (allDaysFinished && !attempt.end_time) {
+      const totalScore = await this.calculateAttemptScore(attempt, attempt.id);
+      const updated = await this.attemptsRepository.update(id, {
+        end_time: new Date(),
+        score: totalScore.score,
+      });
+
+      return {
+        success: true,
+        data: {
+          attemptId: updated.id,
+          attemptDayId,
+          examId: updated.exam_id,
+          timeSpentSeconds: updated.time_spent_seconds,
+          endTime: updated.end_time,
+          score: totalScore.score,
+          ...totalScore.data,
+        },
+      };
+    }
 
     return {
       success: true,
       data: {
-        attemptId: updated.id,
-        examId: updated.exam_id,
-        timeSpentSeconds: updated.time_spent_seconds,
-        endTime: updated.end_time,
-        score: totalScore.score,
-        ...totalScore.data,
+        attemptId: attempt.id,
+        attemptDayId,
+        examId: attempt.exam_id,
+        timeSpentSeconds: attempt.time_spent_seconds,
+        endTime: attempt.end_time,
+        score: attempt.score ?? 0,
+        totalQuestions: 0,
+        answeredQuestions: 0,
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        blankAnswers: 0,
+        resultBySubject: [],
       },
     };
   }
@@ -159,26 +198,32 @@ export class AttemptsService {
     };
   }
 
-  private formatQuestionsWithAnswers(examDays: any[], userAnswers: any[]) {
-    return examDays
-      .flatMap((day) =>
-        day.questions.map((q: any) => {
-          const answer = userAnswers.find((a: any) => a.question_id === q.id);
-          return {
-            id: q.id,
-            number: q.number,
-            text: q.text,
-            imageUrl: q.image_url,
-            day: day.day,
-            alternatives: q.alternatives.map((alt: any) => ({
-              id: alt.id,
-              letter: alt.letter,
-              text: alt.text,
-            })),
-            selectedAlternativeId: answer?.alternative_id ?? null,
-          };
-        }),
-      )
+  private async formatQuestionsWithAnswers(examDays: any[], userAnswers: any[]) {
+    const flatQuestions = examDays.flatMap((day) => day.questions.map((q: any) => ({ q, day })));
+
+    const mediaKeys = flatQuestions.map(
+      ({ q }: { q: { media_key?: string | null } }) => q.media_key,
+    );
+    const signedUrls = await this.questionMedia.resolveSignedUrls(mediaKeys);
+
+    return flatQuestions
+      .map(({ q, day }, index) => {
+        const answer = userAnswers.find((a: any) => a.question_id === q.id);
+        const imageUrl = signedUrls[index];
+        return {
+          id: q.id,
+          number: q.number,
+          text: q.text,
+          imageUrl,
+          day: day.day,
+          alternatives: q.alternatives.map((alt: any) => ({
+            id: alt.id,
+            letter: alt.letter,
+            text: alt.text,
+          })),
+          selectedAlternativeId: answer?.alternative_id ?? null,
+        };
+      })
       .sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
   }
 
