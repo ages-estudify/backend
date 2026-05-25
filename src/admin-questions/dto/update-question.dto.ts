@@ -83,4 +83,11 @@ export class UpdateQuestionDto {
   @IsOptional()
   @IsBoolean()
   enable?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Question image as base64 (raw or data URI). Replaces existing image when sent.',
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptsService } from './attempts.service';
 import { AttemptsRepository } from './attempts.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { QuestionMediaService } from '../../storage/question-media.service';
 
 const mockAttemptsRepository = {
   create: jest.fn(),
@@ -24,6 +25,17 @@ describe('AttemptsService', () => {
         {
           provide: AttemptsRepository,
           useValue: mockAttemptsRepository,
+        },
+        {
+          provide: QuestionMediaService,
+          useValue: {
+            resolveSignedUrl: jest.fn().mockResolvedValue(null),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) =>
+                Promise.resolve(keys.map(() => null)),
+              ),
+          },
         },
       ],
     }).compile();

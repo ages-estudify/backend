@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptDaysService } from './attempt-days.service';
 import { AttemptDaysRepository } from './attempt-days.repository';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 describe('AttemptDaysService', () => {
   let service: AttemptDaysService;
@@ -39,7 +40,7 @@ describe('AttemptDaysService', () => {
       id: attemptId,
       exam_id: examId,
       user_id: userId,
-      exam: { id: examId, name: 'Simulado ENEM - Novembro 2024', origin: 'x', image_url: null },
+      exam: { id: examId, name: 'Simulado ENEM - Novembro 2024', origin: 'x', media_key: null },
     },
     exam_day: { id: examDayId, day: 1, exam_id: examId },
     answers: [] as unknown[],
@@ -53,7 +54,21 @@ describe('AttemptDaysService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AttemptDaysService, { provide: AttemptDaysRepository, useValue: repository }],
+      providers: [
+        AttemptDaysService,
+        { provide: AttemptDaysRepository, useValue: repository },
+        {
+          provide: QuestionMediaService,
+          useValue: {
+            resolveSignedUrl: jest
+              .fn()
+              .mockImplementation((key: string | null) => Promise.resolve(key)),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys)),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get(AttemptDaysService);
@@ -137,7 +152,7 @@ describe('AttemptDaysService', () => {
       {
         id: qCorrect,
         text: 'Q1',
-        image_url: 'https://img.test/q1.png',
+        media_key: 'https://img.test/q1.png',
         feedback: 'fb1',
         number: 1,
         alternatives: [a1c, a1w],
@@ -145,7 +160,7 @@ describe('AttemptDaysService', () => {
       {
         id: qWrong,
         text: 'Q2',
-        image_url: null,
+        media_key: null,
         feedback: 'fb2',
         number: 2,
         alternatives: [a2w, a2c],
@@ -153,7 +168,7 @@ describe('AttemptDaysService', () => {
       {
         id: qBlankNull,
         text: 'Q3',
-        image_url: null,
+        media_key: null,
         feedback: 'fb3',
         number: 3,
         alternatives: [alt('c1', 'A', false), alt('c2', 'B', true)],
@@ -161,7 +176,7 @@ describe('AttemptDaysService', () => {
       {
         id: qNoAnswer,
         text: 'Q4',
-        image_url: null,
+        media_key: null,
         feedback: 'fb4',
         number: 4,
         alternatives: [alt('d1', 'A', true), alt('d2', 'B', false)],
@@ -242,7 +257,7 @@ describe('AttemptDaysService', () => {
       {
         id: qid,
         text: 'Only',
-        image_url: null,
+        media_key: null,
         feedback: 'f',
         number: 1,
         alternatives: [oldAlt, newAlt],
@@ -267,7 +282,7 @@ describe('AttemptDaysService', () => {
       {
         id: qid,
         text: 'Bad',
-        image_url: null,
+        media_key: null,
         feedback: 'f',
         number: 1,
         alternatives: badAlts,
@@ -290,7 +305,7 @@ describe('AttemptDaysService', () => {
       {
         id: qid,
         text: 'Q',
-        image_url: null,
+        media_key: null,
         feedback: 'f',
         number: 1,
         alternatives: alts,

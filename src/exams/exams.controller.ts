@@ -28,7 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { ListExamsResponseDto, UpdateExamResponseDto } from './dto';
+import { ListExamsResponseDto, UpdateExamRequestDto, UpdateExamResponseDto } from './dto';
 import type { MulterFile } from '../common/types/multer-file';
 
 @ApiTags('Exams (Admin)')
@@ -98,39 +98,10 @@ Rules:
   @Put(':id')
   @ApiOperation({
     summary: 'Update exam',
-    description: 'Updates exam data. You can optionally upload an image and/or change status.',
+    description:
+      'Updates exam data. Optional image field accepts base64 (raw or data URI). Required to publish if no cover exists.',
   })
-  @UseInterceptors(FileInterceptor('image'))
-  @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          example: 'ENEM 2024',
-          description: 'Exam title',
-        },
-        origin: {
-          type: 'string',
-          example: 'INEP',
-          description: 'Exam origin',
-        },
-        status: {
-          type: 'string',
-          enum: ['DRAFT', 'PUBLISHED'],
-          example: 'PUBLISHED',
-          description: 'Exam status',
-        },
-        image: {
-          type: 'string',
-          format: 'binary',
-          description: 'Optional image file (required to publish if none exists)',
-        },
-      },
-    },
-  })
   @ApiResponse({ status: 200, type: UpdateExamResponseDto })
   @ApiResponse({
     status: 400,
@@ -139,15 +110,8 @@ Rules:
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Not ADM' })
   @ApiResponse({ status: 404, description: 'Exam not found' })
-  async updateExam(@Param('id') id: string, @Body() body: any, @UploadedFile() image?: MulterFile) {
-    const updates = {
-      title: body.title,
-      origin: body.origin,
-      image: image,
-      status: body.status,
-    };
-
-    return this.examsService.updateExam(id, updates);
+  async updateExam(@Param('id') id: string, @Body() body: UpdateExamRequestDto) {
+    return this.examsService.updateExam(id, body);
   }
 
   @Delete(':id')
