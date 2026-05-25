@@ -69,7 +69,7 @@ export class SubjectRepository {
         id: string;
         name: string;
         text: string;
-        icon: string;
+        icon_url: string;
         availableByType: {
           ORIGINAL: number;
           EXTERNAL: number;
@@ -83,7 +83,7 @@ export class SubjectRepository {
               p.id,
               p.name,
               p.text,
-              p.icon_url AS icon,
+              p.icon_url AS icon_url,
 
               JSON_BUILD_OBJECT(
                 'ORIGINAL', COUNT(q.id) FILTER (WHERE q.origin = 'ORIGINAL'),

@@ -74,7 +74,7 @@ describe('SubjectService', () => {
         id: 'path1',
         name: 'Algebra',
         text: 'desc',
-        icon: 'icon',
+        icon_url: '/icons/topics/matematica-algebra.png',
         availableByType: { ORIGINAL: 10, EXTERNAL: 5 },
         answeredByType: { ORIGINAL: 4, EXTERNAL: 2 },
       },
@@ -84,6 +84,32 @@ describe('SubjectService', () => {
 
     expect(result.data[0].availableByType.ORIGINAL).toBe(10);
     expect(result.data[0].answeredByType.ORIGINAL).toBe(4);
+  });
+
+  // MONTAGEM DA URL ABSOLUTA DO ÍCONE (caminho relativo + ASSET_BASE_URL)
+  it('monta a icon_url absoluta a partir do caminho relativo e do ASSET_BASE_URL', async () => {
+    const previous = process.env.ASSET_BASE_URL;
+    process.env.ASSET_BASE_URL = 'https://cdn.test';
+
+    try {
+      repository.existsSubjectById.mockResolvedValue(true);
+      repository.findAllPathsBySubject.mockResolvedValue([
+        {
+          id: 'path1',
+          name: 'Algebra',
+          text: 'desc',
+          icon_url: '/icons/topics/matematica-algebra.png',
+          availableByType: { ORIGINAL: 1, EXTERNAL: 1 },
+          answeredByType: { ORIGINAL: 0, EXTERNAL: 0 },
+        },
+      ]);
+
+      const result = await service.findAllPathsBySubject('sub1', 'user1');
+
+      expect(result.data[0].icon_url).toBe('https://cdn.test/icons/topics/matematica-algebra.png');
+    } finally {
+      process.env.ASSET_BASE_URL = previous;
+    }
   });
 
   // DISCIPLINA INEXISTENTE

@@ -4,6 +4,14 @@ import { SubjectListingResponseDto } from './dto/subjectListing.dto.';
 import { AllSubjectsPathsResponseDto } from './dto/allPathsBySubject.dto';
 import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
+function toAbsoluteAssetUrl(pathOrUrl: string): string {
+  if (!pathOrUrl) return pathOrUrl;
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const base = (process.env.ASSET_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
+  const path = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  return `${base}${path}`;
+}
+
 @Injectable()
 export class SubjectService {
   constructor(private subjectRepository: SubjectRepository) {}
@@ -36,7 +44,7 @@ export class SubjectService {
         id: item.id,
         name: item.name,
         text: item.text,
-        icon: item.icon,
+        icon_url: toAbsoluteAssetUrl(item.icon_url),
         availableByType: {
           ORIGINAL: Number(item.availableByType?.ORIGINAL ?? 0),
           EXTERNAL: Number(item.availableByType?.EXTERNAL ?? 0),
