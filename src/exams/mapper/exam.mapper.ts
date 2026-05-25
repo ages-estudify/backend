@@ -13,19 +13,39 @@ export class ExamMapper {
   }
 
   static toDto(item: any): ExamDto {
+    const examDayByNumber = new Map<number, any>(
+      (item.exam_days ?? []).map((ed: any) => [ed.day, ed]),
+    );
+
     const days: DayDto[] = [1, 2].map((day) => {
       const attemptDay = item.attempt_days?.find((d) => d.exam_day.day === day);
+      const examDay = examDayByNumber.get(day);
+
+      const hasLanguageChoice = (examDay?.questions ?? []).some(
+        (q: { language: string | null }) => q.language != null,
+      );
+
+      let dayStatus: DayDto['status'];
+      if (!attemptDay) {
+        dayStatus = 'available';
+      } else if (attemptDay.isCompleted) {
+        dayStatus = 'completed';
+      } else {
+        dayStatus = 'in_progress';
+      }
 
       return {
+        examDayId: examDay?.id ?? '',
         day,
-        totalQuestions:
-          day === 1
-            ? (item.exam_days?.[0]?._count.questions ?? 0)
-            : (item.exam_days?.[1]?._count.questions ?? 0),
+        totalQuestions: examDay?._count?.questions ?? 0,
 
         answeredQuestions: attemptDay?._count.answers ?? 0,
 
         isCompleted: attemptDay?.isCompleted ?? false,
+
+        status: dayStatus,
+
+        hasLanguageChoice,
       };
     });
 
@@ -51,6 +71,8 @@ export class ExamMapper {
       status = 'available';
     }
 
+    const hasLanguageChoice = days.some((d) => d.hasLanguageChoice);
+
     return {
       id: item.id,
       name: item.name,
@@ -62,6 +84,8 @@ export class ExamMapper {
       totalQuestions,
       answeredQuestions,
       progress,
+
+      hasLanguageChoice,
 
       days,
     };

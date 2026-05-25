@@ -12,6 +12,9 @@ const mockAttemptsRepository = {
   findLastWithQuestions: jest.fn(),
   findAnswersByAttemptId: jest.fn(),
   findAttemptForFinish: jest.fn(),
+  findAttemptDay: jest.fn(),
+  finishAttemptDay: jest.fn(),
+  countFinishedAttemptDays: jest.fn(),
 };
 
 describe('AttemptsService', () => {
@@ -144,6 +147,7 @@ describe('AttemptsService', () => {
 
       repository.findAttemptForFinish.mockResolvedValue(mockAttempt);
       repository.findAnswersByAttemptId.mockResolvedValue(mockAnswers);
+      repository.countFinishedAttemptDays.mockResolvedValue(1);
       repository.update.mockResolvedValue({
         id: 'att-1',
         exam_id: 'exam-1',

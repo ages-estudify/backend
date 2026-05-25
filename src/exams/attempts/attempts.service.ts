@@ -16,7 +16,7 @@ export class AttemptsService {
     const existingAttempt = await this.attemptsRepository.findActive(userId, examId);
 
     if (existingAttempt) {
-      await this.finish(existingAttempt.id, userId);
+      return { success: true, data: { attempt: existingAttempt } };
     }
 
     const attempt = await this.attemptsRepository.create({
@@ -57,8 +57,8 @@ export class AttemptsService {
     return { success: true, data: { attempt: updatedAttempt } };
   }
 
-  async findLast(userId: string, examId: string) {
-    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId);
+  async findLast(userId: string, examId: string, examDayId?: string) {
+    const attempt = await this.attemptsRepository.findLastWithQuestions(userId, examId, examDayId);
 
     if (!attempt) throw new NotFoundException('No active attempt found');
 
@@ -85,28 +85,63 @@ export class AttemptsService {
     };
   }
 
-  async finish(id: string, userId: string) {
+  async finish(id: string, userId: string, examDayId?: string) {
     const attempt = await this.attemptsRepository.findAttemptForFinish(id, userId);
 
     if (!attempt) throw new NotFoundException('Attempt not found');
-    if (attempt.end_time) throw new BadRequestException('Attempt already finished');
 
-    const totalScore = await this.calculateAttemptScore(attempt, attempt.id);
+    let attemptDayId: string | undefined;
 
-    const updated = await this.attemptsRepository.update(id, {
-      end_time: new Date(),
-      score: totalScore.score,
-    });
+    if (examDayId) {
+      const attemptDay = await this.attemptsRepository.findAttemptDay(id, examDayId);
+      if (attemptDay) {
+        attemptDayId = attemptDay.id;
+        if (!attemptDay.end_time) {
+          await this.attemptsRepository.finishAttemptDay(attemptDay.id, attempt.time_spent_seconds);
+        }
+      }
+    }
+
+    const totalDays = attempt.exam.exam_days.length;
+    const finishedDays = await this.attemptsRepository.countFinishedAttemptDays(id);
+    const allDaysFinished = totalDays > 0 && finishedDays >= totalDays;
+
+    if (allDaysFinished && !attempt.end_time) {
+      const totalScore = await this.calculateAttemptScore(attempt, attempt.id);
+      const updated = await this.attemptsRepository.update(id, {
+        end_time: new Date(),
+        score: totalScore.score,
+      });
+
+      return {
+        success: true,
+        data: {
+          attemptId: updated.id,
+          attemptDayId,
+          examId: updated.exam_id,
+          timeSpentSeconds: updated.time_spent_seconds,
+          endTime: updated.end_time,
+          score: totalScore.score,
+          ...totalScore.data,
+        },
+      };
+    }
 
     return {
       success: true,
       data: {
-        attemptId: updated.id,
-        examId: updated.exam_id,
-        timeSpentSeconds: updated.time_spent_seconds,
-        endTime: updated.end_time,
-        score: totalScore.score,
-        ...totalScore.data,
+        attemptId: attempt.id,
+        attemptDayId,
+        examId: attempt.exam_id,
+        timeSpentSeconds: attempt.time_spent_seconds,
+        endTime: attempt.end_time,
+        score: attempt.score ?? 0,
+        totalQuestions: 0,
+        answeredQuestions: 0,
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        blankAnswers: 0,
+        resultBySubject: [],
       },
     };
   }
