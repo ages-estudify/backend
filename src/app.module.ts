@@ -14,6 +14,7 @@ import { PrismaService } from './prisma.service';
 import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
 import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
 import { StorageModule } from './storage/storage.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { StorageModule } from './storage/storage.module';
     ExamsModule,
     AttemptDaysModule,
     OnboardingModule,
+    ScheduleModule,
     AdminQuestionsModule,
     StorageModule,
   ],
