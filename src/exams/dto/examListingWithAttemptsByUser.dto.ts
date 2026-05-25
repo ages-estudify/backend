@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsIn,
   IsNumber,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -98,9 +99,10 @@ export class ExamDto {
   @Type(() => ProgressDto)
   progress!: ProgressDto;
 
-  @ApiProperty({ example: 'https://cdn.com/image.png' })
+  @ApiProperty({ example: 'https://cdn.com/image.png', nullable: true, required: false })
+  @IsOptional()
   @IsString()
-  image_url!: string;
+  imageUrl?: string | null;
 
   @ApiProperty({
     example: true,

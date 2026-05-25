@@ -1,13 +1,19 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { ExamsService } from './exams.service';
 import { ExamsRepository } from './exams.repository';
 import { PrismaService } from '../prisma.service';
+import { ExamMediaService } from '../storage/exam-media.service';
 
 describe('ExamsService', () => {
   let service: ExamsService;
   let repository: jest.Mocked<ExamsRepository>;
+  const examMediaMocks = {
+    uploadExamImage: jest.fn(),
+    resolveSignedUrl: jest.fn(),
+    resolveSignedUrls: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,11 +38,19 @@ describe('ExamsService', () => {
             $transaction: jest.fn(),
           },
         },
+        {
+          provide: ExamMediaService,
+          useValue: examMediaMocks,
+        },
       ],
     }).compile();
 
     service = module.get(ExamsService);
     repository = module.get(ExamsRepository);
+
+    examMediaMocks.uploadExamImage.mockResolvedValue('exams/exam1/cover.png');
+    examMediaMocks.resolveSignedUrl.mockImplementation((key) => Promise.resolve(key));
+    examMediaMocks.resolveSignedUrls.mockImplementation((keys) => Promise.resolve(keys));
   });
 
   afterEach(() => {
@@ -50,7 +64,7 @@ describe('ExamsService', () => {
           id: 'exam1',
           name: 'Simulado ENEM',
           origin: 'ENEM',
-          image_url: 'https://example.com/enem.png',
+          media_key: 'https://example.com/enem.png',
           status: 'DRAFT',
           exam_days: [
             {
@@ -62,7 +76,7 @@ describe('ExamsService', () => {
                   id: 'q1',
                   number: 1,
                   origin: 'ENEM',
-                  image_url: null,
+                  media_key: null,
                   exam_id: 'exam1',
                   text: '',
                   year: 2024,
@@ -75,7 +89,7 @@ describe('ExamsService', () => {
                   id: 'q2',
                   number: 2,
                   origin: 'ENEM',
-                  image_url: null,
+                  media_key: null,
                   exam_id: 'exam1',
                   text: '',
                   year: 2024,
@@ -107,7 +121,7 @@ describe('ExamsService', () => {
         id: 'exam1',
         name: 'Old Title',
         origin: 'ENEM',
-        image_url: 'https://example.com/old.png',
+        media_key: 'https://example.com/old.png',
         status: 'DRAFT',
         created_at: new Date(),
         updated_at: new Date(),
@@ -117,7 +131,7 @@ describe('ExamsService', () => {
         id: 'exam1',
         name: 'New Title',
         origin: 'ENEM',
-        image_url: 'https://example.com/old.png',
+        media_key: 'https://example.com/old.png',
         status: 'DRAFT',
         created_at: new Date(),
         updated_at: new Date(),
@@ -136,7 +150,7 @@ describe('ExamsService', () => {
         id: 'exam1',
         name: 'Title',
         origin: 'ENEM',
-        image_url: null,
+        media_key: null,
         status: 'DRAFT',
         created_at: new Date(),
         updated_at: new Date(),
@@ -146,6 +160,46 @@ describe('ExamsService', () => {
         BadRequestException,
       );
     });
+
+    it('should upload cover image to S3 when base64 image is provided', async () => {
+      examMediaMocks.resolveSignedUrl.mockResolvedValueOnce('https://signed.example/cover.png');
+
+      repository.findExamById.mockResolvedValue({
+        id: 'exam1',
+        name: 'Title',
+        origin: 'ENEM',
+        media_key: null,
+        status: 'DRAFT',
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as unknown as Awaited<ReturnType<ExamsRepository['findExamById']>>);
+
+      repository.updateExam.mockResolvedValue({
+        id: 'exam1',
+        name: 'Title',
+        origin: 'ENEM',
+        media_key: 'exams/exam1/cover.png',
+        status: 'PUBLISHED',
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as unknown as Awaited<ReturnType<ExamsRepository['updateExam']>>);
+
+      const imageBase64 =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+      const result = await service.updateExam('exam1', { image: imageBase64 });
+
+      expect(examMediaMocks.uploadExamImage).toHaveBeenCalledWith(
+        'exam1',
+        expect.any(Buffer),
+        'image/png',
+      );
+      expect(repository.updateExam.mock.calls[0]).toEqual([
+        'exam1',
+        expect.objectContaining({ media_key: 'exams/exam1/cover.png', status: 'PUBLISHED' }),
+      ]);
+      expect(result.data.imageUrl).toBe('https://signed.example/cover.png');
+    });
   });
 
   describe('deleteExamLogical', () => {
@@ -154,7 +208,7 @@ describe('ExamsService', () => {
         id: 'exam1',
         name: 'Title',
         origin: 'ENEM',
-        image_url: null,
+        media_key: null,
         status: 'PUBLISHED',
         created_at: new Date(),
         updated_at: new Date(),
@@ -181,7 +235,7 @@ describe('ExamsService', () => {
         {
           id: '1',
           name: 'Simulado 1',
-          image_url: 'img',
+          media_key: 'img',
           origin: 'EXTERNAL',
           status: 'DRAFT',
           exam_days: [

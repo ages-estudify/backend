@@ -1,6 +1,5 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum } from 'class-validator';
-import type { MulterFile } from '../../common/types/multer-file';
 
 export class UpdateExamRequestDto {
   @ApiProperty({ example: 'Simulado ENEM - Novembro 2024', required: false })
@@ -13,9 +12,13 @@ export class UpdateExamRequestDto {
   @IsString()
   origin?: string;
 
-  @ApiProperty({ type: 'string', format: 'binary', required: false })
+  @ApiProperty({
+    required: false,
+    description: 'Exam cover as base64 (raw or data URI, e.g. data:image/png;base64,...)',
+  })
   @IsOptional()
-  image?: MulterFile;
+  @IsString()
+  image?: string;
 
   @ApiProperty({ example: 'PUBLISHED', enum: ['DRAFT', 'PUBLISHED'], required: false })
   @IsOptional()

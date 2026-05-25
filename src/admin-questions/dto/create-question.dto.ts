@@ -102,4 +102,11 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsUUID()
   pathId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Question image as base64 (raw or data URI, e.g. data:image/png;base64,...)',
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
 }
