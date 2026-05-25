@@ -16,6 +16,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
+import { UserStatsDto } from './dto/user-stats.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -35,6 +36,15 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('stats')
+  @ApiOkResponse({ type: UserStatsDto })
+  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
+  async getStats(@CurrentUser() user: JwtAuthUser): Promise<UserStatsDto> {
+    return await this.usersService.getStats(user.userId);
   }
 
   @Get(':id')
