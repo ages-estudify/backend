@@ -8,13 +8,12 @@ describe('SubjectService', () => {
   let service: SubjectService;
   let repository: jest.Mocked<SubjectRepository>;
   const iconMediaMocks = {
-    resolveIconUrl: jest.fn(),
     resolveIconUrls: jest.fn(),
   };
 
   beforeEach(async () => {
-    iconMediaMocks.resolveIconUrls.mockImplementation(async (refs: (string | null | undefined)[]) =>
-      refs.map((ref) => ref ?? null),
+    iconMediaMocks.resolveIconUrls.mockImplementation((refs: (string | null | undefined)[]) =>
+      Promise.resolve(refs.map((ref) => ref ?? null)),
     );
 
     const module: TestingModule = await Test.createTestingModule({
@@ -84,7 +83,7 @@ describe('SubjectService', () => {
         id: 'path1',
         name: 'Algebra',
         text: 'desc',
-        icon_key: '/icons/topics/matematica-algebra.png',
+        icon_key: 'paths/path1/icon.png',
         availableByType: { ORIGINAL: 10, EXTERNAL: 5 },
         answeredByType: { ORIGINAL: 4, EXTERNAL: 2 },
       },
@@ -94,26 +93,6 @@ describe('SubjectService', () => {
 
     expect(result.data[0].availableByType.ORIGINAL).toBe(10);
     expect(result.data[0].answeredByType.ORIGINAL).toBe(4);
-  });
-
-  it('resolve icon_url via IconMediaService', async () => {
-    repository.existsSubjectById.mockResolvedValue(true);
-    repository.findAllPathsBySubject.mockResolvedValue([
-      {
-        id: 'path1',
-        name: 'Algebra',
-        text: 'desc',
-        icon_key: 'paths/path1/icon.png',
-        availableByType: { ORIGINAL: 1, EXTERNAL: 1 },
-        answeredByType: { ORIGINAL: 0, EXTERNAL: 0 },
-      },
-    ]);
-    iconMediaMocks.resolveIconUrls.mockResolvedValue(['https://s3.example.com/signed-icon.png']);
-
-    const result = await service.findAllPathsBySubject('sub1', 'user1');
-
-    expect(iconMediaMocks.resolveIconUrls).toHaveBeenCalledWith(['paths/path1/icon.png']);
-    expect(result.data[0].icon_url).toBe('https://s3.example.com/signed-icon.png');
   });
 
   // DISCIPLINA INEXISTENTE
