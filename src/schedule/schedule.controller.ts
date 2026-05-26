@@ -21,7 +21,7 @@ import { ScheduleService } from './schedule.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
 import { UpdateScheduleItemDto } from './dto/update-schedule-item.dto';
 
-@ApiTags('schedule')
+@ApiTags('Schedule')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, SubscriptionGuard)
 @Controller({ path: 'schedule', version: '1' })
@@ -29,13 +29,13 @@ export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Gera o ciclo inicial de cronograma após onboarding' })
-  @ApiResponse({ status: 201, description: 'Cronograma gerado com sucesso' })
-  @ApiResponse({ status: 200, description: 'Cronograma já existente' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Assinatura necessária' })
-  @ApiResponse({ status: 409, description: 'Onboarding não concluído' })
-  @ApiResponse({ status: 422, description: 'Defina ao menos uma janela de estudo' })
+  @ApiOperation({ summary: 'Generate the initial schedule cycle after onboarding' })
+  @ApiResponse({ status: 201, description: 'Schedule generated successfully' })
+  @ApiResponse({ status: 200, description: 'Schedule already exists' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Active subscription required' })
+  @ApiResponse({ status: 409, description: 'Onboarding not completed' })
+  @ApiResponse({ status: 422, description: 'Set at least one study window' })
   async createSchedule(
     @CurrentUser() user: JwtAuthUser,
     @Res({ passthrough: true }) res: Response,
@@ -48,16 +48,16 @@ export class ScheduleController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Retorna a visualização semanal do cronograma' })
+  @ApiOperation({ summary: 'Return the weekly schedule view' })
   @ApiQuery({
     name: 'weekStart',
     required: true,
-    description: 'Data de início da semana no formato YYYY-MM-DD',
+    description: 'Week start date in YYYY-MM-DD format',
   })
-  @ApiResponse({ status: 200, description: 'Semana retornada com sucesso' })
-  @ApiResponse({ status: 400, description: 'Parâmetro weekStart inválido' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Assinatura necessária' })
+  @ApiResponse({ status: 200, description: 'Week returned successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid weekStart parameter' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Active subscription required' })
   async getWeekSchedule(@CurrentUser() user: JwtAuthUser, @Query() query: ScheduleQueryDto) {
     const result = await this.scheduleService.getWeekSchedule(user.userId, query.weekStart);
     return { data: result };
@@ -65,11 +65,11 @@ export class ScheduleController {
 
   @Patch('items/:itemId/complete')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Marca ou desmarca um item do cronograma como concluído' })
-  @ApiResponse({ status: 200, description: 'Item atualizado com sucesso' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Assinatura necessária' })
-  @ApiResponse({ status: 404, description: 'Item não encontrado' })
+  @ApiOperation({ summary: 'Mark or unmark a schedule item as completed' })
+  @ApiResponse({ status: 200, description: 'Item updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Active subscription required' })
+  @ApiResponse({ status: 404, description: 'Item not found' })
   async completeScheduleItem(
     @CurrentUser() user: JwtAuthUser,
     @Param('itemId') itemId: string,

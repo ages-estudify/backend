@@ -81,6 +81,7 @@ async function main() {
       role: Role.USER,
       coins: 50,
       streak: 3,
+      onboarding_completed: true,
       Study_day: {
         create: [
           { day: WeekDay.MONDAY, hour: 10 },
@@ -103,6 +104,7 @@ async function main() {
       role: Role.USER,
       coins: 120,
       streak: 7,
+      onboarding_completed: true,
       Study_day: {
         create: [
           { day: WeekDay.FRIDAY, hour: 10 },
