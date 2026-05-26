@@ -2,12 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SubjectService } from './subjects.service';
 import { SubjectRepository } from './subjects.repository';
 import { NotFoundException } from '@nestjs/common';
+import { IconMediaService } from '../storage/icon-media.service';
 
 describe('SubjectService', () => {
   let service: SubjectService;
   let repository: jest.Mocked<SubjectRepository>;
+  const iconMediaMocks = {
+    resolveIconUrl: jest.fn(),
+    resolveIconUrls: jest.fn(),
+  };
 
   beforeEach(async () => {
+    iconMediaMocks.resolveIconUrls.mockImplementation(async (refs: (string | null | undefined)[]) =>
+      refs.map((ref) => ref ?? null),
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubjectService,
@@ -21,6 +30,7 @@ describe('SubjectService', () => {
             countByPathAndType: jest.fn(),
           },
         },
+        { provide: IconMediaService, useValue: iconMediaMocks },
       ],
     }).compile();
 
@@ -74,7 +84,7 @@ describe('SubjectService', () => {
         id: 'path1',
         name: 'Algebra',
         text: 'desc',
-        icon_url: '/icons/topics/matematica-algebra.png',
+        icon_key: '/icons/topics/matematica-algebra.png',
         availableByType: { ORIGINAL: 10, EXTERNAL: 5 },
         answeredByType: { ORIGINAL: 4, EXTERNAL: 2 },
       },
@@ -86,30 +96,24 @@ describe('SubjectService', () => {
     expect(result.data[0].answeredByType.ORIGINAL).toBe(4);
   });
 
-  // MONTAGEM DA URL ABSOLUTA DO ÍCONE (caminho relativo + ASSET_BASE_URL)
-  it('monta a icon_url absoluta a partir do caminho relativo e do ASSET_BASE_URL', async () => {
-    const previous = process.env.ASSET_BASE_URL;
-    process.env.ASSET_BASE_URL = 'https://cdn.test';
+  it('resolve icon_url via IconMediaService', async () => {
+    repository.existsSubjectById.mockResolvedValue(true);
+    repository.findAllPathsBySubject.mockResolvedValue([
+      {
+        id: 'path1',
+        name: 'Algebra',
+        text: 'desc',
+        icon_key: 'paths/path1/icon.png',
+        availableByType: { ORIGINAL: 1, EXTERNAL: 1 },
+        answeredByType: { ORIGINAL: 0, EXTERNAL: 0 },
+      },
+    ]);
+    iconMediaMocks.resolveIconUrls.mockResolvedValue(['https://s3.example.com/signed-icon.png']);
 
-    try {
-      repository.existsSubjectById.mockResolvedValue(true);
-      repository.findAllPathsBySubject.mockResolvedValue([
-        {
-          id: 'path1',
-          name: 'Algebra',
-          text: 'desc',
-          icon_url: '/icons/topics/matematica-algebra.png',
-          availableByType: { ORIGINAL: 1, EXTERNAL: 1 },
-          answeredByType: { ORIGINAL: 0, EXTERNAL: 0 },
-        },
-      ]);
+    const result = await service.findAllPathsBySubject('sub1', 'user1');
 
-      const result = await service.findAllPathsBySubject('sub1', 'user1');
-
-      expect(result.data[0].icon_url).toBe('https://cdn.test/icons/topics/matematica-algebra.png');
-    } finally {
-      process.env.ASSET_BASE_URL = previous;
-    }
+    expect(iconMediaMocks.resolveIconUrls).toHaveBeenCalledWith(['paths/path1/icon.png']);
+    expect(result.data[0].icon_url).toBe('https://s3.example.com/signed-icon.png');
   });
 
   // DISCIPLINA INEXISTENTE

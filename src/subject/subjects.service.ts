@@ -1,20 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { IconMediaService } from '../storage/icon-media.service';
 import { SubjectRepository } from './subjects.repository';
 import { SubjectListingResponseDto } from './dto/subjectListing.dto.';
 import { AllSubjectsPathsResponseDto } from './dto/allPathsBySubject.dto';
 import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
-function toAbsoluteAssetUrl(pathOrUrl: string): string {
-  if (!pathOrUrl) return pathOrUrl;
-  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  const base = (process.env.ASSET_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
-  const path = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
-  return `${base}${path}`;
-}
-
 @Injectable()
 export class SubjectService {
-  constructor(private subjectRepository: SubjectRepository) {}
+  constructor(
+    private subjectRepository: SubjectRepository,
+    private readonly iconMedia: IconMediaService,
+  ) {}
 
   async findAllWithAnsweredByUser(userId: string): Promise<SubjectListingResponseDto> {
     const data = await this.subjectRepository.findAllWithAnsweredByUser(userId);
@@ -38,13 +34,14 @@ export class SubjectService {
     }
 
     const result = await this.subjectRepository.findAllPathsBySubject(id, userId);
+    const iconUrls = await this.iconMedia.resolveIconUrls(result.map((item) => item.icon_key));
 
     return {
-      data: result.map((item) => ({
+      data: result.map((item, index) => ({
         id: item.id,
         name: item.name,
         text: item.text,
-        icon_url: toAbsoluteAssetUrl(item.icon_url),
+        icon_url: iconUrls[index] ?? item.icon_key,
         availableByType: {
           ORIGINAL: Number(item.availableByType?.ORIGINAL ?? 0),
           EXTERNAL: Number(item.availableByType?.EXTERNAL ?? 0),

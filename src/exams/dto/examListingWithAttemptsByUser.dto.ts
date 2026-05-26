@@ -111,13 +111,6 @@ export class ExamDto {
   @IsBoolean()
   hasLanguageChoice!: boolean;
 
-  @ApiProperty({
-    example: true,
-    description: 'True when at least one day of the exam has a language choice.',
-  })
-  @IsBoolean()
-  hasLanguageChoice!: boolean;
-
   @ApiProperty({ type: [DayDto] })
   @IsArray()
   @ValidateNested({ each: true })
