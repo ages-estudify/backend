@@ -6,6 +6,7 @@ import { SelectedAnswer } from './dto/answer-question.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
 import { Role } from '@prisma/client';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -71,6 +72,13 @@ describe('QuestionsService', () => {
       findUniqueById: jest.fn(),
     };
 
+    const mockQuestionMedia = {
+      resolveSignedUrl: jest.fn().mockResolvedValue(null),
+      resolveSignedUrls: jest
+        .fn()
+        .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys.map(() => null))),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
@@ -85,6 +93,10 @@ describe('QuestionsService', () => {
         {
           provide: UsersRepository,
           useValue: mockUsersRepository,
+        },
+        {
+          provide: QuestionMediaService,
+          useValue: mockQuestionMedia,
         },
       ],
     }).compile();
@@ -118,7 +130,7 @@ describe('QuestionsService', () => {
       {
         id: 'q1',
         text: 'Pergunta 1',
-        image_url: null,
+        media_key: null,
         origin: 'ORIGINAL',
         subjectName: 'Matemática',
         topicName: 'Álgebra',

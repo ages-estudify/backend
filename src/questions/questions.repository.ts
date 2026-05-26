@@ -5,7 +5,7 @@ import { Prisma, Question, Answer } from '@prisma/client';
 export type QuestionResponse = {
   id: string;
   text: string;
-  image_url: string | null;
+  media_key: string | null;
   origin: 'ORIGINAL' | 'EXTERNAL';
   subjectName: string;
   topicName: string;
@@ -146,7 +146,7 @@ export class QuestionsRepository {
     return {
       id: question.id,
       text: question.text,
-      image_url: question.image_url,
+      media_key: question.media_key,
       origin: question.origin,
       subjectName: question.path.subject.name,
       topicName: question.path.name,

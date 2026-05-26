@@ -33,23 +33,18 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 async function main() {
-  // LIMPA BANCO
   await prisma.answer.deleteMany();
   await prisma.attemptDay.deleteMany();
   await prisma.attempt.deleteMany();
-
   await prisma.alternative.deleteMany();
   await prisma.question.deleteMany();
-
   await prisma.examDay.deleteMany();
   await prisma.exam.deleteMany();
-
   await prisma.studyLog.deleteMany();
   await prisma.studyDay.deleteMany();
-
+  await prisma.subscription.deleteMany();
   await prisma.path.deleteMany();
   await prisma.subject.deleteMany();
-
   await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
 
@@ -1562,7 +1557,7 @@ async function main() {
     data: {
       name: 'Simulado Geral 1',
       origin: 'ORIGINAL',
-      image_url: 'https://example.com/exam1.png',
+      media_key: null,
       questions: {
         connect: [{ id: q3!.id }, { id: q4!.id }],
       },
@@ -1602,7 +1597,7 @@ async function main() {
       id: string;
       name: string;
       origin: string;
-      image_url: string | null;
+      media_key: string | null;
     };
     examDays: {
       id: string;
@@ -1620,7 +1615,7 @@ async function main() {
         name: `Simulado ${i + 1}`,
         status: i < 3 ? 'PUBLISHED' : 'DRAFT',
         origin: Origin.EXTERNAL,
-        image_url: `https://example.com/${i + 1}.png`,
+        media_key: i < 3 ? `https://example.com/${i + 1}.png` : null,
       },
     });
 
