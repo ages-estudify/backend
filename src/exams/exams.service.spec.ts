@@ -215,7 +215,7 @@ describe('ExamsService', () => {
       } as unknown as Awaited<ReturnType<ExamsRepository['findExamById']>>);
 
       const spy = jest.spyOn(repository, 'deleteExamLogical');
-      spy.mockResolvedValue(undefined);
+      spy.mockResolvedValue(undefined as never);
 
       await service.deleteExamLogical('exam1');
 
