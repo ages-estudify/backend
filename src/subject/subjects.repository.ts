@@ -7,7 +7,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Injectable()
 export class SubjectRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async existsSubjectById(subjectId: string): Promise<boolean> {
     const subject = await this.prisma.subject.findUnique({
@@ -28,7 +28,6 @@ export class SubjectRepository {
   }
 
   async findAllWithAnsweredByUser(userId: string): Promise<SubjectListingDto[]> {
-
     const query = await this.prisma.subject.findMany({
       select: {
         id: true,
@@ -38,24 +37,24 @@ export class SubjectRepository {
           select: {
             questions: {
               where: {
-                exam_day_id: null
+                exam_day_id: null,
               },
               select: {
                 id: true,
                 answers: {
                   where: {
-                    user_id: userId
+                    user_id: userId,
                   },
                   select: {
-                    id: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     const data: SubjectListingDto[] = query.map((subject) => {
       let totalQuestions = 0;
@@ -65,7 +64,7 @@ export class SubjectRepository {
         totalQuestions += path.questions.length;
 
         answeredQuestions += path.questions.filter(
-          (question) => question.answers.length > 0
+          (question) => question.answers.length > 0,
         ).length;
       });
 
@@ -74,19 +73,17 @@ export class SubjectRepository {
         name: subject.name,
         icon: subject.icon_url,
         totalQuestions,
-        answeredQuestions
+        answeredQuestions,
       };
     });
 
     return data;
-
   }
 
   async findAllPathsBySubject(id: string, userId: string): Promise<SubjectPathDto[]> {
-
     const query = await this.prisma.path.findMany({
       where: {
-        subject_id: id
+        subject_id: id,
       },
       select: {
         id: true,
@@ -95,33 +92,32 @@ export class SubjectRepository {
         icon_url: true,
         questions: {
           where: {
-            exam_day_id: null
+            exam_day_id: null,
           },
           select: {
             origin: true,
             answers: {
               where: {
-                user_id: userId
+                user_id: userId,
               },
               select: {
-                id: true
-              }
-            }
-          }
-
-        }
-      }
-    })
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     const data: SubjectPathDto[] = query.map((path) => {
       const availableByType = {
         ORIGINAL: 0,
-        EXTERNAL: 0
+        EXTERNAL: 0,
       };
 
       const answeredByType = {
         ORIGINAL: 0,
-        EXTERNAL: 0
+        EXTERNAL: 0,
       };
 
       path.questions.forEach((question) => {
@@ -139,54 +135,52 @@ export class SubjectRepository {
         icon: path.icon_url,
 
         availableByType,
-        answeredByType
+        answeredByType,
       };
     });
 
     return data;
   }
 
-  async countByPathAndType(pathId: string, type: string, userId: string): Promise<CountByPathAndTypeDto> {
-
+  async countByPathAndType(
+    pathId: string,
+    type: string,
+    userId: string,
+  ): Promise<CountByPathAndTypeDto> {
     if (!Object.values(Origin).includes(type as Origin)) {
       throw new BadRequestException('Invalid origin');
     }
 
     const query = await this.prisma.path.findMany({
       where: {
-        id: pathId
+        id: pathId,
       },
       select: {
         questions: {
           where: {
             exam_day_id: null,
-            origin: type as Origin
+            origin: type as Origin,
           },
           select: {
             id: true,
             answers: {
               where: {
-                user_id: userId
+                user_id: userId,
               },
               select: {
-                id: true
-              }
-            }
-          }
-
-        }
-      }
-
-
-    })
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     const result = query[0];
 
     const questions = result.questions.length;
 
-    const answered = result.questions.filter(
-      q => q.answers.length > 0
-    ).length;
+    const answered = result.questions.filter((q) => q.answers.length > 0).length;
 
     return { total: questions, answered: answered };
   }
