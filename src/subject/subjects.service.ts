@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { SubjectRepository } from './subjects.repository';
 import { SubjectListingResponseDto } from './dto/subjectListing.dto.';
 import { AllSubjectsPathsResponseDto } from './dto/allPathsBySubject.dto';
@@ -54,6 +54,10 @@ export class SubjectService {
     type: 'ORIGINAL' | 'EXTERNAL',
     userId: string,
   ): Promise<CountByPathAndTypeDto> {
+    if (type !== 'ORIGINAL' && type !== 'EXTERNAL') {
+      throw new BadRequestException('Invalid origin');
+    }
+
     const pathExists = await this.subjectRepository.existsPathById(pathId);
 
     if (!pathExists) {
