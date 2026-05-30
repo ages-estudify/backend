@@ -279,4 +279,15 @@ export class UsersRepository {
 
     return formatted;
   }
+
+  async updateStreak(
+    id: string,
+    data: { streak?: number; last_active?: Date },
+  ): Promise<{ streak: number | null; last_active: Date | null }> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: { streak: true, last_active: true },
+    });
+  }
 }
