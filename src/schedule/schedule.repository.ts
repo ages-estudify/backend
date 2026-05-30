@@ -42,10 +42,31 @@ export class ScheduleRepository {
     };
   }
 
-  async findPathsOrdered() {
+  async findPathsForSchedule() {
     return this.prisma.path.findMany({
       orderBy: { schedule_position: 'asc' },
-      select: { id: true },
+      select: { id: true, subject_id: true, schedule_position: true },
+    });
+  }
+
+  async getMaxStudyLogDate(userId: string) {
+    const last = await this.prisma.studyLog.findFirst({
+      where: { user_id: userId },
+      orderBy: { date: 'desc' },
+      select: { date: true },
+    });
+    return last?.date ?? null;
+  }
+
+  async countStudyLogs(userId: string) {
+    return this.prisma.studyLog.count({ where: { user_id: userId } });
+  }
+
+  async findLastStudyLog(userId: string) {
+    return this.prisma.studyLog.findFirst({
+      where: { user_id: userId },
+      orderBy: { date: 'desc' },
+      select: { date: true },
     });
   }
 
@@ -57,13 +78,37 @@ export class ScheduleRepository {
     });
   }
 
+  async extendStudyLogs(
+    entries: Array<{ date: Date; path_id: string; user_id: string; done: boolean }>,
+  ) {
+    if (entries.length === 0) {
+      return;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.studyLog.createMany({ data: entries, skipDuplicates: true });
+    });
+  }
+
   async findStudyLogsByRange(userId: string, startDate: Date, endDate: Date) {
+    const endOfWeek = new Date(
+      Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth(),
+        endDate.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
+
     return this.prisma.studyLog.findMany({
       where: {
         user_id: userId,
         date: {
           gte: startDate,
-          lte: endDate,
+          lte: endOfWeek,
         },
       },
       include: {
