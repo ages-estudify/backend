@@ -42,8 +42,10 @@ describe('AuthService', () => {
     coins: null as number | null,
     createdAt: new Date(),
     enable: true,
+    desired_university: null as string | null,
     desired_course: null as string | null,
-    desired_exam: null as string | null,
+    preferred_language: null,
+    onboarding_completed: false,
     last_active: null as Date | null,
   };
 

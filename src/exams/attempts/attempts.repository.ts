@@ -95,4 +95,47 @@ export class AttemptsRepository {
       },
     });
   }
+  async findHistoryByExamAndUser(examId: string, userId: string) {
+    return this.prisma.attemptDay.findMany({
+      where: {
+        end_time: { not: null },
+        attempt: {
+          exam_id: examId,
+          user_id: userId,
+        },
+      },
+      include: {
+        exam_day: {
+          include: {
+            _count: { select: { questions: true } },
+          },
+        },
+        _count: {
+          select: {
+            answers: { where: { alternative_id: { not: null } } },
+          },
+        },
+        answers: {
+          where: { alternative: { is_correct: true } },
+          select: { id: true },
+        },
+
+        attempt: {
+          include: {
+            exam: {
+              select: { id: true, name: true, origin: true },
+            },
+          },
+        },
+      },
+      orderBy: { end_time: 'desc' },
+    });
+  }
+
+  async findExamById(examId: string) {
+    return this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { id: true, name: true, origin: true },
+    });
+  }
 }
