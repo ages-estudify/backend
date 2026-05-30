@@ -43,4 +43,4 @@ import { StreakModule } from './streak/streak.module';
   providers: [PrismaService],
   exports: [PrismaService],
 })
-export class AppModule { }
+export class AppModule {}

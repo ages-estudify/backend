@@ -15,7 +15,7 @@ export class QuestionsService {
     private usersRepository: UsersRepository,
     private questionMedia: QuestionMediaService,
     private streakService: StreakService,
-  ) { }
+  ) {}
 
   async getQuestionBatch(
     topicId: string,
