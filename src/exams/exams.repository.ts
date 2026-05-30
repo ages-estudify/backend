@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Origin, ExamStatus } from '@prisma/client';
+import { Origin, ExamStatus, Role } from '@prisma/client';
 
 export interface CreateExamData {
   name: string;
@@ -34,6 +34,18 @@ export const ATTEMPT_RESULT_GRID_INCLUDE = {
       exam_day: {
         select: {
           day: true,
+          questions: {
+            select: {
+              id: true,
+              number: true,
+              alternatives: {
+                select: {
+                  letter: true,
+                  is_correct: true,
+                },
+              },
+            },
+          },
         },
       },
       answers: {
@@ -63,8 +75,11 @@ export const ATTEMPT_RESULT_GRID_INCLUDE = {
 export class ExamsRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findAllExams(take?: number, skip?: number) {
+  async findAllExamsByRole(userRole: Role, take?: number, skip?: number) {
+    const where = userRole === Role.ADM ? {} : { status: ExamStatus.PUBLISHED };
+
     const exams = await this.prisma.exam.findMany({
+      where,
       select: {
         id: true,
         origin: true,
@@ -73,40 +88,12 @@ export class ExamsRepository {
         media_key: true,
         exam_days: {
           select: {
+            id: true,
             day: true,
             _count: {
               select: { questions: true },
             },
-            questions: true,
-          },
-        },
-      },
-      take,
-      skip,
-    });
-
-    return exams.map((exam) => ({
-      ...exam,
-      totalQuestions: exam.exam_days.reduce((acc, day) => acc + (day._count.questions ?? 0), 0),
-    }));
-  }
-
-  async findAllPublishedExams(take?: number, skip?: number) {
-    const exams = await this.prisma.exam.findMany({
-      where: { status: 'PUBLISHED' },
-      select: {
-        id: true,
-        origin: true,
-        status: true,
-        name: true,
-        media_key: true,
-        exam_days: {
-          select: {
-            day: true,
-            _count: {
-              select: { questions: true },
-            },
-            questions: true,
+            questions: { select: { language: true } },
           },
         },
       },

@@ -13,6 +13,7 @@ import {
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
 import { QuestionMediaService } from '../storage/question-media.service';
+import { IconMediaService } from '../storage/icon-media.service';
 import { decodeBase64Image } from '../storage/base64-image.util';
 
 const VALID_LETTERS = ['A', 'B', 'C', 'D', 'E'];
@@ -22,6 +23,7 @@ export class AdminQuestionsService {
   constructor(
     private readonly repository: AdminQuestionsRepository,
     private readonly questionMedia: QuestionMediaService,
+    private readonly iconMedia: IconMediaService,
   ) {}
 
   async create(dto: CreateQuestionDto) {
@@ -216,7 +218,16 @@ export class AdminQuestionsService {
   }
 
   async findAllPaths() {
-    return this.repository.findAllPaths();
+    const paths = await this.repository.findAllPaths();
+    const pathIconUrls = await this.iconMedia.resolveIconUrls(paths.map((p) => p.icon_key));
+
+    return paths.map((path, index) => {
+      const { icon_key, ...pathData } = path;
+      return {
+        ...pathData,
+        icon_url: pathIconUrls[index] ?? icon_key,
+      };
+    });
   }
 
   async findAllExams() {

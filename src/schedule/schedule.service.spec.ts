@@ -51,7 +51,6 @@ type ScheduleRepositoryMock = {
 describe('ScheduleService', () => {
   let service: ScheduleService;
   let repository: ScheduleRepositoryMock;
-
   beforeAll(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-05-24T00:00:00.000Z'));
   });

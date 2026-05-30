@@ -5,6 +5,7 @@ import { AdminQuestionsRepository } from './admin-questions.repository';
 import { AdminQuestionsService } from './admin-questions.service';
 import { AdminQuestionType } from './dto/create-question.dto';
 import { QuestionMediaService } from '../storage/question-media.service';
+import { IconMediaService } from '../storage/icon-media.service';
 
 type RepoMock = jest.Mocked<
   Pick<
@@ -105,6 +106,16 @@ describe('AdminQuestionsService', () => {
                 Promise.resolve(keys.map(() => null)),
               ),
             uploadQuestionImage: jest.fn().mockResolvedValue('questions/qid/photo.png'),
+          },
+        },
+        {
+          provide: IconMediaService,
+          useValue: {
+            resolveIconUrls: jest
+              .fn()
+              .mockImplementation((refs: (string | null | undefined)[]) =>
+                Promise.resolve(refs.map((ref) => ref ?? null)),
+              ),
           },
         },
       ],
