@@ -5,7 +5,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SelectedAnswer } from './dto/answer-question.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
+import { StreakService } from '../streak/streak.service';
 import { Role } from '@prisma/client';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -71,6 +73,17 @@ describe('QuestionsService', () => {
       findUniqueById: jest.fn(),
     };
 
+    const mockQuestionMedia = {
+      resolveSignedUrl: jest.fn().mockResolvedValue(null),
+      resolveSignedUrls: jest
+        .fn()
+        .mockImplementation((keys: (string | null)[]) => Promise.resolve(keys.map(() => null))),
+    };
+
+    const mockStreakService = {
+      registerAnswer: jest.fn().mockResolvedValue({ streakDays: 1, streakActive: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QuestionsService,
@@ -85,6 +98,14 @@ describe('QuestionsService', () => {
         {
           provide: UsersRepository,
           useValue: mockUsersRepository,
+        },
+        {
+          provide: QuestionMediaService,
+          useValue: mockQuestionMedia,
+        },
+        {
+          provide: StreakService,
+          useValue: mockStreakService,
         },
       ],
     }).compile();
@@ -118,7 +139,7 @@ describe('QuestionsService', () => {
       {
         id: 'q1',
         text: 'Pergunta 1',
-        image_url: null,
+        media_key: null,
         origin: 'ORIGINAL',
         subjectName: 'Matemática',
         topicName: 'Álgebra',
@@ -201,6 +222,8 @@ describe('QuestionsService', () => {
           explanation: 'Explanation',
           coinsEarned: 1,
           totalCoins: 11,
+          streakDays: 1,
+          streakActive: true,
         },
       });
       expect(repository.createAnswer).toHaveBeenCalledWith({
@@ -233,6 +256,8 @@ describe('QuestionsService', () => {
           explanation: 'Explanation',
           coinsEarned: 0,
           totalCoins: 10,
+          streakDays: 1,
+          streakActive: true,
         },
       });
       expect(gamificationService.earnCoins).toHaveBeenCalledWith({

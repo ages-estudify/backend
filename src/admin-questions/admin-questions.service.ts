@@ -12,12 +12,19 @@ import {
 } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QueryQuestionsDto } from './dto/query-questions.dto';
+import { QuestionMediaService } from '../storage/question-media.service';
+import { IconMediaService } from '../storage/icon-media.service';
+import { decodeBase64Image } from '../storage/base64-image.util';
 
 const VALID_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 @Injectable()
 export class AdminQuestionsService {
-  constructor(private readonly repository: AdminQuestionsRepository) {}
+  constructor(
+    private readonly repository: AdminQuestionsRepository,
+    private readonly questionMedia: QuestionMediaService,
+    private readonly iconMedia: IconMediaService,
+  ) {}
 
   async create(dto: CreateQuestionDto) {
     const letter = dto.correctAnswer.trim().toUpperCase();
@@ -48,7 +55,12 @@ export class AdminQuestionsService {
     if (!created) {
       throw new BadRequestException('Failed to create question');
     }
-    return this.toAdminResponse(created);
+
+    if (dto.image?.trim()) {
+      return this.saveQuestionImageFromBase64(created.id, dto.image);
+    }
+
+    return await this.toAdminResponse(created);
   }
 
   async findAll(query: QueryQuestionsDto, enable?: boolean) {
@@ -78,7 +90,7 @@ export class AdminQuestionsService {
     const { content, totalElements } = await this.repository.findMany(where, page * size, size);
 
     return {
-      content: content.map((q) => this.toAdminResponse(q)),
+      content: await Promise.all(content.map((q) => this.toAdminResponse(q))),
       page,
       size,
       totalElements,
@@ -88,7 +100,7 @@ export class AdminQuestionsService {
   async findOne(id: string) {
     const question = await this.repository.findById(id);
     if (!question) throw new NotFoundException('Question not found');
-    return this.toAdminResponse(question);
+    return await this.toAdminResponse(question);
   }
 
   async update(id: string, dto: UpdateQuestionDto) {
@@ -129,12 +141,24 @@ export class AdminQuestionsService {
     }
 
     const updated = await this.repository.update(id, updateData);
-    return this.toAdminResponse(updated);
+
+    if (dto.image?.trim()) {
+      return this.saveQuestionImageFromBase64(id, dto.image);
+    }
+
+    return await this.toAdminResponse(updated);
   }
 
   async remove(id: string) {
     await this.findOneRaw(id);
     await this.repository.update(id, { enable: false });
+  }
+
+  private async saveQuestionImageFromBase64(questionId: string, imageBase64: string) {
+    const { buffer, mimeType } = decodeBase64Image(imageBase64);
+    const mediaKey = await this.questionMedia.uploadQuestionImage(questionId, buffer, mimeType);
+    const updated = await this.repository.update(questionId, { media_key: mediaKey });
+    return await this.toAdminResponse(updated);
   }
 
   async importCsv(buffer: Buffer) {
@@ -194,7 +218,16 @@ export class AdminQuestionsService {
   }
 
   async findAllPaths() {
-    return this.repository.findAllPaths();
+    const paths = await this.repository.findAllPaths();
+    const pathIconUrls = await this.iconMedia.resolveIconUrls(paths.map((p) => p.icon_key));
+
+    return paths.map((path, index) => {
+      const { icon_key, ...pathData } = path;
+      return {
+        ...pathData,
+        icon_url: pathIconUrls[index] ?? icon_key,
+      };
+    });
   }
 
   async findAllExams() {
@@ -209,13 +242,15 @@ export class AdminQuestionsService {
     return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
   }
 
-  private toAdminResponse(
+  private async toAdminResponse(
     q: NonNullable<Awaited<ReturnType<AdminQuestionsRepository['findById']>>>,
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
     const byLetter = Object.fromEntries(
       q.alternatives.map((a) => [a.letter.toUpperCase(), a.text]),
     ) as Record<'A' | 'B' | 'C' | 'D' | 'E', string>;
     const correctAnswer = q.alternatives.find((a) => a.is_correct)?.letter.toUpperCase() ?? '';
+
+    const imageUrl = await this.questionMedia.resolveSignedUrl(q.media_key);
 
     return {
       id: q.id,
@@ -235,6 +270,7 @@ export class AdminQuestionsService {
       year: q.year,
       mockExamId: q.exam_id,
       bank: q.bank,
+      imageUrl,
       enable: q.enable,
       createdAt: q.createdAt,
       updatedAt: q.updatedAt,

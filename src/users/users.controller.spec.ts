@@ -5,20 +5,28 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { StreakService } from '../streak/streak.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: jest.Mocked<Pick<UsersService, 'findAll' | 'findOne'>>;
+  let streakService: jest.Mocked<Pick<StreakService, 'getStreak'>>;
 
   beforeEach(async () => {
     usersService = {
       findAll: jest.fn(),
       findOne: jest.fn(),
     };
+    streakService = {
+      getStreak: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: usersService }],
+      providers: [
+        { provide: UsersService, useValue: usersService },
+        { provide: StreakService, useValue: streakService },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })

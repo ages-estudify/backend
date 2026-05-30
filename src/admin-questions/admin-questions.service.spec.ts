@@ -4,6 +4,8 @@ import { Origin } from '@prisma/client';
 import { AdminQuestionsRepository } from './admin-questions.repository';
 import { AdminQuestionsService } from './admin-questions.service';
 import { AdminQuestionType } from './dto/create-question.dto';
+import { QuestionMediaService } from '../storage/question-media.service';
+import { IconMediaService } from '../storage/icon-media.service';
 
 type RepoMock = jest.Mocked<
   Pick<
@@ -47,7 +49,7 @@ function mockAdminQuestion(overrides: Record<string, unknown> = {}) {
     exam_day_id: null,
     number: null,
     language: null,
-    image_url: null,
+    media_key: null,
     alternatives: alts,
     path: {
       id: 'path-id',
@@ -94,6 +96,28 @@ describe('AdminQuestionsService', () => {
       providers: [
         AdminQuestionsService,
         { provide: AdminQuestionsRepository, useValue: repository },
+        {
+          provide: QuestionMediaService,
+          useValue: {
+            resolveSignedUrl: jest.fn().mockResolvedValue(null),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) =>
+                Promise.resolve(keys.map(() => null)),
+              ),
+            uploadQuestionImage: jest.fn().mockResolvedValue('questions/qid/photo.png'),
+          },
+        },
+        {
+          provide: IconMediaService,
+          useValue: {
+            resolveIconUrls: jest
+              .fn()
+              .mockImplementation((refs: (string | null | undefined)[]) =>
+                Promise.resolve(refs.map((ref) => ref ?? null)),
+              ),
+          },
+        },
       ],
     }).compile();
 

@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 
 export enum ResultGridStatusFilter {
   CORRECT = 'CORRECT',
@@ -25,4 +25,11 @@ export class ResultGridQueryDto {
   })
   @IsEnum(ResultGridStatusFilter, { each: true })
   statusFilter?: ResultGridStatusFilter[];
+
+  @ApiPropertyOptional({
+    description: 'When provided, restricts the grid to questions of this attempt day only.',
+  })
+  @IsOptional()
+  @IsUUID()
+  attemptDayId?: string;
 }

@@ -7,10 +7,14 @@ import {
 import type { AttemptDayResultDataDto } from './dto/attempt-day-result-data.dto';
 import type { AttemptDayResultQuestionDto } from './dto/attempt-day-result-question.dto';
 import { AttemptDaysRepository } from './attempt-days.repository';
+import { QuestionMediaService } from '../storage/question-media.service';
 
 @Injectable()
 export class AttemptDaysService {
-  constructor(private readonly attemptDaysRepository: AttemptDaysRepository) {}
+  constructor(
+    private readonly attemptDaysRepository: AttemptDaysRepository,
+    private readonly questionMedia: QuestionMediaService,
+  ) {}
 
   async getAttemptDayResult(
     attemptDayId: string,
@@ -45,18 +49,23 @@ export class AttemptDaysService {
     const totalQuestions = questions.length;
     const blankAnswers = totalQuestions - answeredQuestions;
 
-    const questionItems: AttemptDayResultQuestionDto[] = questions.map((q) => {
+    const signedUrls = await this.questionMedia.resolveSignedUrls(
+      questions.map((q) => q.media_key),
+    );
+
+    const questionItems: AttemptDayResultQuestionDto[] = questions.map((q, index) => {
       const sortedAlts = [...q.alternatives].sort((a, b) => a.letter.localeCompare(b.letter));
       const correctAlt = sortedAlts.find((alt) => alt.is_correct);
       if (!correctAlt) {
         throw new InternalServerErrorException(`Question ${q.id} has no correct alternative`);
       }
       const answer = answerByQuestionId.get(q.id);
+      const imageUrl = signedUrls[index];
       return {
         id: q.id,
         number: q.number ?? 0,
         text: q.text,
-        imageUrl: q.image_url,
+        imageUrl,
         alternatives: sortedAlts.map((alt) => ({
           id: alt.id,
           letter: alt.letter,

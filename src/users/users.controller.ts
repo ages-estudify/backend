@@ -16,6 +16,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import type { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
+import { UserStatsDto } from './dto/user-stats.dto';
+import { StreakService } from '../streak/streak.service';
+import { StreakDataDto } from '../streak/dto/streak-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -26,7 +29,10 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 })
 @Controller({ path: 'users', version: '1' })
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly streakService: StreakService,
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -37,12 +43,13 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by id (self or admin)' })
-  @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
-  @ApiNotFoundResponse({ description: 'User not found' })
-  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
-    return this.usersService.findOne(viewer, id);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('stats')
+  @ApiOkResponse({ type: UserStatsDto })
+  @ApiUnauthorizedResponse({ description: 'Não autorizado' })
+  async getStats(@CurrentUser() user: JwtAuthUser): Promise<UserStatsDto> {
+    return await this.usersService.getStats(user.userId);
   }
 
   @Get('me/coins')
@@ -58,5 +65,24 @@ export class UsersController {
       success: true,
       data: { coins },
     };
+  }
+
+  @Get('streak')
+  @ApiOperation({ summary: 'Get current user streak (consecutive active days)' })
+  @ApiOkResponse({ type: StreakDataDto })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: { example: { message: 'User not found' } },
+  })
+  async getStreak(@CurrentUser() user: JwtAuthUser): Promise<StreakDataDto> {
+    return this.streakService.getStreak(user.userId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by id (self or admin)' })
+  @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
+    return this.usersService.findOne(viewer, id);
   }
 }

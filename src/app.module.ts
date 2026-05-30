@@ -13,6 +13,9 @@ import { OnboardingModule } from './onboarding/onboarding.module';
 import { PrismaService } from './prisma.service';
 import { AttemptExamsModule } from './exams/attempts/exam-attempt.module';
 import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
+import { StorageModule } from './storage/storage.module';
+import { ScheduleModule } from './schedule/schedule.module';
+import { StreakModule } from './streak/streak.module';
 
 @Module({
   imports: [
@@ -31,7 +34,10 @@ import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
     ExamsModule,
     AttemptDaysModule,
     OnboardingModule,
+    ScheduleModule,
     AdminQuestionsModule,
+    StorageModule,
+    StreakModule,
   ],
   controllers: [],
   providers: [PrismaService],

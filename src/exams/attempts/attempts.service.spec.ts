@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AttemptsService } from './attempts.service';
 import { AttemptsRepository } from './attempts.repository';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { QuestionMediaService } from '../../storage/question-media.service';
 
 const mockAttemptsRepository = {
   create: jest.fn(),
@@ -11,6 +12,11 @@ const mockAttemptsRepository = {
   findLastWithQuestions: jest.fn(),
   findAnswersByAttemptId: jest.fn(),
   findAttemptForFinish: jest.fn(),
+  findExamById: jest.fn(),
+  findHistoryByExamAndUser: jest.fn(),
+  findAttemptDay: jest.fn(),
+  finishAttemptDay: jest.fn(),
+  countFinishedAttemptDays: jest.fn(),
 };
 
 describe('AttemptsService', () => {
@@ -24,6 +30,17 @@ describe('AttemptsService', () => {
         {
           provide: AttemptsRepository,
           useValue: mockAttemptsRepository,
+        },
+        {
+          provide: QuestionMediaService,
+          useValue: {
+            resolveSignedUrl: jest.fn().mockResolvedValue(null),
+            resolveSignedUrls: jest
+              .fn()
+              .mockImplementation((keys: (string | null)[]) =>
+                Promise.resolve(keys.map(() => null)),
+              ),
+          },
         },
       ],
     }).compile();
@@ -132,6 +149,7 @@ describe('AttemptsService', () => {
 
       repository.findAttemptForFinish.mockResolvedValue(mockAttempt);
       repository.findAnswersByAttemptId.mockResolvedValue(mockAnswers);
+      repository.countFinishedAttemptDays.mockResolvedValue(1);
       repository.update.mockResolvedValue({
         id: 'att-1',
         exam_id: 'exam-1',
@@ -185,6 +203,151 @@ describe('AttemptsService', () => {
       repository.findLastWithQuestions.mockResolvedValue(null);
 
       await expect(service.findLast('user-1', 'exam-123')).rejects.toThrow(NotFoundException);
+    });
+  });
+  describe('getExamHistory()', () => {
+    const mockExam = { id: 'exam-uuid', name: 'Novembro 2024', origin: 'ENEM' };
+
+    const makeAttemptDay = (
+      overrides: Partial<{
+        id: string;
+        day: number;
+        questionCount: number;
+        answeredCount: number;
+        correctCount: number;
+        timeSpent: number;
+        endTime: Date;
+      }> = {},
+    ) => {
+      const {
+        id = 'ad-uuid-1',
+        day = 1,
+        questionCount = 90,
+        answeredCount = 82,
+        correctCount = 65,
+        timeSpent = 5400,
+        endTime = new Date('2025-02-13T16:45:00.000Z'),
+      } = overrides;
+
+      return {
+        id,
+        time_spent_seconds: timeSpent,
+        end_time: endTime,
+        exam_day: { day, _count: { questions: questionCount } },
+        _count: { answers: answeredCount },
+        answers: Array.from({ length: correctCount }, (_, i) => ({ id: `ans-${i}` })),
+
+        attempt: { exam: mockExam },
+      };
+    };
+
+    it('should throw NotFoundException when exam does not exist', async () => {
+      repository.findExamById.mockResolvedValue(null);
+
+      await expect(service.getExamHistory('non-existent-uuid', 'user-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findHistoryByExamAndUser).not.toHaveBeenCalled();
+    });
+
+    it('should return empty history and zeroed summary when no completed attempt days exist', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result).toEqual({
+        data: {
+          exam: { id: 'exam-uuid', name: 'Novembro 2024', origin: 'ENEM' },
+          summary: { averageScore: 0, totalCompleted: 0 },
+          history: [],
+        },
+      });
+    });
+
+    it('should return history with one item and correct summary', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([
+        makeAttemptDay({ correctCount: 65, questionCount: 90 }),
+      ]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result.data.summary.totalCompleted).toBe(1);
+      expect(result.data.summary.averageScore).toBe(722);
+      expect(result.data.history).toHaveLength(1);
+    });
+
+    it('should calculate averageScore as rounded mean across multiple attempt days', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([
+        makeAttemptDay({ id: 'ad-1', correctCount: 90, questionCount: 90 }),
+        makeAttemptDay({ id: 'ad-2', correctCount: 0, questionCount: 90 }),
+      ]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result.data.summary.totalCompleted).toBe(2);
+      expect(result.data.summary.averageScore).toBe(500);
+    });
+
+    it('should map attempt day fields correctly in history item', async () => {
+      const endTime = new Date('2025-02-13T16:45:00.000Z');
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([
+        makeAttemptDay({
+          id: 'ad-uuid-1',
+          day: 1,
+          questionCount: 90,
+          answeredCount: 82,
+          correctCount: 65,
+          timeSpent: 5400,
+          endTime,
+        }),
+      ]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+      const item = result.data.history[0];
+
+      expect(item.attemptDayId).toBe('ad-uuid-1');
+      expect(item.day).toBe(1);
+      expect(item.totalQuestions).toBe(90);
+      expect(item.answeredQuestions).toBe(82);
+      expect(item.correctAnswers).toBe(65);
+      expect(item.timeSpentSeconds).toBe(5400);
+      expect(item.completedAt).toBe(endTime.toISOString());
+    });
+
+    it('should include exam info at the top of the response', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result.data.exam).toEqual({ id: 'exam-uuid', name: 'Novembro 2024', origin: 'ENEM' });
+    });
+
+    it('should allow the same day to appear multiple times in history', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([
+        makeAttemptDay({ id: 'ad-1', day: 1, endTime: new Date('2025-02-13T16:45:00.000Z') }),
+        makeAttemptDay({ id: 'ad-2', day: 1, endTime: new Date('2025-02-02T14:20:00.000Z') }),
+      ]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result.data.history).toHaveLength(2);
+    });
+
+    it('should handle zero totalQuestions without dividing by zero', async () => {
+      repository.findExamById.mockResolvedValue(mockExam);
+      repository.findHistoryByExamAndUser.mockResolvedValue([
+        makeAttemptDay({ questionCount: 0, answeredCount: 0, correctCount: 0 }),
+      ]);
+
+      const result = await service.getExamHistory('exam-uuid', 'user-uuid');
+
+      expect(result.data.summary.averageScore).toBe(0);
     });
   });
 });

@@ -29,7 +29,7 @@ export class AttemptsRepository {
     });
   }
 
-  async findLastWithQuestions(userId: string, examId: string) {
+  async findLastWithQuestions(userId: string, examId: string, examDayId?: string) {
     return this.prisma.attempt.findFirst({
       where: { user_id: userId, exam_id: examId, end_time: null },
       orderBy: { init_time: 'desc' },
@@ -37,6 +37,7 @@ export class AttemptsRepository {
         exam: {
           include: {
             exam_days: {
+              where: examDayId ? { id: examDayId } : undefined,
               include: { questions: { include: { alternatives: true } } },
             },
           },
@@ -48,6 +49,28 @@ export class AttemptsRepository {
   async findAnswersByAttemptId(attemptId: string) {
     return this.prisma.answer.findMany({
       where: { attempt_day: { attempt_id: attemptId } },
+    });
+  }
+
+  async findAttemptDay(attemptId: string, examDayId: string) {
+    return this.prisma.attemptDay.findUnique({
+      where: { attempt_id_exam_day_id: { attempt_id: attemptId, exam_day_id: examDayId } },
+    });
+  }
+
+  async countFinishedAttemptDays(attemptId: string) {
+    return this.prisma.attemptDay.count({
+      where: { attempt_id: attemptId, end_time: { not: null } },
+    });
+  }
+
+  async finishAttemptDay(attemptDayId: string, timeSpentSeconds?: number) {
+    return this.prisma.attemptDay.update({
+      where: { id: attemptDayId },
+      data: {
+        end_time: new Date(),
+        ...(timeSpentSeconds !== undefined ? { time_spent_seconds: timeSpentSeconds } : {}),
+      },
     });
   }
 
@@ -70,6 +93,49 @@ export class AttemptsRepository {
           },
         },
       },
+    });
+  }
+  async findHistoryByExamAndUser(examId: string, userId: string) {
+    return this.prisma.attemptDay.findMany({
+      where: {
+        end_time: { not: null },
+        attempt: {
+          exam_id: examId,
+          user_id: userId,
+        },
+      },
+      include: {
+        exam_day: {
+          include: {
+            _count: { select: { questions: true } },
+          },
+        },
+        _count: {
+          select: {
+            answers: { where: { alternative_id: { not: null } } },
+          },
+        },
+        answers: {
+          where: { alternative: { is_correct: true } },
+          select: { id: true },
+        },
+
+        attempt: {
+          include: {
+            exam: {
+              select: { id: true, name: true, origin: true },
+            },
+          },
+        },
+      },
+      orderBy: { end_time: 'desc' },
+    });
+  }
+
+  async findExamById(examId: string) {
+    return this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { id: true, name: true, origin: true },
     });
   }
 }

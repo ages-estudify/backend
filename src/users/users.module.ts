@@ -5,9 +5,10 @@ import { UsersService } from './users.service';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { UsersRepository } from './users.repository';
 import { PrismaService } from '../prisma.service';
+import { StreakModule } from '../streak/streak.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
+  imports: [forwardRef(() => AuthModule), forwardRef(() => StreakModule)],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, RefreshTokenRepository, PrismaService],
   exports: [UsersRepository, RefreshTokenRepository],

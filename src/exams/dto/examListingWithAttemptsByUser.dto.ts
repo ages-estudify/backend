@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsIn,
   IsNumber,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -26,6 +27,10 @@ export class ProgressDto {
 }
 
 export class DayDto {
+  @ApiProperty({ example: 'uuid' })
+  @IsUUID()
+  examDayId!: string;
+
   @ApiProperty({ example: 1 })
   @IsInt()
   day!: number;
@@ -41,6 +46,23 @@ export class DayDto {
   @ApiProperty({ example: false })
   @IsBoolean()
   isCompleted!: boolean;
+
+  @ApiProperty({
+    example: 'in_progress',
+    enum: ['completed', 'in_progress', 'available'],
+    description:
+      'Day status. Computed from the user attempt: completed when finished, in_progress when started, available otherwise.',
+  })
+  @IsString()
+  @IsIn(['completed', 'in_progress', 'available'])
+  status!: 'completed' | 'in_progress' | 'available';
+
+  @ApiProperty({
+    example: true,
+    description: 'True when this day has questions with a language variant (e.g. ENEM day 1).',
+  })
+  @IsBoolean()
+  hasLanguageChoice!: boolean;
 }
 
 export class ExamDto {
@@ -77,9 +99,17 @@ export class ExamDto {
   @Type(() => ProgressDto)
   progress!: ProgressDto;
 
-  @ApiProperty({ example: 'https://cdn.com/image.png' })
+  @ApiProperty({ example: 'https://cdn.com/image.png', nullable: true, required: false })
+  @IsOptional()
   @IsString()
-  image_url!: string;
+  imageUrl?: string | null;
+
+  @ApiProperty({
+    example: true,
+    description: 'True when at least one day of the exam has a language choice.',
+  })
+  @IsBoolean()
+  hasLanguageChoice!: boolean;
 
   @ApiProperty({ type: [DayDto] })
   @IsArray()

@@ -69,7 +69,7 @@ export class SubjectRepository {
         id: string;
         name: string;
         text: string;
-        icon: string;
+        icon_key: string;
         availableByType: {
           ORIGINAL: number;
           EXTERNAL: number;
@@ -83,7 +83,7 @@ export class SubjectRepository {
               p.id,
               p.name,
               p.text,
-              p.icon_url AS icon,
+              p.icon_key AS icon_key,
 
               JSON_BUILD_OBJECT(
                 'ORIGINAL', COUNT(q.id) FILTER (WHERE q.origin = 'ORIGINAL'),
@@ -103,7 +103,7 @@ export class SubjectRepository {
 
             WHERE p.subject_id = ${id}
 
-            GROUP BY p.id, p.name, p.text
+            GROUP BY p.id, p.name, p.text, p.icon_key
             ORDER BY p.trail_position;
           `;
 
