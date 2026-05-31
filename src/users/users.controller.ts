@@ -32,7 +32,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) {}
+  ) { }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -78,9 +78,7 @@ export class UsersController {
     return this.streakService.getStreak(user.userId);
   }
 
-  // Only match UUID-style user IDs here so literal routes like /users/stats
-  // and /users/streak are not captured by the dynamic :id route.
-  @Get(':id([0-9a-fA-F-]{36})')
+  @Get(':id')
   @ApiOperation({ summary: 'Get user by id (self or admin)' })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
   @ApiNotFoundResponse({ description: 'User not found' })
