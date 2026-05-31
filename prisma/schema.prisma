@@ -85,6 +85,8 @@ model StudyDay {
   hour    Int
   user_id String  @db.Uuid
   user    User    @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
 }
 
 model StudyLog {
@@ -99,6 +101,8 @@ model StudyLog {
   path    Path   @relation(fields: [path_id], references: [id])
 
   @@unique([user_id, path_id, date])
+
+  @@index([user_id, date])
 }
 
 model Subject {
@@ -136,6 +140,8 @@ model Exam {
   attempts  Attempt[]
   questions Question[]
   exam_days ExamDay[]
+
+  @@index([status])
 }
 
 model ExamDay {
@@ -164,6 +170,8 @@ model Attempt {
   user         User         @relation(fields: [user_id], references: [id])
   attempt_days AttemptDay[]
   answers      Answer[]
+
+  @@index([user_id, exam_id])
 }
 
 model AttemptDay {
@@ -207,7 +215,8 @@ model Question {
   alternatives Alternative[]
   answers      Answer[]
 
-  @@index([exam_day_id])
+  @@index([path_id, origin])
+  @@index([exam_day_id, number])
 }
 
 model Alternative {
@@ -235,6 +244,10 @@ model Answer {
   attempt        Attempt?     @relation(fields: [attempt_id], references: [id])
   attempt_day_id String?      @db.Uuid
   attempt_day    AttemptDay?  @relation(fields: [attempt_day_id], references: [id])
+
+  @@index([user_id, question_id])
+  @@index([attempt_day_id, question_id])
+
 }
 
 model Subscription {
