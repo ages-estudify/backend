@@ -109,4 +109,9 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({ example: 12, description: 'Question order within exam or trail' })
+  @IsOptional()
+  @IsInt()
+  number?: number;
 }

@@ -150,6 +150,27 @@ describe('AdminQuestionsService', () => {
       expect(repository.create).toHaveBeenCalled();
     });
 
+    it('persists number on create and returns it in the response', async () => {
+      repository.pathExists.mockResolvedValue(true);
+      repository.create.mockResolvedValue(mockAdminQuestion({ number: 7 }) as never);
+
+      const result = await service.create({
+        discipline: 'Mathematics',
+        content: 'Geo',
+        question: 'Q?',
+        alternatives: alternativesDto,
+        correctAnswer: 'A',
+        answerExplanation: 'Exp',
+        type: AdminQuestionType.ORIGINAL,
+        year: 2024,
+        pathId: 'path-id',
+        number: 7,
+      });
+
+      expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ number: 7 }));
+      expect(result).toMatchObject({ number: 7 });
+    });
+
     it('uses fallback path when pathId omitted', async () => {
       repository.getFallbackPathId.mockResolvedValue('fallback-path');
       repository.create.mockResolvedValue(mockAdminQuestion({ path_id: 'fallback-path' }) as never);
