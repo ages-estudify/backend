@@ -90,4 +90,13 @@ export class UpdateQuestionDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 12,
+    description: 'Question order within exam or trail. Send null to clear.',
+  })
+  @IsOptional()
+  @IsInt()
+  number?: number | null;
 }
