@@ -48,6 +48,7 @@ export class AdminQuestionsService {
       origin: this.adminTypeToOrigin(dto.type),
       path_id: pathId,
       exam_id: dto.mockExamId ?? null,
+      number: dto.number ?? null,
       alternatives,
     };
 
@@ -268,6 +269,7 @@ export class AdminQuestionsService {
       answerExplanation: q.feedback,
       type: this.originToAdminType(q.origin),
       year: q.year,
+      number: q.number,
       mockExamId: q.exam_id,
       bank: q.bank,
       imageUrl,
@@ -291,6 +293,7 @@ export class AdminQuestionsService {
     if (dto.question !== undefined) u.text = dto.question;
     if (dto.answerExplanation !== undefined) u.feedback = dto.answerExplanation;
     if (dto.year !== undefined) u.year = dto.year;
+    if (dto.number !== undefined) u.number = dto.number;
     if (dto.type !== undefined) u.origin = this.adminTypeToOrigin(dto.type);
     if (dto.enable !== undefined) u.enable = dto.enable;
     if (dto.pathId) u.path = { connect: { id: dto.pathId } };
@@ -333,6 +336,7 @@ export class AdminQuestionsService {
       origin: this.adminTypeToOrigin(type),
       path_id: pathId,
       exam_id: row['mock_exam_id']?.trim() || null,
+      number: row['number']?.trim() ? parseInt(row['number'], 10) : null,
       alternatives: VALID_LETTERS.map((L) => ({
         letter: L,
         text: row[`alternative_${L.toLowerCase()}`],
