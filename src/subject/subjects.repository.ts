@@ -7,7 +7,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Injectable()
 export class SubjectRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async existsSubjectById(subjectId: string): Promise<boolean> {
     const subject = await this.prisma.subject.findUnique({
@@ -144,12 +144,9 @@ export class SubjectRepository {
 
   async countByPathAndType(
     pathId: string,
-    type: string,
     userId: string,
+    type?: 'ORIGINAL' | 'EXTERNAL',
   ): Promise<CountByPathAndTypeDto> {
-    if (!Object.values(Origin).includes(type as Origin)) {
-      throw new BadRequestException('Invalid origin');
-    }
 
     const query = await this.prisma.path.findMany({
       where: {
@@ -159,7 +156,9 @@ export class SubjectRepository {
         questions: {
           where: {
             exam_day_id: null,
-            origin: type as Origin,
+            ...(type && {
+              origin: type as Origin,
+            }),
           },
           select: {
             id: true,

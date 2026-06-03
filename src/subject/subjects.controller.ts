@@ -20,7 +20,7 @@ import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 @UseGuards(JwtAuthGuard, SubscriptionGuard)
 @ApiBearerAuth('JWT-auth')
 export class SubjectController {
-  constructor(private readonly subjectService: SubjectService) {}
+  constructor(private readonly subjectService: SubjectService) { }
 
   @Get()
   @ApiOkResponse({ type: SubjectListingResponseDto })
@@ -42,13 +42,14 @@ export class SubjectController {
   @ApiOkResponse({ type: CountByPathAndTypeDto })
   @ApiNotFoundResponse({ description: 'Topico não encontrada' })
   @ApiBadRequestResponse({ description: 'Tipo de questão inválido' })
-  @ApiQuery({ name: 'type', enum: ['ORIGINAL', 'EXTERNAL'], required: true })
+  @ApiQuery({ name: 'type', enum: ['ORIGINAL', 'EXTERNAL'], required: false })
   async countQuestions(
     @Param('topicId') pathId: string,
-    @Query('type') type: 'ORIGINAL' | 'EXTERNAL',
     @CurrentUser() user: JwtAuthUser,
+    @Query('type') type?: 'ORIGINAL' | 'EXTERNAL',
   ): Promise<CountByPathAndTypeDto> {
-    if (!type || !['ORIGINAL', 'EXTERNAL'].includes(type)) {
+
+    if (type && !['ORIGINAL', 'EXTERNAL'].includes(type)) {
       throw new BadRequestException('Tipo de questão inválido');
     }
 
