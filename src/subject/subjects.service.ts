@@ -6,7 +6,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Injectable()
 export class SubjectService {
-  constructor(private subjectRepository: SubjectRepository) { }
+  constructor(private subjectRepository: SubjectRepository) {}
 
   async findAllWithAnsweredByUser(userId: string): Promise<SubjectListingResponseDto> {
     const data = await this.subjectRepository.findAllWithAnsweredByUser(userId);
@@ -54,20 +54,21 @@ export class SubjectService {
     type: 'ORIGINAL' | 'EXTERNAL' | undefined,
     userId: string,
   ): Promise<CountByPathAndTypeDto> {
-
-
     const pathExists = await this.subjectRepository.existsPathById(pathId);
+
+    if (type && !['ORIGINAL', 'EXTERNAL'].includes(type)) {
+      throw new BadRequestException('Tipo de questão inválido');
+    }
 
     if (!pathExists) {
       throw new NotFoundException('Tópico não encontrado');
     }
 
-    const result: CountByPathAndTypeDto =
-      await this.subjectRepository.countByPathAndType(
-        pathId,
-        userId,
-        type
-      );
+    const result: CountByPathAndTypeDto = await this.subjectRepository.countByPathAndType(
+      pathId,
+      userId,
+      type,
+    );
 
     return result;
   }

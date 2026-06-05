@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { SubjectPathDto } from './dto/allPathsBySubject.dto';
 import { SubjectListingDto } from './dto/subjectListing.dto.';
@@ -7,7 +7,7 @@ import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Injectable()
 export class SubjectRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async existsSubjectById(subjectId: string): Promise<boolean> {
     const subject = await this.prisma.subject.findUnique({
@@ -147,7 +147,6 @@ export class SubjectRepository {
     userId: string,
     type?: 'ORIGINAL' | 'EXTERNAL',
   ): Promise<CountByPathAndTypeDto> {
-
     const query = await this.prisma.path.findMany({
       where: {
         id: pathId,

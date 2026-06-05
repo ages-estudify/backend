@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { SubjectService } from './subjects.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -20,7 +20,7 @@ import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 @UseGuards(JwtAuthGuard, SubscriptionGuard)
 @ApiBearerAuth('JWT-auth')
 export class SubjectController {
-  constructor(private readonly subjectService: SubjectService) { }
+  constructor(private readonly subjectService: SubjectService) {}
 
   @Get()
   @ApiOkResponse({ type: SubjectListingResponseDto })
@@ -48,11 +48,6 @@ export class SubjectController {
     @CurrentUser() user: JwtAuthUser,
     @Query('type') type?: 'ORIGINAL' | 'EXTERNAL',
   ): Promise<CountByPathAndTypeDto> {
-
-    if (type && !['ORIGINAL', 'EXTERNAL'].includes(type)) {
-      throw new BadRequestException('Tipo de questão inválido');
-    }
-
     return this.subjectService.countByPathAndType(pathId, type, user.userId);
   }
 }
