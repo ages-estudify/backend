@@ -19,5 +19,5 @@ jobs:
       - name: Push to GitLab
         run: |
           git remote add gitlab https://ravel.andrade:${{ secrets.GITLAB_TOKEN }}@tools.ages.pucrs.br/estudify/backend.git
-          git push gitlab --all
+          git push gitlab --all --force --no-verify
           git push gitlab --tags

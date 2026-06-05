@@ -89,7 +89,7 @@ export class SubjectRepository {
         id: true,
         name: true,
         text: true,
-        icon_url: true,
+        icon_key: true,
         questions: {
           where: {
             exam_day_id: null,
@@ -132,7 +132,7 @@ export class SubjectRepository {
         id: path.id,
         name: path.name,
         text: path.text,
-        icon: path.icon_url,
+        icon_key: path.icon_key,
 
         availableByType,
         answeredByType,

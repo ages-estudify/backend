@@ -22,8 +22,7 @@ describe('ExamsService', () => {
         {
           provide: ExamsRepository,
           useValue: {
-            findAllExams: jest.fn(),
-            findAllPublishedExams: jest.fn(),
+            findAllExamsByRole: jest.fn(),
             findAllAttemptsByUser: jest.fn(),
             findAttemptResultGridById: jest.fn(),
             findExamById: jest.fn(),
@@ -60,7 +59,7 @@ describe('ExamsService', () => {
 
   describe('listAllExams', () => {
     it('should list all exams with days and question counts', async () => {
-      repository.findAllExams.mockResolvedValue([
+      repository.findAllExamsByRole.mockResolvedValue([
         {
           id: 'exam1',
           name: 'Simulado ENEM',
@@ -109,7 +108,7 @@ describe('ExamsService', () => {
 
       repository.countQuestionsByExam.mockResolvedValue(2);
 
-      const result = await service.listAllExams();
+      const result = await service.listAllExams('ADMIN' as any);
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].title).toBe('Simulado ENEM');
@@ -216,7 +215,7 @@ describe('ExamsService', () => {
       } as unknown as Awaited<ReturnType<ExamsRepository['findExamById']>>);
 
       const spy = jest.spyOn(repository, 'deleteExamLogical');
-      spy.mockResolvedValue(undefined);
+      spy.mockResolvedValue(undefined as never);
 
       await service.deleteExamLogical('exam1');
 
@@ -232,17 +231,20 @@ describe('ExamsService', () => {
 
   describe('findAllWithLastAttemptByUser', () => {
     it('should merge exams with attempts correctly (completed)', async () => {
-      repository.findAllPublishedExams.mockResolvedValue([
+      repository.findAllExamsByRole.mockResolvedValue([
         {
           id: '1',
           name: 'Simulado 1',
           media_key: 'img',
           origin: 'EXTERNAL',
           status: 'DRAFT',
-          exam_days: [{ _count: { questions: 10 } }, { _count: { questions: 20 } }],
+          exam_days: [
+            { id: 'd1', day: 1, _count: { questions: 10 }, questions: [] },
+            { id: 'd2', day: 2, _count: { questions: 20 }, questions: [] },
+          ],
           totalQuestions: 30,
         },
-      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllPublishedExams']>>);
+      ] as unknown as Awaited<ReturnType<ExamsRepository['findAllExams']>>);
 
       repository.findAllAttemptsByUser.mockResolvedValue([
         {
@@ -264,7 +266,7 @@ describe('ExamsService', () => {
         },
       ] as unknown as Awaited<ReturnType<ExamsRepository['findAllAttemptsByUser']>>);
 
-      const result = await service.findAllWithLastAttemptByUser('user-1');
+      const result = await service.findAllWithLastAttemptByUser('ADMIN' as any, 'user-1');
 
       const exam = result.data[0];
 

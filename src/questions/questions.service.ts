@@ -5,6 +5,7 @@ import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
 import { QuestionMediaService } from '../storage/question-media.service';
+import { StreakService } from '../streak/streak.service';
 
 @Injectable()
 export class QuestionsService {
@@ -13,6 +14,7 @@ export class QuestionsService {
     private gamificationService: GamificationService,
     private usersRepository: UsersRepository,
     private questionMedia: QuestionMediaService,
+    private streakService: StreakService,
   ) {}
 
   async getQuestionBatch(
@@ -183,6 +185,8 @@ export class QuestionsService {
       answer_date: new Date(),
     });
 
+    const streakResult = await this.streakService.registerAnswer(userId);
+
     const gamificationResult = await this.gamificationService.earnCoins({
       userId,
       isCorrect,
@@ -197,6 +201,8 @@ export class QuestionsService {
         explanation: question.feedback,
         coinsEarned: gamificationResult.coinsEarned,
         totalCoins: gamificationResult.totalCoins,
+        streakDays: streakResult.streakDays,
+        streakActive: streakResult.streakActive,
       },
     } as AnswerSuccessResponseDto;
   }

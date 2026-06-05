@@ -2,12 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SubjectService } from './subjects.service';
 import { SubjectRepository } from './subjects.repository';
 import { NotFoundException } from '@nestjs/common';
+import { IconMediaService } from '../storage/icon-media.service';
 
 describe('SubjectService', () => {
   let service: SubjectService;
   let repository: jest.Mocked<SubjectRepository>;
+  const iconMediaMocks = {
+    resolveIconUrls: jest.fn(),
+  };
 
   beforeEach(async () => {
+    iconMediaMocks.resolveIconUrls.mockImplementation((refs: (string | null | undefined)[]) =>
+      Promise.resolve(refs.map((ref) => ref ?? null)),
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubjectService,
@@ -21,6 +29,7 @@ describe('SubjectService', () => {
             countByPathAndType: jest.fn(),
           },
         },
+        { provide: IconMediaService, useValue: iconMediaMocks },
       ],
     }).compile();
 
@@ -74,7 +83,7 @@ describe('SubjectService', () => {
         id: 'path1',
         name: 'Algebra',
         text: 'desc',
-        icon: 'icon',
+        icon_key: 'paths/path1/icon.png',
         availableByType: { ORIGINAL: 10, EXTERNAL: 5 },
         answeredByType: { ORIGINAL: 4, EXTERNAL: 2 },
       },

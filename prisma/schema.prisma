@@ -112,7 +112,7 @@ model Path {
   id                String @id @default(uuid()) @db.Uuid
   name              String
   text              String
-  icon_url          String
+  icon_key          String
   schedule_position Int    @unique
   trail_position    Int
 
