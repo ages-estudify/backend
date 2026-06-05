@@ -6,6 +6,18 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { WeekDay } from '@prisma/client';
+import { interleavePathsBySubject } from './schedule-path-order';
+import {
+  addDaysUtc,
+  buildExtensionEntries,
+  buildScheduleEntries,
+  buildSlotsByWeekDay,
+  findNextScheduleDate,
+  findNextSlotAfter,
+  formatDateUtc,
+  isWeekScheduleCovered,
+  WEEKDAYS_UTC,
+} from './schedule-slots';
 import { ScheduleRepository } from './schedule.repository';
 
 type ScheduleResponse = {
@@ -42,16 +54,6 @@ type ScheduleItemUpdateResponse = {
   completed: boolean;
 };
 
-const WEEKDAYS_UTC: WeekDay[] = [
-  WeekDay.SUNDAY,
-  WeekDay.MONDAY,
-  WeekDay.TUESDAY,
-  WeekDay.WEDNESDAY,
-  WeekDay.THURSDAY,
-  WeekDay.FRIDAY,
-  WeekDay.SATURDAY,
-];
-
 @Injectable()
 export class ScheduleService {
   constructor(private readonly scheduleRepository: ScheduleRepository) {}
@@ -77,21 +79,22 @@ export class ScheduleService {
       };
     }
 
-    const paths = await this.scheduleRepository.findPathsOrdered();
-    if (paths.length === 0) {
+    const catalog = await this.scheduleRepository.findPathsForSchedule();
+    if (catalog.length === 0) {
       throw new BadRequestException('Nenhum Path disponível para agendamento');
     }
 
-    const slotsByWeekDay = this.buildSlotsByWeekDay(studyDays);
-    const startDate = this.findNextScheduleDate(this.todayUtc(), [...slotsByWeekDay.keys()]);
-    const scheduleEntries = this.buildScheduleEntries(startDate, slotsByWeekDay, paths, userId);
+    const paths = interleavePathsBySubject(catalog);
+    const slotsByWeekDay = buildSlotsByWeekDay(studyDays);
+    const startDate = findNextScheduleDate(this.todayUtc(), [...slotsByWeekDay.keys()]);
+    const scheduleEntries = buildScheduleEntries(startDate, slotsByWeekDay, paths, userId);
 
     await this.scheduleRepository.createStudyLogs(scheduleEntries);
 
     return {
       generatedItems: scheduleEntries.length,
-      firstDate: this.formatDateUtc(scheduleEntries[0].date),
-      lastDate: this.formatDateUtc(scheduleEntries[scheduleEntries.length - 1].date),
+      firstDate: formatDateUtc(scheduleEntries[0].date),
+      lastDate: formatDateUtc(scheduleEntries[scheduleEntries.length - 1].date),
     };
   }
 
@@ -101,7 +104,10 @@ export class ScheduleService {
     }
 
     const weekStartDate = this.parseUtcDateOnly(weekStart);
-    const weekEndDate = this.addDaysUtc(weekStartDate, 6);
+    const weekEndDate = addDaysUtc(weekStartDate, 6);
+
+    await this.extendScheduleIfNeeded(userId, weekEndDate);
+
     const studyLogs = await this.scheduleRepository.findStudyLogsByRange(
       userId,
       weekStartDate,
@@ -111,7 +117,7 @@ export class ScheduleService {
     const logsByDate = new Map<string, WeekScheduleItem[]>();
 
     for (const log of studyLogs) {
-      const dateKey = this.formatDateUtc(log.date);
+      const dateKey = formatDateUtc(log.date);
       const items = logsByDate.get(dateKey) ?? [];
       items.push({
         id: log.id,
@@ -128,8 +134,8 @@ export class ScheduleService {
 
     const days: WeekScheduleDay[] = [];
     for (let offset = 0; offset < 7; offset++) {
-      const currentDate = this.addDaysUtc(weekStartDate, offset);
-      const dateKey = this.formatDateUtc(currentDate);
+      const currentDate = addDaysUtc(weekStartDate, offset);
+      const dateKey = formatDateUtc(currentDate);
       const items = (logsByDate.get(dateKey) ?? []).sort((a, b) =>
         a.scheduledTime.localeCompare(b.scheduledTime),
       );
@@ -141,8 +147,8 @@ export class ScheduleService {
     }
 
     return {
-      weekStart: this.formatDateUtc(weekStartDate),
-      weekEnd: this.formatDateUtc(weekEndDate),
+      weekStart: formatDateUtc(weekStartDate),
+      weekEnd: formatDateUtc(weekEndDate),
       days,
     };
   }
@@ -169,54 +175,42 @@ export class ScheduleService {
     };
   }
 
-  private buildSlotsByWeekDay(studyDays: Array<{ day: WeekDay; hour: number }>) {
-    const slots = new Map<WeekDay, number[]>();
-
-    for (const studyDay of studyDays) {
-      const hours = slots.get(studyDay.day) ?? [];
-      if (!hours.includes(studyDay.hour)) {
-        hours.push(studyDay.hour);
-      }
-      slots.set(studyDay.day, hours);
+  private async extendScheduleIfNeeded(userId: string, weekEndDate: Date): Promise<void> {
+    const maxLogDate = await this.scheduleRepository.getMaxStudyLogDate(userId);
+    if (!maxLogDate || isWeekScheduleCovered(maxLogDate, weekEndDate)) {
+      return;
     }
 
-    for (const [day, hours] of slots.entries()) {
-      hours.sort((a, b) => a - b);
-      slots.set(day, hours);
+    const studyDays = await this.scheduleRepository.findStudyDaysByUser(userId);
+    if (studyDays.length === 0) {
+      return;
     }
 
-    return slots;
-  }
-
-  private buildScheduleEntries(
-    startDate: Date,
-    slotsByWeekDay: Map<WeekDay, number[]>,
-    paths: Array<{ id: string }>,
-    userId: string,
-  ) {
-    const entries: Array<{ date: Date; path_id: string; user_id: string; done: boolean }> = [];
-    let currentDate = startDate;
-    let pathIndex = 0;
-
-    while (pathIndex < paths.length) {
-      const weekDay = WEEKDAYS_UTC[currentDate.getUTCDay()];
-      const hours = slotsByWeekDay.get(weekDay);
-      if (hours) {
-        for (const hour of hours) {
-          if (pathIndex >= paths.length) break;
-          entries.push({
-            date: this.setUtcHour(currentDate, hour),
-            path_id: paths[pathIndex].id,
-            user_id: userId,
-            done: false,
-          });
-          pathIndex += 1;
-        }
-      }
-      currentDate = this.addDaysUtc(currentDate, 1);
+    const catalog = await this.scheduleRepository.findPathsForSchedule();
+    if (catalog.length === 0) {
+      return;
     }
 
-    return entries;
+    const paths = interleavePathsBySubject(catalog);
+    const slotsByWeekDay = buildSlotsByWeekDay(studyDays);
+    const lastLog = await this.scheduleRepository.findLastStudyLog(userId);
+    if (!lastLog) {
+      return;
+    }
+
+    const slotOffset = await this.scheduleRepository.countStudyLogs(userId);
+    const startSlot = findNextSlotAfter(lastLog.date, slotsByWeekDay);
+    const entries = buildExtensionEntries(
+      paths,
+      slotsByWeekDay,
+      userId,
+      startSlot,
+      slotOffset,
+      maxLogDate,
+      weekEndDate,
+    );
+
+    await this.scheduleRepository.extendStudyLogs(entries);
   }
 
   private todayUtc(): Date {
@@ -224,23 +218,9 @@ export class ScheduleService {
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   }
 
-  private findNextScheduleDate(startDate: Date, availableWeekDays: WeekDay[]) {
-    for (let offset = 0; offset < 7; offset += 1) {
-      const candidate = this.addDaysUtc(startDate, offset);
-      if (availableWeekDays.includes(WEEKDAYS_UTC[candidate.getUTCDay()])) {
-        return candidate;
-      }
-    }
-    throw new BadRequestException('Defina ao menos uma janela de estudo');
-  }
-
   private parseUtcDateOnly(value: string): Date {
     const [year, month, day] = value.split('-').map((part) => Number(part));
     return new Date(Date.UTC(year, month - 1, day));
-  }
-
-  private formatDateUtc(value: Date): string {
-    return value.toISOString().slice(0, 10);
   }
 
   private formatTimeUtc(value: Date): string {
@@ -248,24 +228,12 @@ export class ScheduleService {
     return `${hours}:00`;
   }
 
-  private addDaysUtc(date: Date, days: number): Date {
-    return new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days, 0, 0, 0),
-    );
-  }
-
-  private setUtcHour(date: Date, hour: number): Date {
-    return new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hour, 0, 0),
-    );
-  }
-
   private isWeekStartValid(value: string): boolean {
     if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) {
       return false;
     }
     const date = this.parseUtcDateOnly(value);
-    return this.formatDateUtc(date) === value;
+    return formatDateUtc(date) === value;
   }
 
   private isUuid(value: string): boolean {

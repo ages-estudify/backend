@@ -1,1 +1,0 @@
--- No-op: schema inicial já criado em 20260317143606_init (migration duplicada removida).

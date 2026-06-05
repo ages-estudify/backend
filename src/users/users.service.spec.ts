@@ -17,7 +17,9 @@ const createUserBuilder = (overrides: Partial<any> = {}) => ({
   createdAt: new Date('2023-01-01T00:00:00.000Z'),
   enable: true,
   desired_course: null,
-  desired_exam: null,
+  desired_university: null,
+  preferred_language: null,
+  onboarding_completed: false,
   last_active: null,
   birth_date: null,
 

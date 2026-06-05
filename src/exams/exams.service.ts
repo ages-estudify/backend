@@ -14,6 +14,7 @@ import { ExamListingWithAttemptsByUserDto } from './dto/examListingWithAttemptsB
 import { ResultGridItemDto, ResultGridItemStatus } from './dto/result-grid-item.dto';
 import { ResultGridQueryDto } from './dto/result-grid-query.dto';
 import { ResultGridSuccessResponseDto } from './dto/result-grid-response.dto';
+import { Role } from '@prisma/client';
 import { ExamMediaService } from '../storage/exam-media.service';
 import { decodeBase64Image } from '../storage/base64-image.util';
 
@@ -50,30 +51,6 @@ type AnswerWithRelations = {
   } | null;
 };
 
-type AttemptDayWithAnswers = {
-  exam_day: {
-    day: number;
-  };
-  answers: AnswerWithRelations[];
-};
-
-interface ParsedRow {
-  exam_title: string;
-  bank: string;
-  exam_day: string;
-  discipline: string;
-  content: string;
-  question: string;
-  alternative_a: string;
-  alternative_b: string;
-  alternative_c: string;
-  alternative_d: string;
-  alternative_e: string;
-  correct_answer: string;
-  answer_explanation: string;
-  year: string;
-}
-
 @Injectable()
 export class ExamsService {
   private readonly maxFileSize = 10 * 1024 * 1024;
@@ -102,8 +79,8 @@ export class ExamsService {
     private examMedia: ExamMediaService,
   ) {}
 
-  async listAllExams(): Promise<ListExamsResponseDto> {
-    const exams = await this.examsRepository.findAllExams();
+  async listAllExams(userRole: Role): Promise<ListExamsResponseDto> {
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
 
     const signedUrls = await this.examMedia.resolveSignedUrls(exams.map((e) => e.media_key));
 
@@ -299,8 +276,11 @@ export class ExamsService {
     await this.examsRepository.deleteExamLogical(id);
   }
 
-  async findAllWithLastAttemptByUser(userId: string): Promise<ExamListingWithAttemptsByUserDto> {
-    const exams = await this.examsRepository.findAllPublishedExams();
+  async findAllWithLastAttemptByUser(
+    userRole: Role,
+    userId: string,
+  ): Promise<ExamListingWithAttemptsByUserDto> {
+    const exams = await this.examsRepository.findAllExamsByRole(userRole);
     const attempts = await this.examsRepository.findAllAttemptsByUser(userId);
 
     const attemptByExamId = new Map(attempts.map((a) => [a.exam_id, a]));
@@ -345,12 +325,50 @@ export class ExamsService {
   ): Promise<ResultGridSuccessResponseDto> {
     const attempt = await this.getAttempt(attemptId, userId);
 
-    const answers = this.getOrderedAnswers(attempt.attempt_days as AttemptDayWithAnswers[]);
+    const filteredAttemptDays = query?.attemptDayId
+      ? (attempt.attempt_days as any[]).filter((ad) => ad.id === query.attemptDayId)
+      : (attempt.attempt_days as any[]);
 
-    const gridWithoutFilter = answers.map(({ answer }, index) => ({
-      questionId: answer.question_id,
+    const answerByQuestionId = new Map<string, AnswerWithRelations>();
+    for (const ad of filteredAttemptDays) {
+      for (const ans of ad.answers ?? []) {
+        answerByQuestionId.set(ans.question_id, ans as AnswerWithRelations);
+      }
+    }
+
+    const allQuestions: Array<{
+      examDayDay: number;
+      question: {
+        id: string;
+        number: number | null;
+        alternatives: { letter: string; is_correct: boolean }[];
+      };
+      answer?: AnswerWithRelations;
+    }> = [];
+
+    for (const ad of filteredAttemptDays) {
+      const dayNum = ad.exam_day.day;
+      for (const q of ad.exam_day.questions ?? []) {
+        allQuestions.push({
+          examDayDay: dayNum,
+          question: q,
+          answer: answerByQuestionId.get(q.id),
+        });
+      }
+    }
+
+    allQuestions.sort((a, b) => {
+      if (a.examDayDay !== b.examDayDay) return a.examDayDay - b.examDayDay;
+      const an = a.question.number ?? Number.MAX_SAFE_INTEGER;
+      const bn = b.question.number ?? Number.MAX_SAFE_INTEGER;
+      if (an !== bn) return an - bn;
+      return a.question.id.localeCompare(b.question.id);
+    });
+
+    const gridWithoutFilter = allQuestions.map((item, index) => ({
+      questionId: item.question.id,
       number: index + 1,
-      status: this.getQuestionStatus(answer),
+      status: this.getQuestionStatus(item.answer, item.question.alternatives),
     }));
 
     const grid = this.filterGridByStatus(gridWithoutFilter, query?.statusFilter);
@@ -375,45 +393,6 @@ export class ExamsService {
     return attempt;
   }
 
-  private getOrderedAnswers(attemptDays: AttemptDayWithAnswers[]) {
-    return attemptDays
-      .flatMap((attemptDay) =>
-        attemptDay.answers.map((answer) => ({
-          examDayDay: attemptDay.exam_day.day,
-          answer,
-        })),
-      )
-      .sort((a, b) => this.sortAnswers(a, b));
-  }
-
-  private sortAnswers(
-    a: { examDayDay: number; answer: AnswerWithRelations },
-    b: { examDayDay: number; answer: AnswerWithRelations },
-  ) {
-    const dayDifference = a.examDayDay - b.examDayDay;
-
-    if (dayDifference !== 0) {
-      return dayDifference;
-    }
-
-    const questionNumberA = a.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-    const questionNumberB = b.answer.question.number ?? Number.MAX_SAFE_INTEGER;
-
-    const questionDifference = questionNumberA - questionNumberB;
-
-    if (questionDifference !== 0) {
-      return questionDifference;
-    }
-
-    const dateDifference = a.answer.answer_date.getTime() - b.answer.answer_date.getTime();
-
-    if (dateDifference !== 0) {
-      return dateDifference;
-    }
-
-    return a.answer.question_id.localeCompare(b.answer.question_id);
-  }
-
   private filterGridByStatus(
     grid: ResultGridItemDto[],
     statusFilter?: ResultGridItemStatus[],
@@ -425,14 +404,15 @@ export class ExamsService {
     return grid.filter((item) => statusFilter.includes(item.status));
   }
 
-  private getQuestionStatus(answer: AnswerWithRelations): ResultGridItemStatus {
-    if (!answer.alternative) {
+  private getQuestionStatus(
+    answer: AnswerWithRelations | undefined,
+    alternatives: { letter: string; is_correct: boolean }[],
+  ): ResultGridItemStatus {
+    if (!answer || !answer.alternative) {
       return 'BLANK';
     }
 
-    const correctAlternative = answer.question.alternatives.find(
-      (alternative) => alternative.is_correct,
-    );
+    const correctAlternative = alternatives.find((alternative) => alternative.is_correct);
 
     if (answer.alternative.letter === correctAlternative?.letter) {
       return 'CORRECT';

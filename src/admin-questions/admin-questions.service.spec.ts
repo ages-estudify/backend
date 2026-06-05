@@ -5,6 +5,7 @@ import { AdminQuestionsRepository } from './admin-questions.repository';
 import { AdminQuestionsService } from './admin-questions.service';
 import { AdminQuestionType } from './dto/create-question.dto';
 import { QuestionMediaService } from '../storage/question-media.service';
+import { IconMediaService } from '../storage/icon-media.service';
 
 type RepoMock = jest.Mocked<
   Pick<
@@ -107,6 +108,16 @@ describe('AdminQuestionsService', () => {
             uploadQuestionImage: jest.fn().mockResolvedValue('questions/qid/photo.png'),
           },
         },
+        {
+          provide: IconMediaService,
+          useValue: {
+            resolveIconUrls: jest
+              .fn()
+              .mockImplementation((refs: (string | null | undefined)[]) =>
+                Promise.resolve(refs.map((ref) => ref ?? null)),
+              ),
+          },
+        },
       ],
     }).compile();
 
@@ -137,6 +148,27 @@ describe('AdminQuestionsService', () => {
         correctAnswer: 'A',
       });
       expect(repository.create).toHaveBeenCalled();
+    });
+
+    it('persists number on create and returns it in the response', async () => {
+      repository.pathExists.mockResolvedValue(true);
+      repository.create.mockResolvedValue(mockAdminQuestion({ number: 7 }) as never);
+
+      const result = await service.create({
+        discipline: 'Mathematics',
+        content: 'Geo',
+        question: 'Q?',
+        alternatives: alternativesDto,
+        correctAnswer: 'A',
+        answerExplanation: 'Exp',
+        type: AdminQuestionType.ORIGINAL,
+        year: 2024,
+        pathId: 'path-id',
+        number: 7,
+      });
+
+      expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ number: 7 }));
+      expect(result).toMatchObject({ number: 7 });
     });
 
     it('uses fallback path when pathId omitted', async () => {
