@@ -23,7 +23,7 @@ export type QuestionWithAlternatives = Question & {
 
 @Injectable()
 export class QuestionsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByPathAndType(
     pathId: string,
@@ -36,6 +36,7 @@ export class QuestionsRepository {
     const origin = this.getOrigin(type);
     const limitNum = limit || 10;
     const baseWhere: any = {
+      exam_day_id: null,
       path_id: pathId,
       origin,
     };
