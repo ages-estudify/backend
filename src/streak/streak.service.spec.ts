@@ -18,9 +18,6 @@ describe('StreakService', () => {
   const yesterdayBR = new Date(Date.UTC(2026, 5, 14, 15, 0, 0));
   const twoDaysAgoBR = new Date(Date.UTC(2026, 5, 13, 15, 0, 0));
 
-  // Output: o que startOfDay() retorna (meia-noite do dia Brasil, expressa como UTC)
-  const todayStart = new Date(Date.UTC(2026, 5, 15));
-
   beforeAll(() => {
     jest.useFakeTimers();
     jest.setSystemTime(fixedNow);
@@ -63,7 +60,7 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 1, streakActive: true });
       expect(users.updateStreak).toHaveBeenCalledWith(userId, {
         streak: 1,
-        last_active: todayStart,
+        last_active: fixedNow,
       });
     });
 
@@ -88,7 +85,7 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 8, streakActive: true });
       expect(users.updateStreak).toHaveBeenCalledWith(userId, {
         streak: 8,
-        last_active: todayStart,
+        last_active: fixedNow,
       });
     });
 
@@ -104,7 +101,7 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 0, streakActive: false });
       expect(users.updateStreak).toHaveBeenCalledWith(userId, {
         streak: 0,
-        last_active: todayStart,
+        last_active: fixedNow,
       });
     });
 
@@ -120,8 +117,26 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 1, streakActive: true });
       expect(users.updateStreak).toHaveBeenCalledWith(userId, {
         streak: 1,
-        last_active: todayStart,
+        last_active: fixedNow,
       });
+    });
+
+    it('respostas repetidas no mesmo dia nao incrementam (regressao: last_active persistido reentra como mesmo dia)', async () => {
+      // 1a resposta: last_active null -> persiste o instante real (fixedNow)
+      users.findUniqueById.mockResolvedValueOnce({ id: userId, streak: null, last_active: null });
+      const first = await service.registerAnswer(userId);
+      expect(first).toEqual({ streakDays: 1, streakActive: true });
+      expect(users.updateStreak).toHaveBeenLastCalledWith(userId, {
+        streak: 1,
+        last_active: fixedNow,
+      });
+
+      // 2a resposta no mesmo dia: relê o last_active persistido (fixedNow) -> gapDays=0
+      users.updateStreak.mockClear();
+      users.findUniqueById.mockResolvedValueOnce({ id: userId, streak: 1, last_active: fixedNow });
+      const second = await service.registerAnswer(userId);
+      expect(second).toEqual({ streakDays: 1, streakActive: true });
+      expect(users.updateStreak).not.toHaveBeenCalled();
     });
 
     it('respostas em 23h, 00:10 e 00:20 (dias consecutivos) incrementam streak para 3', async () => {
@@ -131,9 +146,6 @@ describe('StreakService', () => {
       const day2At0010BRT = new Date(Date.UTC(2026, 5, 16, 3, 10, 0));
       // Dia 3 às 00:20 BRT (= 03:20 UTC do dia 3)
       const day3At0020BRT = new Date(Date.UTC(2026, 5, 17, 3, 20, 0));
-
-      const day2Start = new Date(Date.UTC(2026, 5, 16));
-      const day3Start = new Date(Date.UTC(2026, 5, 17));
 
       // Primeira resposta: dia 1 às 23h (last_active=null)
       jest.setSystemTime(day1At23BRT);
@@ -152,7 +164,7 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 2, streakActive: true });
       expect(users.updateStreak).toHaveBeenLastCalledWith(userId, {
         streak: 2,
-        last_active: day2Start,
+        last_active: day2At0010BRT,
       });
 
       // Terceira resposta: dia 3 às 00:20 (last_active=dia 2)
@@ -166,7 +178,7 @@ describe('StreakService', () => {
       expect(result).toEqual({ streakDays: 3, streakActive: true });
       expect(users.updateStreak).toHaveBeenLastCalledWith(userId, {
         streak: 3,
-        last_active: day3Start,
+        last_active: day3At0020BRT,
       });
 
       jest.setSystemTime(fixedNow);
