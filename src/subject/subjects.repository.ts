@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { SubjectPathDto } from './dto/allPathsBySubject.dto';
+import { SubjectListingDto } from './dto/subjectListing.dto.';
+import { Origin } from '@prisma/client';
+import { CountByPathAndTypeDto } from './dto/countByPathAndType.dto';
 
 @Injectable()
 export class SubjectRepository {
@@ -23,107 +27,159 @@ export class SubjectRepository {
     return !!path;
   }
 
-  async findAllWithAnsweredByUser(userId: string) {
-    const result = await this.prisma.$queryRaw<
-      {
-        id: string;
-        name: string;
-        icon: string;
-        totalQuestions: number;
-        answeredQuestions: number;
-      }[]
-    >`
-      SELECT 
-        s.id,
-        s.name,
-        s.icon_url AS icon,
+  async findAllWithAnsweredByUser(userId: string): Promise<SubjectListingDto[]> {
+    const query = await this.prisma.subject.findMany({
+      select: {
+        id: true,
+        name: true,
+        icon_url: true,
+        paths: {
+          select: {
+            questions: {
+              where: {
+                exam_day_id: null,
+              },
+              select: {
+                id: true,
+                answers: {
+                  where: {
+                    user_id: userId,
+                  },
+                  select: {
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-        COUNT(DISTINCT q.id)::int AS "totalQuestions",
+    const data: SubjectListingDto[] = query.map((subject) => {
+      let totalQuestions = 0;
+      let answeredQuestions = 0;
 
-        COUNT(DISTINCT a.question_id)::int AS "answeredQuestions"
+      subject.paths.forEach((path) => {
+        totalQuestions += path.questions.length;
 
-      FROM "Subject" s
+        answeredQuestions += path.questions.filter(
+          (question) => question.answers.length > 0,
+        ).length;
+      });
 
-      LEFT JOIN "Path" p 
-        ON p.subject_id = s.id
+      return {
+        id: subject.id,
+        name: subject.name,
+        icon: subject.icon_url,
+        totalQuestions,
+        answeredQuestions,
+      };
+    });
 
-      LEFT JOIN "Question" q 
-        ON q.path_id = p.id
-        AND q.exam_day_id IS NULL
-
-      LEFT JOIN "Answer" a
-        ON a.question_id = q.id
-        AND a.user_id = ${userId}
-
-      GROUP BY s.id, s.name, s.icon_url
-
-      HAVING COUNT(DISTINCT q.id) > 0
-    `;
-
-    return result;
+    return data;
   }
 
-  async findAllPathsBySubject(id: string, userId: string) {
-    const result = await this.prisma.$queryRaw<
-      {
-        id: string;
-        name: string;
-        text: string;
-        icon_key: string;
-        availableByType: {
-          ORIGINAL: number;
-          EXTERNAL: number;
-        };
-        answeredByType: {
-          ORIGINAL: number;
-          EXTERNAL: number;
-        };
-      }[]
-    >`SELECT
-              p.id,
-              p.name,
-              p.text,
-              p.icon_key AS icon_key,
+  async findAllPathsBySubject(id: string, userId: string): Promise<SubjectPathDto[]> {
+    const query = await this.prisma.path.findMany({
+      where: {
+        subject_id: id,
+      },
+      select: {
+        id: true,
+        name: true,
+        text: true,
+        icon_key: true,
+        questions: {
+          where: {
+            exam_day_id: null,
+          },
+          select: {
+            origin: true,
+            answers: {
+              where: {
+                user_id: userId,
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-              JSON_BUILD_OBJECT(
-                'ORIGINAL', COUNT(q.id) FILTER (WHERE q.origin = 'ORIGINAL'),
-                'EXTERNAL', COUNT(q.id) FILTER (WHERE q.origin = 'EXTERNAL')
-              ) AS "availableByType",
+    const data: SubjectPathDto[] = query.map((path) => {
+      const availableByType = {
+        ORIGINAL: 0,
+        EXTERNAL: 0,
+      };
 
-              JSON_BUILD_OBJECT(
-                'ORIGINAL', COUNT(a.id) FILTER (WHERE q.origin = 'ORIGINAL'),
-                'EXTERNAL', COUNT(a.id) FILTER (WHERE q.origin = 'EXTERNAL')
-              ) AS "answeredByType"
+      const answeredByType = {
+        ORIGINAL: 0,
+        EXTERNAL: 0,
+      };
 
-            FROM "Path" p
-            LEFT JOIN "Question" q ON q.path_id = p.id
-            LEFT JOIN "Answer" a 
-              ON a.question_id = q.id 
-            AND a.user_id = ${userId}
+      path.questions.forEach((question) => {
+        availableByType[question.origin]++;
 
-            WHERE p.subject_id = ${id}
+        if (question.answers.length > 0) {
+          answeredByType[question.origin]++;
+        }
+      });
 
-            GROUP BY p.id, p.name, p.text, p.icon_key
-            ORDER BY p.trail_position;
-          `;
+      return {
+        id: path.id,
+        name: path.name,
+        text: path.text,
+        icon_key: path.icon_key,
 
-    return result;
+        availableByType,
+        answeredByType,
+      };
+    });
+
+    return data;
   }
 
-  async countByPathAndType(pathId: string, type: string, userId: string) {
-    const result = await this.prisma.$queryRaw<{ total: number; answered: number }[]>`
-  SELECT 
-    COUNT(q.id)::int AS total,
-    COUNT(DISTINCT a."question_id")::int AS answered
-  FROM "Question" q
-  LEFT JOIN "Answer" a 
-    ON a."question_id" = q.id 
-    AND a."user_id" = ${userId}
-  WHERE 
-    q."path_id" = ${pathId}
-    AND q.origin = ${type};
-`;
+  async countByPathAndType(
+    pathId: string,
+    userId: string,
+    type?: 'ORIGINAL' | 'EXTERNAL',
+  ): Promise<CountByPathAndTypeDto> {
+    const query = await this.prisma.path.findMany({
+      where: {
+        id: pathId,
+      },
+      select: {
+        questions: {
+          where: {
+            exam_day_id: null,
+            ...(type && {
+              origin: type as Origin,
+            }),
+          },
+          select: {
+            id: true,
+            answers: {
+              where: {
+                user_id: userId,
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    return result[0] ?? { total: 0, answered: 0 };
+    const result = query[0];
+
+    const questions = result.questions.length;
+
+    const answered = result.questions.filter((q) => q.answers.length > 0).length;
+
+    return { total: questions, answered: answered };
   }
 }
