@@ -4,6 +4,7 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
 import { UserStatsMapper } from './mapper/user-stats-mapper';
+import { ProfilePictureService } from './profile-picture.service';
 import {
   CompletedTopicsDto,
   LevelDto,
@@ -17,7 +18,10 @@ import {
 export class UsersService {
   amountOfAttempts: number = 5;
 
-  constructor(private readonly users: UsersRepository) {}
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly profilePictureService: ProfilePictureService,
+  ) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -68,5 +72,15 @@ export class UsersService {
     );
 
     return response;
+  }
+  async uploadProfilePicture(userId: string, imageBase64: string): Promise<string> {
+    const key = await this.profilePictureService.upload(userId, imageBase64);
+    await this.users.updateProfilePicture(userId, key);
+    const url = await this.profilePictureService.resolveSignedUrl(key);
+    return url!;
+  }
+
+  async removeProfilePicture(userId: string): Promise<void> {
+    await this.users.updateProfilePicture(userId, null);
   }
 }
