@@ -242,7 +242,7 @@ export class UsersRepository {
         attempt_days: {
           select: {
             id: true,
-            exam_day: { select: { day: true } },
+            exam_day: { select: { day: true, questions: true } },
             answers: { select: { alternative: { select: { is_correct: true } } } },
           },
         },
@@ -257,7 +257,7 @@ export class UsersRepository {
       date: attempt.end_time?.toISOString().split('T')[0] ?? null,
 
       days: attempt.attempt_days.map((day) => {
-        const total = day.answers.length;
+        const total = day.exam_day.questions.length;
 
         const correct = day.answers.filter((answer) => answer.alternative?.is_correct).length;
 
