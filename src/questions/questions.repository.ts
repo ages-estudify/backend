@@ -23,7 +23,7 @@ export type QuestionWithAlternatives = Question & {
 
 @Injectable()
 export class QuestionsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByPathAndType(
     pathId: string,
