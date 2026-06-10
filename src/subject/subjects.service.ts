@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { IconMediaService } from '../storage/icon-media.service';
 import { SubjectRepository } from './subjects.repository';
 import { SubjectListingResponseDto } from './dto/subjectListing.dto.';
@@ -41,7 +41,7 @@ export class SubjectService {
         id: item.id,
         name: item.name,
         text: item.text,
-        icon_url: iconUrls[index] ?? item.icon_key,
+        icon_key: iconUrls[index] ?? item.icon_key,
         availableByType: {
           ORIGINAL: Number(item.availableByType?.ORIGINAL ?? 0),
           EXTERNAL: Number(item.availableByType?.EXTERNAL ?? 0),
@@ -56,20 +56,25 @@ export class SubjectService {
 
   async countByPathAndType(
     pathId: string,
-    type: 'ORIGINAL' | 'EXTERNAL',
+    type: 'ORIGINAL' | 'EXTERNAL' | undefined,
     userId: string,
   ): Promise<CountByPathAndTypeDto> {
     const pathExists = await this.subjectRepository.existsPathById(pathId);
+
+    if (type && !['ORIGINAL', 'EXTERNAL'].includes(type)) {
+      throw new BadRequestException('Tipo de questão inválido');
+    }
 
     if (!pathExists) {
       throw new NotFoundException('Tópico não encontrado');
     }
 
-    const result = await this.subjectRepository.countByPathAndType(pathId, type, userId);
+    const result: CountByPathAndTypeDto = await this.subjectRepository.countByPathAndType(
+      pathId,
+      userId,
+      type,
+    );
 
-    return {
-      total: Number(result.total ?? 0),
-      answered: Number(result.answered ?? 0),
-    };
+    return result;
   }
 }
