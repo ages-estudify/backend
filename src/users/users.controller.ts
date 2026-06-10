@@ -33,7 +33,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) { }
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -84,7 +84,10 @@ export class UsersController {
   @ApiOkResponse({ type: GetUserProfileResponseDto })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id', new ParseUUIDPipe({ version: '4' })) id: string): Promise<GetUserProfileResponseDto> {
+  findOne(
+    @CurrentUser() viewer: JwtAuthUser,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<GetUserProfileResponseDto> {
     return this.usersService.findOne(viewer, id);
   }
 }

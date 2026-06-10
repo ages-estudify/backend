@@ -13,15 +13,13 @@ import {
   SimuladoDto,
 } from './dto/user-stats.dto';
 
-
 @Injectable()
 export class UsersService {
-
   private readonly logger = new Logger(UsersService.name);
 
   amountOfAttempts: number = 5;
 
-  constructor(private readonly users: UsersRepository) { }
+  constructor(private readonly users: UsersRepository) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -29,12 +27,11 @@ export class UsersService {
 
   async findOne(viewer: JwtAuthUser, id: string): Promise<UserResponse> {
     this.ensureSelfOrAdmin(viewer, id);
-    this.logger.log(`Searching for User Profile: ${id}`)
+    this.logger.log(`Searching for User Profile: ${id}`);
     const user = await this.users.findUniqueById(id);
     if (!user) {
       throw new NotFoundException();
     }
-
 
     return user;
   }
