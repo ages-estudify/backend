@@ -31,7 +31,7 @@ export class AuthService {
     private readonly refreshTokens: RefreshTokenRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterRequestDto): Promise<RegisterResult> {
     const email = dto.email.trim().toLowerCase();
