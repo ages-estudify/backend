@@ -5,4 +5,5 @@ export type JwtAuthUser = {
   userId: string;
   role: Role;
   planExpirationDate: string | null;
+  purpose?: 'password_reset' | null;
 };

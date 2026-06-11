@@ -37,7 +37,7 @@ export class OtpController {
             throw new UnauthorizedException('OTP inválido');
         }
 
-        const data = await this.AuthService.buildAuthSession(user)
+        const data = await this.AuthService.buildAuthSession(user, true)
 
         return { success: true as const, data };
     }

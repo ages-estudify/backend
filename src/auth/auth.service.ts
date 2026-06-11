@@ -10,6 +10,7 @@ import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshRequestDto } from './dto/refresh-request.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
 import { JwtUserClaims } from './security/jwt-claims';
+import { SignOptions } from 'jsonwebtoken';
 
 export type AuthSession = {
   token: string;
@@ -97,14 +98,21 @@ export class AuthService {
     return session;
   }
 
-  async buildAuthSession(user: Pick<User, 'id' | 'role' | 'plan_end_date'>): Promise<AuthSession> {
+  async buildAuthSession(user: Pick<User, 'id' | 'role' | 'plan_end_date'>, isOtp = false,): Promise<AuthSession> {
+
     const planExpirationDate = this.formatPlanDate(user.plan_end_date);
+
     const payload: JwtUserClaims = {
       userId: user.id,
       role: user.role,
       planExpirationDate,
+      ...(isOtp ? { purpose: 'password_reset' } : {}),
     };
-    const token = this.jwt.sign(payload);
+
+    const token = this.jwt.sign(payload, {
+      ...(isOtp ? { expiresIn: '15m' } : {}),
+    });
+
     const refreshToken = await this.persistRefreshToken(user.id);
     return {
       token,

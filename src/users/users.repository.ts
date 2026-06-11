@@ -12,7 +12,7 @@ export type UserResponse = Omit<User, 'password'>;
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -44,6 +44,19 @@ export class UsersRepository {
       where: { id },
       omit: { password: true },
     });
+  }
+
+  async updatePassword(id: string, newHashPassword: string) {
+
+    await this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        password: newHashPassword
+      },
+    });
+
   }
 
   async incrementCoins(id: string, amount: number): Promise<{ coins: number | null }> {

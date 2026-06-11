@@ -12,12 +12,16 @@ import {
   AccuracyBySubjectDto,
   SimuladoDto,
 } from './dto/user-stats.dto';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   amountOfAttempts: number = 5;
 
-  constructor(private readonly users: UsersRepository) {}
+  constructor(private readonly users: UsersRepository,
+    private readonly config: ConfigService,
+  ) { }
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -30,6 +34,14 @@ export class UsersService {
       throw new NotFoundException();
     }
     return user;
+  }
+
+  async updateUserPassword(id: string, newPassword: string) {
+
+    const hashedPassword = await bcrypt.hash(newPassword, this.resolveBcryptRounds());
+
+    await this.users.updatePassword(id, hashedPassword);
+
   }
 
   private ensureSelfOrAdmin(viewer: JwtAuthUser, targetUserId: string): void {
@@ -68,5 +80,13 @@ export class UsersService {
     );
 
     return response;
+  }
+
+  private resolveBcryptRounds(): number {
+    const parsed = Number.parseInt(this.config.get<string>('BCRYPT_ROUNDS') ?? '', 10);
+    if (Number.isFinite(parsed) && parsed >= 4 && parsed <= 15) {
+      return parsed;
+    }
+    return 10;
   }
 }

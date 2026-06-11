@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UnauthorizedException, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -19,6 +19,8 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { PasswordResetGuard } from 'src/auth/guards/password-reset.guard';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -32,7 +34,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) {}
+  ) { }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -41,6 +43,17 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard, PasswordResetGuard)
+  @ApiBearerAuth()
+  @Patch('update/password')
+  async updatePassword(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePasswordDto) {
+
+    await this.usersService.updateUserPassword(user.userId, dto.newPassword);
+
+    return { success: true };
+
   }
 
   @UseGuards(JwtAuthGuard)
