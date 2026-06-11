@@ -20,7 +20,7 @@ import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { PasswordResetGuard } from 'src/auth/guards/password-reset.guard';
+import { PasswordResetGuard } from '../auth/guards/password-reset.guard';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')

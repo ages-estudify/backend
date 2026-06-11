@@ -4,6 +4,7 @@ import { Role, Language } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
+import { ConfigService } from '@nestjs/config';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -58,10 +59,17 @@ describe('UsersService', () => {
       getLastAttemptsByUser: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, { provide: UsersRepository, useValue: usersRepo }],
-    }).compile();
+    const configService = {
+      get: jest.fn(),
+    };
 
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        { provide: UsersRepository, useValue: usersRepo },
+        { provide: ConfigService, useValue: configService },
+      ],
+    }).compile();
     service = module.get<UsersService>(UsersService);
   });
 

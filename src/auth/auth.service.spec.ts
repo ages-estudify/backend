@@ -96,22 +96,27 @@ describe('AuthService', () => {
       role: Role.USER,
       birth_date: new Date('1999-05-15T00:00:00.000Z'),
     });
-    expect(jwtSign).toHaveBeenCalledWith({
-      userId: fullUser.id,
-      role: Role.USER,
-      planExpirationDate: null,
-    });
+    expect(jwtSign).toHaveBeenCalledWith(
+      {
+        userId: fullUser.id,
+        role: Role.USER,
+        planExpirationDate: null,
+      },
+      expect.any(Object),
+    );
     expect(refreshTokens.create).toHaveBeenCalledWith(
       fullUser.id,
       expect.any(String),
       expect.any(Date),
     );
-    expect(result).toMatchObject({
-      userId: fullUser.id,
-      token: 'jwt-token',
-      role: Role.USER,
-      planExpirationDate: null,
-    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        userId: fullUser.id,
+        token: 'jwt-token',
+        role: Role.USER,
+        planExpirationDate: null,
+      }),
+    );
     expect(result.refreshToken.length).toBeGreaterThan(20);
   });
 
@@ -153,11 +158,14 @@ describe('AuthService', () => {
 
     await service.register({ ...dto });
 
-    expect(jwtSign).toHaveBeenCalledWith({
-      userId: fullUser.id,
-      role: Role.USER,
-      planExpirationDate: '2026-12-31',
-    });
+    expect(jwtSign).toHaveBeenCalledWith(
+      {
+        userId: fullUser.id,
+        role: Role.USER,
+        planExpirationDate: '2026-12-31',
+      },
+      expect.any(Object),
+    );
   });
 
   describe('login', () => {
@@ -175,11 +183,14 @@ describe('AuthService', () => {
 
       expect(users.findByEmail).toHaveBeenCalledWith('maria@email.com');
       expect(mockedBcrypt.compare).toHaveBeenCalledWith('secret', fullUser.password);
-      expect(jwtSign).toHaveBeenCalledWith({
-        userId: fullUser.id,
-        role: Role.USER,
-        planExpirationDate: null,
-      });
+      expect(jwtSign).toHaveBeenCalledWith(
+        {
+          userId: fullUser.id,
+          role: Role.USER,
+          planExpirationDate: null,
+        },
+        expect.any(Object),
+      );
       expect(refreshTokens.create).toHaveBeenCalled();
       expect(result).toMatchObject({
         token: 'jwt-token',
@@ -226,11 +237,14 @@ describe('AuthService', () => {
 
       await service.login(loginDto);
 
-      expect(jwtSign).toHaveBeenCalledWith({
-        userId: fullUser.id,
-        role: Role.USER,
-        planExpirationDate: '2026-06-01',
-      });
+      expect(jwtSign).toHaveBeenCalledWith(
+        {
+          userId: fullUser.id,
+          role: Role.USER,
+          planExpirationDate: '2026-06-01',
+        },
+        expect.any(Object),
+      );
     });
 
     it('normalizes email with trim and lowercase', async () => {
@@ -260,16 +274,14 @@ describe('AuthService', () => {
 
       expect(refreshTokens.deleteById).toHaveBeenCalledWith('refresh-row-id');
       expect(refreshTokens.create).toHaveBeenCalled();
-      expect(jwtSign).toHaveBeenCalledWith({
-        userId: fullUser.id,
-        role: Role.USER,
-        planExpirationDate: null,
-      });
-      expect(result).toMatchObject({
-        token: 'jwt-token',
-        role: Role.USER,
-        planExpirationDate: null,
-      });
+      expect(jwtSign).toHaveBeenCalledWith(
+        {
+          userId: fullUser.id,
+          role: Role.USER,
+          planExpirationDate: null,
+        },
+        expect.any(Object),
+      );
       expect(result.refreshToken.length).toBeGreaterThan(20);
     });
 
