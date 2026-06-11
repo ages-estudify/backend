@@ -65,9 +65,7 @@ export class GetUserProfileResponseDto {
   })
   createdAt: Date;
 
-  @ApiProperty({
-    description: 'Plan current status, true for active and false for inactive',
-  })
+  @ApiProperty()
   enable: boolean;
 
   @ApiProperty({
@@ -88,4 +86,10 @@ export class GetUserProfileResponseDto {
     description: 'If user completed onboarding process',
   })
   onboarding_completed: boolean;
+
+  @ApiProperty({
+    description: 'Current status of the user`s plan, derived from the plan_end_date field',
+    example: 'active',
+  })
+  plan_status: string;
 }

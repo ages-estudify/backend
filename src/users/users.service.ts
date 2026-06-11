@@ -12,6 +12,7 @@ import {
   AccuracyBySubjectDto,
   SimuladoDto,
 } from './dto/user-stats.dto';
+import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -25,7 +26,7 @@ export class UsersService {
     return this.users.findMany();
   }
 
-  async findOne(viewer: JwtAuthUser, id: string): Promise<UserResponse> {
+  async findOne(viewer: JwtAuthUser, id: string): Promise<GetUserProfileResponseDto> {
     this.ensureSelfOrAdmin(viewer, id);
     this.logger.log(`Searching for User Profile: ${id}`);
     const user = await this.users.findUniqueById(id);
@@ -33,7 +34,13 @@ export class UsersService {
       throw new NotFoundException();
     }
 
-    return user;
+    const now = new Date();
+    const planEndDate = user.plan_end_date;
+    const planStatus = planEndDate != null && planEndDate >= now ? 'active' : 'inactive';
+    return {
+      ...user,
+      plan_status: planStatus,
+    };
   }
 
   private ensureSelfOrAdmin(viewer: JwtAuthUser, targetUserId: string): void {
