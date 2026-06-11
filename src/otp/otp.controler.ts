@@ -2,7 +2,7 @@ import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { OtpService } from './otp.service';
 import { CreateOtpDto, VerifyOtpDto } from './dto/otp.dto';
-import { AuthService } from 'src/auth/auth.service';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('otp')
 @Controller({ path: 'otp', version: '1' })
