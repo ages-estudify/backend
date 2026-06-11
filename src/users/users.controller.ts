@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -34,7 +34,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) { }
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -49,11 +49,9 @@ export class UsersController {
   @ApiBearerAuth()
   @Patch('update/password')
   async updatePassword(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePasswordDto) {
-
     await this.usersService.updateUserPassword(user.userId, dto.newPassword);
 
     return { success: true };
-
   }
 
   @UseGuards(JwtAuthGuard)

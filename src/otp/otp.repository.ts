@@ -1,86 +1,77 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 
 export type UserResponse = Omit<User, 'password'>;
 
 @Injectable()
 export class OtpRepository {
+  constructor(private readonly prisma: PrismaService) {}
 
-    constructor(private readonly prisma: PrismaService) { }
+  async findUserByMail(email: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-    async findUserByMail(email: string): Promise<User> {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-        });
-
-        if (!user) {
-            throw new NotFoundException('Usuário não encontrado');
-        }
-
-        return user;
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
     }
 
-    async saveOtp(otpHash: string, user: User) {
+    return user;
+  }
 
-        if (await this.hasValidOtp(user))
-            return;
+  async saveOtp(otpHash: string, user: User) {
+    if (await this.hasValidOtp(user)) return;
 
-        const expireAt = new Date(Date.now() + 15 * 60 * 1000);
+    const expireAt = new Date(Date.now() + 15 * 60 * 1000);
 
-        await this.prisma.otp.upsert({
-            where: {
-                user_id: user.id,
-            },
-            create: {
-                otp: otpHash,
-                expiresAt: expireAt,
-                user: {
-                    connect: {
-                        id: user.id,
-                    },
-                },
-            },
-            update: {
-                otp: otpHash,
-                expiresAt: expireAt,
-            },
-        });
+    await this.prisma.otp.upsert({
+      where: {
+        user_id: user.id,
+      },
+      create: {
+        otp: otpHash,
+        expiresAt: expireAt,
+        user: {
+          connect: {
+            id: user.id,
+          },
+        },
+      },
+      update: {
+        otp: otpHash,
+        expiresAt: expireAt,
+      },
+    });
+  }
+
+  async getOtp(user: User): Promise<string> {
+    const otp = await this.prisma.otp.findUnique({
+      where: {
+        user_id: user.id,
+      },
+    });
+
+    if (!otp || otp.expiresAt.getTime() < Date.now()) {
+      throw new Error('OTP invalido');
     }
 
-    async getOtp(user: User): Promise<string> {
+    return otp.otp;
+  }
 
-        const otp = await this.prisma.otp.findUnique({
-            where: {
-                user_id: user.id,
-            },
-        });
+  async deleteOtp(email: string) {
+    const user: User = await this.findUserByMail(email);
 
-        if (!otp || otp.expiresAt.getTime() < Date.now()) {
-            throw new Error('OTP invalido');
-        }
+    await this.prisma.otp.delete({
+      where: {
+        user_id: user.id,
+      },
+    });
+  }
 
-        return otp.otp;
-    }
+  private async hasValidOtp(user: User): Promise<boolean> {
+    const otp = await this.prisma.otp.findUnique({ where: { user_id: user.id } });
 
-    async deleteOtp(email: string) {
-
-        const user: User = await this.findUserByMail(email);
-
-        await this.prisma.otp.delete({
-            where: {
-                user_id: user.id,
-            }
-        });
-
-    }
-
-    private async hasValidOtp(user: User): Promise<boolean> {
-
-        const otp = await this.prisma.otp.findUnique({ where: { user_id: user.id } })
-
-        return !!otp && otp.expiresAt.getTime() > Date.now();
-
-    }
-
+    return !!otp && otp.expiresAt.getTime() > Date.now();
+  }
 }

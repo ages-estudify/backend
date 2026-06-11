@@ -6,11 +6,10 @@ import { MailService } from './email.service';
 import { PrismaService } from 'src/prisma.service';
 import { AuthModule } from 'src/auth/auth.module';
 
-
 @Module({
-    imports: [AuthModule],
-    controllers: [OtpController],
-    providers: [OtpRepository, OtpService, MailService, PrismaService,],
-    exports: [OtpRepository],
+  imports: [AuthModule],
+  controllers: [OtpController],
+  providers: [OtpRepository, OtpService, MailService, PrismaService],
+  exports: [OtpRepository],
 })
-export class OtpModule { }
+export class OtpModule {}

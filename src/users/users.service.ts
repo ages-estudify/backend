@@ -19,9 +19,10 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   amountOfAttempts: number = 5;
 
-  constructor(private readonly users: UsersRepository,
+  constructor(
+    private readonly users: UsersRepository,
     private readonly config: ConfigService,
-  ) { }
+  ) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -37,11 +38,9 @@ export class UsersService {
   }
 
   async updateUserPassword(id: string, newPassword: string) {
-
     const hashedPassword = await bcrypt.hash(newPassword, this.resolveBcryptRounds());
 
     await this.users.updatePassword(id, hashedPassword);
-
   }
 
   private ensureSelfOrAdmin(viewer: JwtAuthUser, targetUserId: string): void {

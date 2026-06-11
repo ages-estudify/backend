@@ -10,7 +10,6 @@ import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshRequestDto } from './dto/refresh-request.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
 import { JwtUserClaims } from './security/jwt-claims';
-import { SignOptions } from 'jsonwebtoken';
 
 export type AuthSession = {
   token: string;
@@ -32,7 +31,7 @@ export class AuthService {
     private readonly refreshTokens: RefreshTokenRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-  ) { }
+  ) {}
 
   async register(dto: RegisterRequestDto): Promise<RegisterResult> {
     const email = dto.email.trim().toLowerCase();
@@ -98,8 +97,10 @@ export class AuthService {
     return session;
   }
 
-  async buildAuthSession(user: Pick<User, 'id' | 'role' | 'plan_end_date'>, isOtp = false,): Promise<AuthSession> {
-
+  async buildAuthSession(
+    user: Pick<User, 'id' | 'role' | 'plan_end_date'>,
+    isOtp = false,
+  ): Promise<AuthSession> {
     const planExpirationDate = this.formatPlanDate(user.plan_end_date);
 
     const payload: JwtUserClaims = {

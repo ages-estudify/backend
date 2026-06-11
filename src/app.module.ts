@@ -39,10 +39,10 @@ import { OtpModule } from './otp/otp.module';
     AdminQuestionsModule,
     StorageModule,
     StreakModule,
-    OtpModule
+    OtpModule,
   ],
   controllers: [],
   providers: [PrismaService],
   exports: [PrismaService],
 })
-export class AppModule { }
+export class AppModule {}
