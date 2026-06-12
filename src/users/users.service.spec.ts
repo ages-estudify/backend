@@ -1,4 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role, Language } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
@@ -20,12 +21,11 @@ const createUserBuilder = (overrides: Partial<any> = {}) => ({
   createdAt: new Date('2023-01-01T00:00:00.000Z'),
   enable: true,
   desired_course: null,
-  last_active: null,
-  birth_date: null,
-
   desired_university: null,
   preferred_language: Language.ENGLISH,
   onboarding_completed: false,
+  last_active: null,
+  birth_date: null,
 
   ...overrides,
 });
