@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { ForbiddenException, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Role, WeekDay } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
@@ -16,6 +16,8 @@ import {
 @Injectable()
 export class UsersService {
   amountOfAttempts: number = 5;
+
+  private readonly logger = new Logger(UsersService.name);
 
   constructor(private readonly users: UsersRepository) {}
 
@@ -68,5 +70,11 @@ export class UsersService {
     );
 
     return response;
+  }
+
+  async updatePreferences(userId, dto){
+    this.validateStudyHours(dto.studyHours);
+    await this.usersRepository.updatePreferences(userId, dto);
+    return { success: true, message: 'Preferências atualizadas e cronograma recalculado.'}
   }
 }

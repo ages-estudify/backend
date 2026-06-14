@@ -7,12 +7,13 @@ import {
   OverviewDto,
   SimuladoDto,
 } from './dto/user-stats.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 export type UserResponse = Omit<User, 'password'>;
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -289,5 +290,16 @@ export class UsersRepository {
       data,
       select: { streak: true, last_active: true },
     });
+  }
+
+  async updatePreferencesAndRebuildSchedule(
+    userId: string,
+    dto: UpdatePreferencesDto,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ ... });
+      await tx.studyDay.deleteMany({ ... });
+      await tx.studyDay.createMany({ ... })
+    })
   }
 }
