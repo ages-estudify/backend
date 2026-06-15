@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ScheduleRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findUserById(userId: string) {
     return this.prisma.user.findUnique({
@@ -142,7 +142,7 @@ export class ScheduleRepository {
       where: {
         user_id: userId,
         OR: [{ date: { lte: threshold } }, { done: true }],
-      }
+      },
     });
   }
 

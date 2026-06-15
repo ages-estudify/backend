@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Role, WeekDay } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
@@ -22,7 +27,7 @@ export class UsersService {
   constructor(
     private readonly users: UsersRepository,
     private readonly scheduleService: ScheduleService,
-  ) { }
+  ) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -119,7 +124,11 @@ export class UsersService {
           }
         }
 
-        newLogs = await this.scheduleService.generateRecalculatedLogs(userId, newStudyDays, threshold);
+        newLogs = await this.scheduleService.generateRecalculatedLogs(
+          userId,
+          newStudyDays,
+          threshold,
+        );
       } else {
         newLogs = [];
       }

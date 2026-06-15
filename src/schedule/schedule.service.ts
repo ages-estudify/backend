@@ -56,7 +56,7 @@ type ScheduleItemUpdateResponse = {
 
 @Injectable()
 export class ScheduleService {
-  constructor(private readonly scheduleRepository: ScheduleRepository) { }
+  constructor(private readonly scheduleRepository: ScheduleRepository) {}
 
   async createInitialSchedule(userId: string): Promise<ScheduleResponse> {
     const user = await this.scheduleRepository.findUserById(userId);
@@ -263,7 +263,7 @@ export class ScheduleService {
       date: Date;
       path_id: string;
       user_id: string;
-      done: boolean
+      done: boolean;
     }> = [];
 
     for (let i = 0; i < paths.length; i++) {

@@ -13,7 +13,7 @@ export type UserResponse = Omit<User, 'password'>;
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
@@ -303,17 +303,17 @@ export class UsersRepository {
       if (Object.keys(userUpdate).length > 0) {
         await tx.user.update({
           where: {
-            id: userId
+            id: userId,
           },
-          data: userUpdate
-        })
+          data: userUpdate,
+        });
       }
 
       if (newStudyDays !== undefined) {
         await tx.studyDay.deleteMany({
           where: {
-            user_id: userId
-          }
+            user_id: userId,
+          },
         });
         if (newStudyDays.length > 0) {
           await tx.studyDay.createMany({ data: newStudyDays });
@@ -326,13 +326,13 @@ export class UsersRepository {
             user_id: userId,
             date: { gt: logsThreshold },
             done: false,
-          }
+          },
         });
 
         if (newLogs.length > 0) {
           await tx.studyLog.createMany({ data: newLogs });
         }
       }
-    })
+    });
   }
 }

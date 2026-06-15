@@ -22,7 +22,6 @@ import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
-
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
@@ -35,7 +34,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) { }
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -93,7 +92,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user preferences and recalculates study schedule' })
   @ApiOkResponse({
     description: 'Succesfully updated preferences',
-    schema: { example: { success: true, message: 'Preferências atualizadas e cronograma recalculado.' } },
+    schema: {
+      example: { success: true, message: 'Preferências atualizadas e cronograma recalculado.' },
+    },
   })
   @ApiBadRequestResponse({ description: 'Invalid validation data' })
   async updatePreferences(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePreferencesDto) {
