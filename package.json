@@ -19,6 +19,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "test:ci": "jest --coverage --ci",
+    "test:structure": "node scripts/check-test-structure.mjs",
+    "test:changed": "node scripts/check-changed-files-have-tests.mjs",
+    "test:coverage:summary": "node scripts/print-coverage-summary.mjs",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand --detectOpenHandles",
     "prepare": "husky install",
     "postinstall": "prisma generate",
@@ -102,10 +106,41 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s",
-      "!**/*.spec.ts"
+      "**/*.service.ts",
+      "**/*.guard.ts",
+      "**/utils/**/*.ts",
+      "**/mapper/**/*.ts",
+      "!**/*.spec.ts",
+      "!**/prisma.service.ts"
     ],
     "coverageDirectory": "../coverage",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "admin-questions\\.service\\.ts$",
+      "csv\\.utils\\.ts$",
+      "roles\\.guard\\.ts$",
+      "exams\\.service\\.ts$",
+      "exam-media\\.service\\.ts$",
+      "icon-media\\.service\\.ts$",
+      "question-media\\.service\\.ts$",
+      "s3\\.service\\.ts$",
+      "attempts\\.service\\.ts$",
+      "exam\\.mapper\\.ts$",
+      "questions\\.service\\.ts$"
+    ],
+    "coverageReporters": [
+      "text",
+      "html",
+      "json-summary"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
     "testEnvironment": "node"
   }
 }
