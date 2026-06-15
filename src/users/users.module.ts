@@ -6,11 +6,16 @@ import { RefreshTokenRepository } from './refresh-token.repository';
 import { UsersRepository } from './users.repository';
 import { PrismaService } from '../prisma.service';
 import { StreakModule } from '../streak/streak.module';
+import { ScheduleModule } from 'src/schedule/schedule.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), forwardRef(() => StreakModule)],
+  imports: [
+    forwardRef(() => AuthModule),
+    forwardRef(() => StreakModule),
+    ScheduleModule
+  ],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, RefreshTokenRepository, PrismaService],
   exports: [UsersRepository, RefreshTokenRepository],
 })
-export class UsersModule {}
+export class UsersModule { }

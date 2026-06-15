@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Body, Patch } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -7,6 +7,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,6 +20,8 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
+
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -32,7 +35,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) {}
+  ) { }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -84,5 +87,16 @@ export class UsersController {
   @ApiNotFoundResponse({ description: 'User not found' })
   findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
     return this.usersService.findOne(viewer, id);
+  }
+
+  @Patch('preferences')
+  @ApiOperation({ summary: 'Update user preferences and recalculates study schedule' })
+  @ApiOkResponse({
+    description: 'Succesfully updated preferences',
+    schema: { example: { success: true, message: 'Preferências atualizadas e cronograma recalculado.' } },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid validation data' })
+  async updatePreferences(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePreferencesDto) {
+    return this.usersService.updatePreferences(user.userId, dto);
   }
 }
