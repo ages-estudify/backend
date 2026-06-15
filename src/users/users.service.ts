@@ -31,7 +31,7 @@ export class UsersService {
   constructor(
     private readonly users: UsersRepository,
     private readonly scheduleService: ScheduleService,
-  ) { }
+  ) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
