@@ -291,6 +291,21 @@ export class UsersRepository {
     return formatted;
   }
 
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<UserResponse> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      omit: { password: true },
+    });
+  }
+
+  async disable(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { enable: false },
+    });
+  }
+
   async updateStreak(
     id: string,
     data: { streak?: number; last_active?: Date },

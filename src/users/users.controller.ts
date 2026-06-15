@@ -1,17 +1,21 @@
 import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+  Patch,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -21,6 +25,8 @@ import {
   ApiNoContentResponse,
   ApiBody,
 } from '@nestjs/swagger';
+import { RegisterRequestDto } from '../auth/dto/register-request.dto';
+import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -50,6 +56,17 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
   ) {}
+
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADM)
+  @ApiOperation({ summary: 'Create a user (admin only)' })
+  @ApiCreatedResponse({ description: 'User created' })
+  @ApiConflictResponse({ description: 'Email or phone already registered' })
+  @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
+  createUser(@Body() dto: RegisterRequestDto) {
+    return this.usersService.createUser(dto);
+  }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -137,5 +154,31 @@ export class UsersController {
   @ApiNoContentResponse({ description: 'Profile picture removed successfully' })
   async removeProfilePicture(@CurrentUser() user: JwtAuthUser): Promise<void> {
     await this.usersService.removeProfilePicture(user.userId);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update user fields (self or admin)' })
+  @ApiOkResponse({ description: 'User updated' })
+  @ApiConflictResponse({ description: 'Email or phone already registered' })
+  @ApiForbiddenResponse({ description: 'Cannot update another user profile' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  updateUser(
+    @CurrentUser() viewer: JwtAuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRequestDto,
+  ) {
+    return this.usersService.updateUser(viewer, id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADM)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Disable a user (admin only)' })
+  @ApiNoContentResponse({ description: 'User disabled' })
+  @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  async disableUser(@Param('id') id: string): Promise<void> {
+    await this.usersService.disableUser(id);
   }
 }

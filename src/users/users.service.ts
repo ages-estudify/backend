@@ -1,7 +1,15 @@
-import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { RegisterRequestDto } from '../auth/dto/register-request.dto';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
+import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { getLevel } from './utils/levels';
 import { UserStatsMapper } from './mapper/user-stats-mapper';
 import { ProfilePictureService } from './profile-picture.service';
@@ -28,6 +36,82 @@ export class UsersService {
     private readonly config: ConfigService,
     private readonly profilePictureService: ProfilePictureService,
   ) {}
+
+  async createUser(dto: RegisterRequestDto): Promise<UserResponse> {
+    const email = dto.email.trim().toLowerCase();
+    const phone = dto.phone.trim();
+
+    if (await this.users.findByEmail(email)) {
+      throw new ConflictException('Email is already registered');
+    }
+    if (await this.users.findByPhone(phone)) {
+      throw new ConflictException('Phone number is already registered');
+    }
+
+    const rounds = this.resolveBcryptRounds();
+    const passwordHash = await bcrypt.hash(dto.password, rounds);
+
+    const user = await this.users.create({
+      full_name: dto.fullName.trim(),
+      email,
+      password: passwordHash,
+      phone_number: phone,
+      role: Role.USER,
+      birth_date: new Date(`${dto.birthDate}T00:00:00.000Z`),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _pw, ...rest } = user;
+    return rest;
+  }
+
+  async updateUser(
+    viewer: JwtAuthUser,
+    id: string,
+    dto: UpdateUserRequestDto,
+  ): Promise<UserResponse> {
+    this.ensureSelfOrAdmin(viewer, id);
+
+    const existing = await this.users.findUniqueById(id);
+    if (!existing) throw new NotFoundException();
+
+    if (dto.email) {
+      const email = dto.email.trim().toLowerCase();
+      const conflict = await this.users.findByEmail(email);
+      if (conflict && conflict.id !== id) {
+        throw new ConflictException('Email is already registered');
+      }
+    }
+
+    if (dto.phone) {
+      const phone = dto.phone.trim();
+      const conflict = await this.users.findByPhone(phone);
+      if (conflict && conflict.id !== id) {
+        throw new ConflictException('Phone number is already registered');
+      }
+    }
+
+    return this.users.update(id, {
+      ...(dto.fullName !== undefined && { full_name: dto.fullName.trim() }),
+      ...(dto.email !== undefined && { email: dto.email.trim().toLowerCase() }),
+      ...(dto.phone !== undefined && { phone_number: dto.phone.trim() }),
+      ...(dto.role !== undefined && { role: dto.role }),
+      ...(dto.planEndDate !== undefined && { plan_end_date: new Date(dto.planEndDate) }),
+      ...(dto.streak !== undefined && { streak: dto.streak }),
+      ...(dto.coins !== undefined && { coins: dto.coins }),
+      ...(dto.desiredCourse !== undefined && { desired_course: dto.desiredCourse }),
+      ...(dto.desiredUniversity !== undefined && { desired_university: dto.desiredUniversity }),
+      ...(dto.preferredLanguage !== undefined && { preferred_language: dto.preferredLanguage }),
+      ...(dto.birthDate !== undefined && {
+        birth_date: new Date(`${dto.birthDate}T00:00:00.000Z`),
+      }),
+    });
+  }
+
+  async disableUser(id: string): Promise<void> {
+    const existing = await this.users.findUniqueById(id);
+    if (!existing) throw new NotFoundException();
+    await this.users.disable(id);
+  }
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
