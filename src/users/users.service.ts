@@ -2,7 +2,8 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException, Logger,
+  NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { RegisterRequestDto } from '../auth/dto/register-request.dto';
@@ -31,11 +32,10 @@ export class UsersService {
   amountOfAttempts: number = 5;
 
   constructor(
-
     private readonly users: UsersRepository,
     private readonly config: ConfigService,
     private readonly profilePictureService: ProfilePictureService,
-  ) { }
+  ) {}
 
   async createUser(dto: RegisterRequestDto): Promise<UserResponse> {
     const email = dto.email.trim().toLowerCase();
