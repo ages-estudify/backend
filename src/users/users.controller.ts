@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -19,6 +19,7 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
+import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -80,9 +81,13 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get user by id (self or admin)' })
+  @ApiOkResponse({ type: GetUserProfileResponseDto })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
+  findOne(
+    @CurrentUser() viewer: JwtAuthUser,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<GetUserProfileResponseDto> {
     return this.usersService.findOne(viewer, id);
   }
 }
