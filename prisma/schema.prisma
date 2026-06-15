@@ -66,6 +66,7 @@ model User {
   refresh_tokens RefreshToken[]
   subscriptions  Subscription[]
   onboarding_completed Boolean @default(false)
+  profile_picture_key String?
 }
 
 model RefreshToken {
