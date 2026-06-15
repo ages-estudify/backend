@@ -31,7 +31,7 @@ export class UsersService {
   constructor(
     private readonly users: UsersRepository,
     private readonly scheduleService: ScheduleService,
-  ) {}
+  ) { }
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
@@ -145,6 +145,8 @@ export class UsersService {
         newLogs = [];
       }
     }
+
+    await this.users.updatePreferencesTx(userId, userUpdate, newStudyDays, threshold, newLogs);
 
     return { success: true, message: 'Preferências atualizadas e cronograma recalculado.' };
   }

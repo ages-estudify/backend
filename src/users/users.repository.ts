@@ -7,7 +7,6 @@ import {
   OverviewDto,
   SimuladoDto,
 } from './dto/user-stats.dto';
-import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 export type UserResponse = Omit<User, 'password'>;
 
