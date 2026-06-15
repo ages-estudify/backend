@@ -13,6 +13,8 @@ import {
   AccuracyBySubjectDto,
   SimuladoDto,
 } from './dto/user-stats.dto';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @Injectable()
@@ -23,6 +25,7 @@ export class UsersService {
 
   constructor(
     private readonly users: UsersRepository,
+    private readonly config: ConfigService,
     private readonly profilePictureService: ProfilePictureService,
   ) {}
 
@@ -45,6 +48,12 @@ export class UsersService {
       ...user,
       plan_status: planStatus,
     };
+  }
+
+  async updateUserPassword(id: string, newPassword: string) {
+    const hashedPassword = await bcrypt.hash(newPassword, this.resolveBcryptRounds());
+
+    await this.users.updatePassword(id, hashedPassword);
   }
 
   private ensureSelfOrAdmin(viewer: JwtAuthUser, targetUserId: string): void {
@@ -84,6 +93,15 @@ export class UsersService {
 
     return response;
   }
+
+  private resolveBcryptRounds(): number {
+    const parsed = Number.parseInt(this.config.get<string>('BCRYPT_ROUNDS') ?? '', 10);
+    if (Number.isFinite(parsed) && parsed >= 4 && parsed <= 15) {
+      return parsed;
+    }
+    return 10;
+  }
+
   async uploadProfilePicture(userId: string, imageBase64: string): Promise<string> {
     const key = await this.profilePictureService.upload(userId, imageBase64);
     await this.users.updateProfilePicture(userId, key);

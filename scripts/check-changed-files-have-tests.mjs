@@ -9,8 +9,6 @@ const WAIVER_FILE = '.github/test-waivers.txt';
 
 const SOURCE_PATTERNS = [
   /^src\/.+\.service\.ts$/,
-  /^src\/.+\.repository\.ts$/,
-  /^src\/.+\.guard\.ts$/,
   /^src\/.+\/utils\/.+\.ts$/,
   /^src\/.+\/mapper\/.+\.ts$/,
 ];

@@ -46,6 +46,17 @@ export class UsersRepository {
     });
   }
 
+  async updatePassword(id: string, newHashPassword: string) {
+    await this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        password: newHashPassword,
+      },
+    });
+  }
+
   async incrementCoins(id: string, amount: number): Promise<{ coins: number | null }> {
     await this.prisma.user.updateMany({
       where: { id, coins: null },

@@ -32,6 +32,8 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { PasswordResetGuard } from '../auth/guards/password-reset.guard';
 import { UploadProfilePictureDto } from './dto/upload-profile-picture.dto';
 import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
@@ -56,6 +58,15 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Authenticated but not an admin' })
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard, PasswordResetGuard)
+  @ApiBearerAuth()
+  @Patch('update/password')
+  async updatePassword(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePasswordDto) {
+    await this.usersService.updateUserPassword(user.userId, dto.newPassword);
+
+    return { success: true };
   }
 
   @UseGuards(JwtAuthGuard)

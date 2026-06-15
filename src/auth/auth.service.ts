@@ -9,7 +9,7 @@ import { UsersRepository } from '../users/users.repository';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshRequestDto } from './dto/refresh-request.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
-import { JwtUserClaims } from './security/jwt-claims';
+import { JwtUserClaims, Purpose } from './security/jwt-claims';
 
 export type AuthSession = {
   token: string;
@@ -57,7 +57,7 @@ export class AuthService {
       birth_date: birthDate,
     });
 
-    const session = await this.buildAuthSession(user);
+    const session = await this.buildAuthSession(user, Purpose.DEFAULT);
     return { userId: user.id, ...session };
   }
 
@@ -74,7 +74,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const session = await this.buildAuthSession(user);
+    const session = await this.buildAuthSession(user, Purpose.DEFAULT);
 
     this.logger.log(
       JSON.stringify({ event: 'user_login_success', userId: user.id, role: user.role }),
@@ -92,19 +92,28 @@ export class AuthService {
     }
 
     await this.refreshTokens.deleteById(row.id);
-    const session = await this.buildAuthSession(row.user);
+    const session = await this.buildAuthSession(row.user, Purpose.DEFAULT);
 
     return session;
   }
 
-  async buildAuthSession(user: Pick<User, 'id' | 'role' | 'plan_end_date'>): Promise<AuthSession> {
+  async buildAuthSession(
+    user: Pick<User, 'id' | 'role' | 'plan_end_date'>,
+    purpose: Purpose,
+  ): Promise<AuthSession> {
     const planExpirationDate = this.formatPlanDate(user.plan_end_date);
+
     const payload: JwtUserClaims = {
       userId: user.id,
       role: user.role,
       planExpirationDate,
+      purpose: purpose,
     };
-    const token = this.jwt.sign(payload);
+
+    const token = this.jwt.sign(payload, {
+      ...(purpose === Purpose.PASSWORDRESET ? { expiresIn: '15m' } : {}),
+    });
+
     const refreshToken = await this.persistRefreshToken(user.id);
     return {
       token,

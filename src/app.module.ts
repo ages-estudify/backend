@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
@@ -16,6 +16,7 @@ import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
 import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { StreakModule } from './streak/streak.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { StreakModule } from './streak/streak.module';
     AdminQuestionsModule,
     StorageModule,
     StreakModule,
+    OtpModule,
   ],
   controllers: [],
   providers: [PrismaService],
