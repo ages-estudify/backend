@@ -96,10 +96,13 @@ describe('UsersService', () => {
       role: Role.USER,
       planExpirationDate: null,
     };
-    const row = { id, email: 'a@b.com' } as never;
-    usersRepo.findUniqueById.mockResolvedValue(row);
+    const row = { id, email: 'a@b.com', plan_end_date: null };
+    usersRepo.findUniqueById.mockResolvedValue(row as never);
 
-    await expect(service.findOne(viewer, id)).resolves.toEqual(row);
+    await expect(service.findOne(viewer, id)).resolves.toEqual({
+      ...row,
+      plan_status: 'inactive',
+    });
     expect(usersRepo.findUniqueById).toHaveBeenCalledWith(id);
   });
 
