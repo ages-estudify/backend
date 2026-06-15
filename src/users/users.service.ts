@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UserResponse, UsersRepository } from './users.repository';
 import { getLevel } from './utils/levels';
 import { UserStatsMapper } from './mapper/user-stats-mapper';
+import { ProfilePictureService } from './profile-picture.service';
 import {
   CompletedTopicsDto,
   LevelDto,
@@ -14,27 +15,39 @@ import {
 } from './dto/user-stats.dto';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   amountOfAttempts: number = 5;
 
   constructor(
     private readonly users: UsersRepository,
     private readonly config: ConfigService,
+    private readonly profilePictureService: ProfilePictureService,
   ) {}
 
   async findAll(): Promise<UserResponse[]> {
     return this.users.findMany();
   }
 
-  async findOne(viewer: JwtAuthUser, id: string): Promise<UserResponse> {
+  async findOne(viewer: JwtAuthUser, id: string): Promise<GetUserProfileResponseDto> {
     this.ensureSelfOrAdmin(viewer, id);
+    this.logger.log(`Searching for User Profile: ${id}`);
     const user = await this.users.findUniqueById(id);
     if (!user) {
       throw new NotFoundException();
     }
-    return user;
+
+    const now = new Date();
+    const planEndDate = user.plan_end_date;
+    const planStatus = planEndDate != null && planEndDate >= now ? 'active' : 'inactive';
+    return {
+      ...user,
+      plan_status: planStatus,
+    };
   }
 
   async updateUserPassword(id: string, newPassword: string) {
@@ -87,5 +100,16 @@ export class UsersService {
       return parsed;
     }
     return 10;
+  }
+
+  async uploadProfilePicture(userId: string, imageBase64: string): Promise<string> {
+    const key = await this.profilePictureService.upload(userId, imageBase64);
+    await this.users.updateProfilePicture(userId, key);
+    const url = await this.profilePictureService.resolveSignedUrl(key);
+    return url!;
+  }
+
+  async removeProfilePicture(userId: string): Promise<void> {
+    await this.users.updateProfilePicture(userId, null);
   }
 }

@@ -67,6 +67,7 @@ model User {
   subscriptions        Subscription[]
   onboarding_completed Boolean        @default(false)
   otp                  Otp?
+  profile_picture_key String?
 }
 
 model RefreshToken {

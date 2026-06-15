@@ -5,6 +5,8 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
 import { ConfigService } from '@nestjs/config';
+import { ProfilePictureService } from './profile-picture.service';
+import { Purpose } from '../auth/security/jwt-claims';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -18,9 +20,6 @@ const createUserBuilder = (overrides: Partial<any> = {}) => ({
   createdAt: new Date('2023-01-01T00:00:00.000Z'),
   enable: true,
   desired_course: null,
-  desired_university: null,
-  preferred_language: null,
-  onboarding_completed: false,
   last_active: null,
   birth_date: null,
 
@@ -63,11 +62,19 @@ describe('UsersService', () => {
       get: jest.fn(),
     };
 
+    const profilePictureServiceMock = {
+      getProfilePictureUrl: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: UsersRepository, useValue: usersRepo },
         { provide: ConfigService, useValue: configService },
+        {
+          provide: ProfilePictureService,
+          useValue: profilePictureServiceMock,
+        },
       ],
     }).compile();
     service = module.get<UsersService>(UsersService);
@@ -82,6 +89,7 @@ describe('UsersService', () => {
       userId: '11111111-1111-1111-1111-111111111111',
       role: Role.USER,
       planExpirationDate: null,
+      purpose: Purpose.DEFAULT,
     };
     await expect(
       service.findOne(viewer, '22222222-2222-2222-2222-222222222222'),
@@ -95,11 +103,15 @@ describe('UsersService', () => {
       userId: id,
       role: Role.USER,
       planExpirationDate: null,
+      purpose: Purpose.DEFAULT,
     };
-    const row = { id, email: 'a@b.com' } as never;
-    usersRepo.findUniqueById.mockResolvedValue(row);
+    const row = { id, email: 'a@b.com', plan_end_date: null };
+    usersRepo.findUniqueById.mockResolvedValue(row as never);
 
-    await expect(service.findOne(viewer, id)).resolves.toEqual(row);
+    await expect(service.findOne(viewer, id)).resolves.toEqual({
+      ...row,
+      plan_status: 'inactive',
+    });
     expect(usersRepo.findUniqueById).toHaveBeenCalledWith(id);
   });
 
@@ -109,6 +121,7 @@ describe('UsersService', () => {
       userId: id,
       role: Role.USER,
       planExpirationDate: null,
+      purpose: Purpose.DEFAULT,
     };
     usersRepo.findUniqueById.mockResolvedValue(null);
 

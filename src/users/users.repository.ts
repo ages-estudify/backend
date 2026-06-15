@@ -301,4 +301,18 @@ export class UsersRepository {
       select: { streak: true, last_active: true },
     });
   }
+  async updateProfilePicture(id: string, key: string | null): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { profile_picture_key: key },
+    });
+  }
+
+  async findProfilePictureKey(id: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { profile_picture_key: true },
+    });
+    return user?.profile_picture_key ?? null;
+  }
 }

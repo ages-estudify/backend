@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  Patch,
+  Delete,
+  Body,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -7,6 +18,8 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiNoContentResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -21,6 +34,8 @@ import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PasswordResetGuard } from '../auth/guards/password-reset.guard';
+import { UploadProfilePictureDto } from './dto/upload-profile-picture.dto';
+import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -91,9 +106,36 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get user by id (self or admin)' })
+  @ApiOkResponse({ type: GetUserProfileResponseDto })
   @ApiForbiddenResponse({ description: 'Cannot access another user profile' })
   @ApiNotFoundResponse({ description: 'User not found' })
-  findOne(@CurrentUser() viewer: JwtAuthUser, @Param('id') id: string) {
+  findOne(
+    @CurrentUser() viewer: JwtAuthUser,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<GetUserProfileResponseDto> {
     return this.usersService.findOne(viewer, id);
+  }
+  @Patch('profile-picture')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Upload or replace profile picture' })
+  @ApiBody({ type: UploadProfilePictureDto })
+  @ApiOkResponse({
+    description: 'Profile picture uploaded successfully',
+    schema: { example: { data: { profilePictureUrl: 'https://...signed-url...' } } },
+  })
+  async uploadProfilePicture(
+    @CurrentUser() user: JwtAuthUser,
+    @Body() dto: UploadProfilePictureDto,
+  ): Promise<{ data: { profilePictureUrl: string } }> {
+    const url = await this.usersService.uploadProfilePicture(user.userId, dto.image);
+    return { data: { profilePictureUrl: url } };
+  }
+
+  @Delete('profile-picture')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove profile picture' })
+  @ApiNoContentResponse({ description: 'Profile picture removed successfully' })
+  async removeProfilePicture(@CurrentUser() user: JwtAuthUser): Promise<void> {
+    await this.usersService.removeProfilePicture(user.userId);
   }
 }
