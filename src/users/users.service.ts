@@ -19,7 +19,7 @@ import {
   SimuladoDto,
 } from './dto/user-stats.dto';
 import { UpdatePreferencesDto } from './dto/update-preferences.dto';
-import { ScheduleService } from 'src/schedule/schedule.service';
+import { ScheduleService } from '../schedule/schedule.service';
 import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
 
 @Injectable()
