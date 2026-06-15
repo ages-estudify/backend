@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ScheduleRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findUserById(userId: string) {
     return this.prisma.user.findUnique({
@@ -134,6 +134,15 @@ export class ScheduleRepository {
     return this.prisma.studyLog.update({
       where: { id: itemId },
       data: { done },
+    });
+  }
+
+  async countPastOrDoneLogs(userId: string, threshold: Date): Promise<number> {
+    return this.prisma.studyLog.count({
+      where: {
+        user_id: userId,
+        OR: [{ date: { lte: threshold } }, { done: true }],
+      }
     });
   }
 

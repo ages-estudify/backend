@@ -56,7 +56,7 @@ type ScheduleItemUpdateResponse = {
 
 @Injectable()
 export class ScheduleService {
-  constructor(private readonly scheduleRepository: ScheduleRepository) {}
+  constructor(private readonly scheduleRepository: ScheduleRepository) { }
 
   async createInitialSchedule(userId: string): Promise<ScheduleResponse> {
     const user = await this.scheduleRepository.findUserById(userId);
@@ -238,5 +238,45 @@ export class ScheduleService {
 
   private isUuid(value: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
+  async generateRecalculatedLogs(
+    userId: string,
+    studyDays: { day: WeekDay; hour: number }[],
+    threshold: Date,
+  ) {
+    if (studyDays.length == 0) return [];
+
+    const catalog = await this.scheduleRepository.findPathsForSchedule();
+
+    if (catalog.length === 0) return [];
+
+    const paths = interleavePathsBySubject(catalog);
+    const slotsByWeekDay = buildSlotsByWeekDay(studyDays);
+
+    const pastCount = await this.scheduleRepository.countPastOrDoneLogs(userId, threshold);
+
+    let nextSlot = findNextSlotAfter(threshold, slotsByWeekDay);
+    let pathIndex = pastCount % paths.length;
+
+    const entries: Array<{
+      date: Date;
+      path_id: string;
+      user_id: string;
+      done: boolean
+    }> = [];
+
+    for (let i = 0; i < paths.length; i++) {
+      entries.push({
+        date: nextSlot,
+        path_id: paths[pathIndex].id,
+        user_id: userId,
+        done: false,
+      });
+
+      pathIndex = (pathIndex + 1) % paths.length;
+      nextSlot = findNextSlotAfter(nextSlot, slotsByWeekDay);
+    }
+    return entries;
   }
 }

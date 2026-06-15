@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsEnum, IsObject, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { Language, WeekDay } from "@prisma/client";
 
@@ -28,16 +28,10 @@ export class UpdatePreferencesDto {
     @IsEnum(Language)
     preferredLanguage?: Language;
 
-    @ApiPropertyOptional({ example: { MONDAY: [18, 19], WEDNESDAY: [20] } })
+    @ApiPropertyOptional({
+        example: { MONDAY: [18, 19], WEDNESDAY: [20] }
+    })
     @IsOptional()
     @IsObject()
     studyHours?: Partial<Record<WeekDay, number[]>>;
-}
-
-export class UpdatePreferencesResponseDto {
-    @ApiProperty({ example: true })
-    success!: boolean;
-
-    @ApiProperty({ example: 'Updated preferences and schedule recalculated.' })
-    message!: string;
 }

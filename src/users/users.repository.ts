@@ -292,14 +292,47 @@ export class UsersRepository {
     });
   }
 
-  async updatePreferencesAndRebuildSchedule(
+  async updatePreferencesTx(
     userId: string,
-    dto: UpdatePreferencesDto,
-  ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({ ... });
-      await tx.studyDay.deleteMany({ ... });
-      await tx.studyDay.createMany({ ... })
+    userUpdate: Prisma.UserUpdateInput,
+    newStudyDays?: Prisma.StudyDayCreateManyInput[],
+    logsThreshold?: Date,
+    newLogs?: Prisma.StudyLogCreateManyInput[],
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      if (Object.keys(userUpdate).length > 0) {
+        await tx.user.update({
+          where: {
+            id: userId
+          },
+          data: userUpdate
+        })
+      }
+
+      if (newStudyDays !== undefined) {
+        await tx.studyDay.deleteMany({
+          where: {
+            user_id: userId
+          }
+        });
+        if (newStudyDays.length > 0) {
+          await tx.studyDay.createMany({ data: newStudyDays });
+        }
+      }
+
+      if (logsThreshold && newLogs !== undefined) {
+        await tx.studyLog.deleteMany({
+          where: {
+            user_id: userId,
+            date: { gt: logsThreshold },
+            done: false,
+          }
+        });
+
+        if (newLogs.length > 0) {
+          await tx.studyLog.createMany({ data: newLogs });
+        }
+      }
     })
   }
 }
