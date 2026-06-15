@@ -7,6 +7,7 @@ import { RefreshTokenRepository } from '../users/refresh-token.repository';
 import { UsersRepository } from '../users/users.repository';
 import { AuthService } from './auth.service';
 import { RegisterRequestDto } from './dto/register-request.dto';
+import { Purpose } from './security/jwt-claims';
 
 jest.mock('bcrypt');
 
@@ -101,8 +102,9 @@ describe('AuthService', () => {
         userId: fullUser.id,
         role: Role.USER,
         planExpirationDate: null,
+        purpose: Purpose.DEFAULT,
       },
-      expect.any(Object),
+      {},
     );
     expect(refreshTokens.create).toHaveBeenCalledWith(
       fullUser.id,
@@ -163,8 +165,9 @@ describe('AuthService', () => {
         userId: fullUser.id,
         role: Role.USER,
         planExpirationDate: '2026-12-31',
+        purpose: Purpose.DEFAULT,
       },
-      expect.any(Object),
+      {},
     );
   });
 
@@ -188,8 +191,9 @@ describe('AuthService', () => {
           userId: fullUser.id,
           role: Role.USER,
           planExpirationDate: null,
+          purpose: Purpose.DEFAULT,
         },
-        expect.any(Object),
+        {},
       );
       expect(refreshTokens.create).toHaveBeenCalled();
       expect(result).toMatchObject({
@@ -242,8 +246,9 @@ describe('AuthService', () => {
           userId: fullUser.id,
           role: Role.USER,
           planExpirationDate: '2026-06-01',
+          purpose: Purpose.DEFAULT,
         },
-        expect.any(Object),
+        {},
       );
     });
 
@@ -279,8 +284,9 @@ describe('AuthService', () => {
           userId: fullUser.id,
           role: Role.USER,
           planExpirationDate: null,
+          purpose: Purpose.DEFAULT,
         },
-        expect.any(Object),
+        {},
       );
       expect(result.refreshToken.length).toBeGreaterThan(20);
     });

@@ -1,16 +1,12 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { OtpService } from './otp.service';
 import { CreateOtpDto, VerifyOtpDto } from './dto/otp.dto';
-import { AuthService } from '../auth/auth.service';
 
 @ApiTags('otp')
 @Controller({ path: 'otp', version: '1' })
 export class OtpController {
-  constructor(
-    private readonly otpService: OtpService,
-    private readonly AuthService: AuthService,
-  ) {}
+  constructor(private readonly otpService: OtpService) {}
 
   @Post('create')
   async create(@Body() dto: CreateOtpDto) {
@@ -28,13 +24,7 @@ export class OtpController {
 
   @Post('verify')
   async verify(@Body() dto: VerifyOtpDto) {
-    const user = await this.otpService.verifyOtp(dto.email, dto.otp);
-
-    if (!user) {
-      throw new UnauthorizedException('OTP inválido');
-    }
-
-    const data = await this.AuthService.buildAuthSession(user, true);
+    const data = await this.otpService.verifyOtp(dto.email, dto.otp);
 
     return { success: true as const, data };
   }

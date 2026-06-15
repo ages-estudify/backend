@@ -4,7 +4,9 @@ import { OtpRepository } from './otp.repository';
 import { MailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Role } from '@prisma/client';
+import { AuthService } from '../auth/auth.service';
 
 jest.mock('bcrypt');
 
@@ -26,6 +28,10 @@ describe('OtpService', () => {
     get: jest.fn(),
   };
 
+  const authServiceMock = {
+    buildAuthSession: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +39,7 @@ describe('OtpService', () => {
         { provide: OtpRepository, useValue: otpRepositoryMock },
         { provide: MailService, useValue: mailServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     }).compile();
 
@@ -73,58 +80,80 @@ describe('OtpService', () => {
   });
 
   describe('verifyOtp', () => {
-    it('should return user when OTP is valid', async () => {
-      const user = { id: 1, email: 'test@mail.com' };
+    it('should return login response when OTP is valid', async () => {
+      const user = {
+        id: 1,
+        email: 'test@mail.com',
+        role: Role.USER,
+        plan_end_date: null,
+      };
 
       otpRepositoryMock.findUserByMail.mockResolvedValue(user);
       otpRepositoryMock.getOtp.mockResolvedValue('hashed_otp');
+      otpRepositoryMock.deleteOtp.mockResolvedValue(undefined);
 
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
+      authServiceMock.buildAuthSession.mockResolvedValue({
+        token: 'jwt-token',
+        refreshToken: 'refresh-token',
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+
       const result = await service.verifyOtp('test@mail.com', '123456');
 
-      expect(result).toEqual(user);
+      expect(result).toEqual({
+        token: 'jwt-token',
+        refreshToken: 'refresh-token',
+        role: Role.USER,
+        planExpirationDate: null,
+      });
+
       expect(otpRepositoryMock.deleteOtp).toHaveBeenCalledWith('test@mail.com');
     });
+    it('should throw NotFoundException when OTP is invalid', async () => {
+      otpRepositoryMock.findUserByMail.mockResolvedValue({
+        id: 1,
+        email: 'test@mail.com',
+      });
 
-    it('should return null when OTP is invalid', async () => {
-      otpRepositoryMock.findUserByMail.mockResolvedValue({ id: 1, email: 'test@mail.com' });
       otpRepositoryMock.getOtp.mockResolvedValue('hashed_otp');
 
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      const result = await service.verifyOtp('test@mail.com', 'wrong');
+      await expect(service.verifyOtp('test@mail.com', 'wrong')).rejects.toThrow(
+        UnauthorizedException,
+      );
 
-      expect(result).toBeNull();
       expect(otpRepositoryMock.deleteOtp).not.toHaveBeenCalled();
     });
 
-    it('should return null on error', async () => {
+    it('should throw UnauthorizedException on error', async () => {
       otpRepositoryMock.findUserByMail.mockRejectedValue(new Error('DB error'));
 
-      const result = await service.verifyOtp('test@mail.com', '123456');
-
-      expect(result).toBeNull();
+      await expect(service.verifyOtp('test@mail.com', '123456')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
-  });
+    describe('resolveBcryptRounds', () => {
+      it('should return config value when valid', () => {
+        configServiceMock.get.mockReturnValue('12');
 
-  describe('resolveBcryptRounds', () => {
-    it('should return config value when valid', () => {
-      configServiceMock.get.mockReturnValue('12');
+        // @ts-expect-error accessing private method
+        const rounds = service.resolveBcryptRounds();
 
-      // @ts-expect-error accessing private method
-      const rounds = service.resolveBcryptRounds();
+        expect(rounds).toBe(12);
+      });
 
-      expect(rounds).toBe(12);
-    });
+      it('should fallback to 10 when invalid', () => {
+        configServiceMock.get.mockReturnValue('invalid');
 
-    it('should fallback to 10 when invalid', () => {
-      configServiceMock.get.mockReturnValue('invalid');
+        // @ts-expect-error accessing private method
+        const rounds = service.resolveBcryptRounds();
 
-      // @ts-expect-error accessing private method
-      const rounds = service.resolveBcryptRounds();
-
-      expect(rounds).toBe(10);
+        expect(rounds).toBe(10);
+      });
     });
   });
 });

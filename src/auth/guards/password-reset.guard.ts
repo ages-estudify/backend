@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtAuthUser } from '../security/jwt-auth-user';
+import { Purpose } from '../security/jwt-claims';
 
 @Injectable()
 export class PasswordResetGuard implements CanActivate {
@@ -7,6 +8,6 @@ export class PasswordResetGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
     const user: JwtAuthUser = req.user;
 
-    return user?.purpose === 'password_reset';
+    return user.purpose == Purpose.PASSWORDRESET;
   }
 }
