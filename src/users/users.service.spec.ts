@@ -1,9 +1,10 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role, Language } from '@prisma/client';
+import { Role, Language, WeekDay } from '@prisma/client';
 import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
+import { ScheduleService } from '../schedule/schedule.service';
 
 const createUserBuilder = (overrides: Partial<any> = {}) => ({
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -35,6 +36,7 @@ const createUserWithoutCoins = () => createUserBuilder({ coins: null });
 
 describe('UsersService', () => {
   let service: UsersService;
+  let scheduleServiceMock: { generateRecalculatedLogs: jest.Mock };
   let usersRepo: {
     findMany: jest.Mock;
     findUniqueById: jest.Mock;
@@ -44,6 +46,7 @@ describe('UsersService', () => {
     getCompletedTopicsByUser: jest.Mock;
     getSubjectStatsByUser: jest.Mock;
     getLastAttemptsByUser: jest.Mock;
+    updatePreferencesTx: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -56,10 +59,19 @@ describe('UsersService', () => {
       getCompletedTopicsByUser: jest.fn(),
       getSubjectStatsByUser: jest.fn(),
       getLastAttemptsByUser: jest.fn(),
+      updatePreferencesTx: jest.fn(),
+    };
+
+    scheduleServiceMock = {
+      generateRecalculatedLogs: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, { provide: UsersRepository, useValue: usersRepo }],
+      providers: [
+        UsersService,
+        { provide: UsersRepository, useValue: usersRepo },
+        { provide: ScheduleService, useValue: scheduleServiceMock },
+      ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
@@ -224,5 +236,75 @@ describe('UsersService', () => {
     expect(result.data.stars).toBe(0);
     expect(result.data.simulados).toEqual([]);
     expect(result.data.accuracyBySubject).toEqual([]);
+  });
+
+  describe('updatePreferences', () => {
+    const userId = '11111111-1111-1111-1111-111111111111';
+
+    beforeEach(() => {
+      usersRepo.findUniqueById.mockResolvedValue({ id: userId, email: 'teste@teste.com' });
+    });
+
+    it('Should throw NotFoundException if user does not exist', async () => {
+      usersRepo.findUniqueById.mockResolvedValue(null);
+
+      await expect(service.updatePreferences(userId, {})).rejects.toBeInstanceOf(NotFoundException);
+      expect(usersRepo.updatePreferencesTx).not.toHaveBeenCalled();
+    });
+
+    it('Must update only profile data while not sending studyHours', async () => {
+      const dto = {
+        name: 'New name',
+        desiredCourse: 'Engineering',
+      };
+
+      const result = await service.updatePreferences(userId, dto);
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Preferências atualizadas e cronograma recalculado.',
+      });
+      expect(usersRepo.updatePreferencesTx).toHaveBeenCalledWith(
+        userId,
+        { full_name: 'New name', desired_course: 'Engineering' },
+        undefined,
+        expect.any(Date),
+        undefined,
+      );
+      expect(scheduleServiceMock.generateRecalculatedLogs).not.toHaveBeenCalled();
+    });
+
+    it('Should update schedule and call transaction if studyHours is valid', async () => {
+      const dto = {
+        studyHours: {
+          [WeekDay.MONDAY]: [18, 19],
+        },
+      };
+
+      const generatedMock = [{ date: new Date(), path_id: 'p1', user_id: userId, done: false }];
+      scheduleServiceMock.generateRecalculatedLogs.mockResolvedValue(generatedMock);
+
+      const result = await service.updatePreferences(userId, dto);
+
+      expect(result.success).toBe(true);
+      expect(scheduleServiceMock.generateRecalculatedLogs).toHaveBeenCalledWith(
+        userId,
+        [
+          { user_id: userId, day: WeekDay.MONDAY, hour: 18 },
+          { user_id: userId, day: WeekDay.MONDAY, hour: 19 },
+        ],
+        expect.any(Date),
+      );
+      expect(usersRepo.updatePreferencesTx).toHaveBeenCalledWith(
+        userId,
+        {},
+        [
+          { user_id: userId, day: WeekDay.MONDAY, hour: 18 },
+          { user_id: userId, day: WeekDay.MONDAY, hour: 19 },
+        ],
+        expect.any(Date),
+        generatedMock,
+      );
+    });
   });
 });

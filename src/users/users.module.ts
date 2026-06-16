@@ -14,4 +14,4 @@ import { ScheduleModule } from '../schedule/schedule.module';
   providers: [UsersService, UsersRepository, RefreshTokenRepository, PrismaService],
   exports: [UsersRepository, RefreshTokenRepository],
 })
-export class UsersModule { }
+export class UsersModule {}
