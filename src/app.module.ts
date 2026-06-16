@@ -16,6 +16,7 @@ import { AdminQuestionsModule } from './admin-questions/admin-questions.module';
 import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { StreakModule } from './streak/streak.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { StreakModule } from './streak/streak.module';
     AdminQuestionsModule,
     StorageModule,
     StreakModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [PrismaService],
