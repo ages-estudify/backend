@@ -11,7 +11,12 @@ import { ProfilePictureService } from './profile-picture.service';
 import { ScheduleModule } from '../schedule/schedule.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), forwardRef(() => StreakModule), StorageModule, ScheduleModule],
+  imports: [
+    forwardRef(() => AuthModule),
+    forwardRef(() => StreakModule),
+    StorageModule,
+    ScheduleModule,
+  ],
   controllers: [UsersController],
   providers: [
     UsersService,
@@ -22,4 +27,4 @@ import { ScheduleModule } from '../schedule/schedule.module';
   ],
   exports: [UsersRepository, RefreshTokenRepository],
 })
-export class UsersModule { }
+export class UsersModule {}

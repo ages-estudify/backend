@@ -39,7 +39,7 @@ export class UsersService {
     private readonly scheduleService: ScheduleService,
     private readonly config: ConfigService,
     private readonly profilePictureService: ProfilePictureService,
-  ) { }
+  ) {}
 
   async createUser(dto: RegisterRequestDto): Promise<UserResponse> {
     const email = dto.email.trim().toLowerCase();

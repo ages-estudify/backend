@@ -57,7 +57,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly streakService: StreakService,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(RolesGuard)
