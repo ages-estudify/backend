@@ -36,36 +36,38 @@ enum PlanType {
   ANUAL
 }
 
-enum ExamStatus{
+enum ExamStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
 }
 
 model User {
-  id             String         @id @default(uuid()) @db.Uuid
-  full_name      String
-  email          String         @unique
-  password       String
-  phone_number   String         @unique
-  role           Role
-  plan_end_date  DateTime?
-  streak         Int?
-  coins          Int?
-  createdAt      DateTime       @default(now())
-  enable         Boolean        @default(true)
-  desired_course String?
-  desired_university String?
-  preferred_language Language?
-  last_active    DateTime?
-  birth_date     DateTime?      @db.Date
-  Study_day      StudyDay[]
-  answers        Answer[]
-  attempts       Attempt[]
-  StudyLog       StudyLog[]
-  refresh_tokens RefreshToken[]
-  subscriptions  Subscription[]
-  onboarding_completed Boolean @default(false)
+  id                   String         @id @default(uuid()) @db.Uuid
+  full_name            String
+  email                String         @unique
+  password             String
+  phone_number         String         @unique
+  role                 Role
+  plan_end_date        DateTime?
+  streak               Int?
+  coins                Int?
+  createdAt            DateTime       @default(now())
+  enable               Boolean        @default(true)
+  desired_course       String?
+  desired_university   String?
+  preferred_language   Language?
+  last_active          DateTime?
+  birth_date           DateTime?      @db.Date
+  Study_day            StudyDay[]
+  answers              Answer[]
+  attempts             Attempt[]
+  StudyLog             StudyLog[]
+  refresh_tokens       RefreshToken[]
+  subscriptions        Subscription[]
+  onboarding_completed Boolean        @default(false)
+  otp                  Otp?
+  profile_picture_key String?
 }
 
 model RefreshToken {
@@ -183,20 +185,20 @@ model AttemptDay {
 }
 
 model Question {
-  id          String    @id @default(uuid()) @db.Uuid
-  text        String
-  origin      Origin
-  year        Int
-  feedback    String
-  number      Int?
-  language    Language?
-  media_key   String?
-  enable      Boolean   @default(true)
-  discipline  String    @default("")
-  content     String    @default("")
-  bank        String?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id         String    @id @default(uuid()) @db.Uuid
+  text       String
+  origin     Origin
+  year       Int
+  feedback   String
+  number     Int?
+  language   Language?
+  media_key  String?
+  enable     Boolean   @default(true)
+  discipline String    @default("")
+  content    String    @default("")
+  bank       String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   path_id      String        @db.Uuid
   path         Path          @relation(fields: [path_id], references: [id])
@@ -247,4 +249,13 @@ model Subscription {
   created_at DateTime @default(now())
 
   @@index([user_id])
+}
+
+model Otp {
+  id        String   @id @default(uuid()) @db.Uuid
+  user_id   String   @unique @db.Uuid
+  otp       String
+  expiresAt DateTime
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

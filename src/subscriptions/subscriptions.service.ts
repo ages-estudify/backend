@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PlanType } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { SubscriptionsRepository } from './subscriptions.repository';
+import { Purpose } from '../auth/security/jwt-claims';
 
 export type ActivatePlanResult = {
   planActive: boolean;
@@ -32,7 +33,7 @@ export class SubscriptionsService {
       throw new NotFoundException('User not found');
     }
 
-    const session = await this.authService.buildAuthSession(updatedUser);
+    const session = await this.authService.buildAuthSession(updatedUser, Purpose.DEFAULT);
 
     return {
       planActive: true,

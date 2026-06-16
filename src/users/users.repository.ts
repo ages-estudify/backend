@@ -46,6 +46,17 @@ export class UsersRepository {
     });
   }
 
+  async updatePassword(id: string, newHashPassword: string) {
+    await this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        password: newHashPassword,
+      },
+    });
+  }
+
   async incrementCoins(id: string, amount: number): Promise<{ coins: number | null }> {
     await this.prisma.user.updateMany({
       where: { id, coins: null },
@@ -280,6 +291,21 @@ export class UsersRepository {
     return formatted;
   }
 
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<UserResponse> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      omit: { password: true },
+    });
+  }
+
+  async disable(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { enable: false },
+    });
+  }
+
   async updateStreak(
     id: string,
     data: { streak?: number; last_active?: Date },
@@ -333,5 +359,19 @@ export class UsersRepository {
         }
       }
     });
+  }
+  async updateProfilePicture(id: string, key: string | null): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { profile_picture_key: key },
+    });
+  }
+
+  async findProfilePictureKey(id: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { profile_picture_key: true },
+    });
+    return user?.profile_picture_key ?? null;
   }
 }
