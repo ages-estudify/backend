@@ -22,6 +22,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
   ApiNoContentResponse,
   ApiBody,
 } from '@nestjs/swagger';
@@ -38,6 +39,7 @@ import { GetCoinsResponseDto } from './dto/get-coins-response.dto';
 import { UserStatsDto } from './dto/user-stats.dto';
 import { StreakService } from '../streak/streak.service';
 import { StreakDataDto } from '../streak/dto/streak-response.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PasswordResetGuard } from '../auth/guards/password-reset.guard';
 import { UploadProfilePictureDto } from './dto/upload-profile-picture.dto';
@@ -132,6 +134,20 @@ export class UsersController {
   ): Promise<GetUserProfileResponseDto> {
     return this.usersService.findOne(viewer, id);
   }
+
+  @Patch('preferences')
+  @ApiOperation({ summary: 'Update user preferences and recalculates study schedule' })
+  @ApiOkResponse({
+    description: 'Succesfully updated preferences',
+    schema: {
+      example: { success: true, message: 'Preferências atualizadas e cronograma recalculado.' },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid validation data' })
+  async updatePreferences(@CurrentUser() user: JwtAuthUser, @Body() dto: UpdatePreferencesDto) {
+    return this.usersService.updatePreferences(user.userId, dto);
+  }
+
   @Patch('profile-picture')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Upload or replace profile picture' })

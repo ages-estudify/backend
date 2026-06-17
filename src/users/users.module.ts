@@ -8,9 +8,15 @@ import { PrismaService } from '../prisma.service';
 import { StreakModule } from '../streak/streak.module';
 import { StorageModule } from '../storage/storage.module';
 import { ProfilePictureService } from './profile-picture.service';
+import { ScheduleModule } from '../schedule/schedule.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), forwardRef(() => StreakModule), StorageModule],
+  imports: [
+    forwardRef(() => AuthModule),
+    forwardRef(() => StreakModule),
+    StorageModule,
+    ScheduleModule,
+  ],
   controllers: [UsersController],
   providers: [
     UsersService,
