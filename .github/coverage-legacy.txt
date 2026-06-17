@@ -1,0 +1,13 @@
+# Legacy files excluded from the 80% coverage gate until dedicated tests land.
+# Requires tech lead approval to add new entries.
+src/admin-questions/admin-questions.service.ts
+src/admin-questions/utils/csv.utils.ts
+src/auth/guards/roles.guard.ts
+src/exams/exams.service.ts
+src/exams/attempts/attempts.service.ts
+src/exams/mapper/exam.mapper.ts
+src/questions/questions.service.ts
+src/storage/exam-media.service.ts
+src/storage/icon-media.service.ts
+src/storage/question-media.service.ts
+src/storage/s3.service.ts

@@ -6,6 +6,7 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { StreakService } from '../streak/streak.service';
+import { Purpose } from '../auth/security/jwt-claims';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -51,6 +52,7 @@ describe('UsersController', () => {
       userId: userRow.id,
       role: Role.USER,
       planExpirationDate: null,
+      purpose: Purpose.DEFAULT,
     };
     usersService.findOne.mockResolvedValue(userRow as never);
 

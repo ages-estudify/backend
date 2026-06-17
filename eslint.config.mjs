@@ -39,4 +39,17 @@ export default tseslint.config(
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
+  {
+    files: ['test/**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message:
+            'Unit tests must be co-located with source code. Use test/ only for e2e setup and integration tests.',
+        },
+      ],
+    },
+  },
 );

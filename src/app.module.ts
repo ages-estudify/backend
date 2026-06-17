@@ -17,6 +17,7 @@ import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { StreakModule } from './streak/streak.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     StorageModule,
     StreakModule,
     DashboardModule,
+    OtpModule,
   ],
   controllers: [],
   providers: [PrismaService],
