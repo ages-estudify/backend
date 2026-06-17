@@ -24,7 +24,7 @@ export class AdminQuestionsService {
     private readonly repository: AdminQuestionsRepository,
     private readonly questionMedia: QuestionMediaService,
     private readonly iconMedia: IconMediaService,
-  ) { }
+  ) {}
 
   async create(dto: CreateQuestionDto) {
     const letter = dto.correctAnswer.trim().toUpperCase();
@@ -198,11 +198,13 @@ export class AdminQuestionsService {
           if (!exists) throw new Error(`Tópico com ID '${pathId}' não encontrado.`);
         } else {
           pathId = await this.repository.pathByNameAndSubject(content, discipline);
-          if (!pathId) throw new Error(`Tópico '${content}' na disciplina '${discipline}' não encontrado.`);
+          if (!pathId)
+            throw new Error(`Tópico '${content}' na disciplina '${discipline}' não encontrado.`);
         }
 
         let examId: string | null | undefined = undefined;
-        const examInput = row['mock_exam_id']?.trim() || row['exam_title']?.trim() || row['exam_name']?.trim();
+        const examInput =
+          row['mock_exam_id']?.trim() || row['exam_title']?.trim() || row['exam_name']?.trim();
         if (examInput) {
           const exam = await this.repository.findExamByIdOrName(examInput);
           if (!exam) throw new Error(`Simulado '${examInput}' não encontrado.`);

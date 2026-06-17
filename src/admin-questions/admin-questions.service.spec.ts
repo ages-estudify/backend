@@ -348,7 +348,9 @@ describe('AdminQuestionsService', () => {
 
       expect(result.errorCount).toBe(1);
       expect(result.successCount).toBe(0);
-      expect(result.results[0].error).toContain("Tópico 'Geometria Avançada' na disciplina 'Matemática' não encontrado.");
+      expect(result.results[0].error).toContain(
+        "Tópico 'Geometria Avançada' na disciplina 'Matemática' não encontrado.",
+      );
     });
 
     it('should link exam when exam_title is given and found in db', async () => {
@@ -365,9 +367,9 @@ describe('AdminQuestionsService', () => {
 
       expect(result.successCount).toBe(1);
       expect(repository.findExamByIdOrName).toHaveBeenCalledWith('Simulado ENEM 2026');
-      
+
       expect(repository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ exam_id: 'uuid-do-exame-123' })
+        expect.objectContaining({ exam_id: 'uuid-do-exame-123' }),
       );
     });
 

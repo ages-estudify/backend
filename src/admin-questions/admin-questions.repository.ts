@@ -28,7 +28,7 @@ export type CreateQuestionPersistenceInput = {
 
 @Injectable()
 export class AdminQuestionsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateQuestionPersistenceInput) {
     const question = await this.prisma.question.create({
