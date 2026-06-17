@@ -6,6 +6,7 @@ import { GamificationService } from '../gamification/gamification.service';
 import { UsersRepository } from '../users/users.repository';
 import { QuestionMediaService } from '../storage/question-media.service';
 import { StreakService } from '../streak/streak.service';
+import { TrainingResultSuccessResponse } from './dto/training-result-response.dto';
 
 @Injectable()
 export class QuestionsService {
@@ -15,7 +16,7 @@ export class QuestionsService {
     private usersRepository: UsersRepository,
     private questionMedia: QuestionMediaService,
     private streakService: StreakService,
-  ) {}
+  ) { }
 
   async getQuestionBatch(
     topicId: string,
@@ -96,7 +97,7 @@ export class QuestionsService {
     selectedAnswer: string,
     attemptId?: string,
     timeSpentSeconds?: number,
-  ): Promise<any> {
+  ): Promise<AnswerSuccessResponseDto> {
     const user = await this.usersRepository.findUniqueById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -209,5 +210,59 @@ export class QuestionsService {
 
   private mapOrigin(origin: 'ORIGINAL' | 'EXTERNAL'): 'ORIGINAL' | 'SIMPLIFIED' {
     return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
+  }
+
+  async trainingResult(
+    userId: string,
+    questionsIds: string[],
+  ): Promise<TrainingResultSuccessResponse> {
+    const user = await this.usersRepository.findUniqueById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    // Validar que todas as questões existem
+    const questions = await this.questionsRepository.findQuestionsByIds(questionsIds);
+    if (questions.length !== questionsIds.length) {
+      throw new NotFoundException('Uma ou mais questões não foram encontradas');
+    }
+
+    // Buscar respostas de treino (attempt_day_id = null) do usuário
+    const trainingAnswers = await this.questionsRepository.getTrainingAnswersForQuestions(
+      userId,
+      questionsIds,
+    );
+
+    // Validar que todas as questões foram respondidas (sessão completa)
+    const answeredQuestionIds = new Set(trainingAnswers.map((answer) => answer.question_id));
+    const missingAnswers = questionsIds.filter((id) => !answeredQuestionIds.has(id));
+    if (missingAnswers.length > 0) {
+      throw new BadRequestException('Sessão incompleta: nem todas as questões foram respondidas');
+    }
+
+    // Pegar apenas a resposta mais recente por questão
+    const latestAnswersByQuestion = new Map();
+    trainingAnswers.forEach((answer) => {
+      if (!latestAnswersByQuestion.has(answer.question_id)) {
+        latestAnswersByQuestion.set(answer.question_id, answer);
+      }
+    });
+
+    // Contar respostas corretas
+    const correctAnswers = Array.from(latestAnswersByQuestion.values()).filter(
+      (answer) => answer.alternative?.is_correct,
+    ).length;
+
+    const totalQuestions = questionsIds.length;
+    const wrongAnswers = totalQuestions - correctAnswers;
+
+    return {
+      success: true,
+      data: {
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+      },
+    };
   }
 }
