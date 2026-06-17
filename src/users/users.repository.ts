@@ -46,6 +46,17 @@ export class UsersRepository {
     });
   }
 
+  async updatePassword(id: string, newHashPassword: string) {
+    await this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: {
+        password: newHashPassword,
+      },
+    });
+  }
+
   async incrementCoins(id: string, amount: number): Promise<{ coins: number | null }> {
     await this.prisma.user.updateMany({
       where: { id, coins: null },
@@ -280,6 +291,21 @@ export class UsersRepository {
     return formatted;
   }
 
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<UserResponse> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      omit: { password: true },
+    });
+  }
+
+  async disable(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { enable: false },
+    });
+  }
+
   async updateStreak(
     id: string,
     data: { streak?: number; last_active?: Date },
@@ -289,5 +315,63 @@ export class UsersRepository {
       data,
       select: { streak: true, last_active: true },
     });
+  }
+
+  async updatePreferencesTx(
+    userId: string,
+    userUpdate: Prisma.UserUpdateInput,
+    newStudyDays?: Prisma.StudyDayCreateManyInput[],
+    logsThreshold?: Date,
+    newLogs?: Prisma.StudyLogCreateManyInput[],
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      if (Object.keys(userUpdate).length > 0) {
+        await tx.user.update({
+          where: {
+            id: userId,
+          },
+          data: userUpdate,
+        });
+      }
+
+      if (newStudyDays !== undefined) {
+        await tx.studyDay.deleteMany({
+          where: {
+            user_id: userId,
+          },
+        });
+        if (newStudyDays.length > 0) {
+          await tx.studyDay.createMany({ data: newStudyDays });
+        }
+      }
+
+      if (logsThreshold && newLogs !== undefined) {
+        await tx.studyLog.deleteMany({
+          where: {
+            user_id: userId,
+            date: { gt: logsThreshold },
+            done: false,
+          },
+        });
+
+        if (newLogs.length > 0) {
+          await tx.studyLog.createMany({ data: newLogs });
+        }
+      }
+    });
+  }
+  async updateProfilePicture(id: string, key: string | null): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { profile_picture_key: key },
+    });
+  }
+
+  async findProfilePictureKey(id: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { profile_picture_key: true },
+    });
+    return user?.profile_picture_key ?? null;
   }
 }

@@ -229,6 +229,18 @@ describe('AdminQuestionsService', () => {
       expect(repository.findMany.mock.calls[0][0]).not.toHaveProperty('enable');
     });
 
+    it('filters by topicId on path_id when provided', async () => {
+      repository.findMany.mockResolvedValue({ content: [], totalElements: 0 });
+
+      await service.findAll({ topicId: 'topic-1' } as never);
+
+      expect(repository.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ path_id: 'topic-1' }),
+        0,
+        20,
+      );
+    });
+
     it('filters by enable when provided', async () => {
       repository.findMany.mockResolvedValue({ content: [], totalElements: 0 });
 
