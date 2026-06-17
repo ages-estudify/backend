@@ -4,6 +4,7 @@ import { PlanType, Role } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { SubscriptionsRepository } from './subscriptions.repository';
 import { SubscriptionsService } from './subscriptions.service';
+import { Purpose } from '../auth/security/jwt-claims';
 
 type RepoMock = jest.Mocked<Pick<SubscriptionsRepository, 'createWithUserUpdate'>>;
 type AuthMock = jest.Mocked<Pick<AuthService, 'buildAuthSession'>>;
@@ -105,11 +106,14 @@ describe('SubscriptionsService', () => {
       token: 'new-jwt',
       refreshToken: 'new-refresh',
     });
-    expect(authService.buildAuthSession).toHaveBeenCalledWith({
-      id: 'u1',
-      role: Role.USER,
-      plan_end_date: new Date('2026-07-15T12:00:00.000Z'),
-    });
+    expect(authService.buildAuthSession).toHaveBeenCalledWith(
+      {
+        id: 'u1',
+        role: Role.USER,
+        plan_end_date: new Date('2026-07-15T12:00:00.000Z'),
+      },
+      Purpose.DEFAULT,
+    );
   });
 
   it('throws NotFoundException when repository returns null (user does not exist)', async () => {

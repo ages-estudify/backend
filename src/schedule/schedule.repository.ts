@@ -137,6 +137,15 @@ export class ScheduleRepository {
     });
   }
 
+  async countPastOrDoneLogs(userId: string, threshold: Date): Promise<number> {
+    return this.prisma.studyLog.count({
+      where: {
+        user_id: userId,
+        OR: [{ date: { lte: threshold } }, { done: true }],
+      },
+    });
+  }
+
   private formatDateOnly(value: Date): string {
     return value.toISOString().slice(0, 10);
   }

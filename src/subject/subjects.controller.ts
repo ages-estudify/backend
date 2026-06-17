@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { SubjectService } from './subjects.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -42,16 +42,12 @@ export class SubjectController {
   @ApiOkResponse({ type: CountByPathAndTypeDto })
   @ApiNotFoundResponse({ description: 'Topico não encontrada' })
   @ApiBadRequestResponse({ description: 'Tipo de questão inválido' })
-  @ApiQuery({ name: 'type', enum: ['ORIGINAL', 'EXTERNAL'], required: true })
+  @ApiQuery({ name: 'type', enum: ['ORIGINAL', 'EXTERNAL'], required: false })
   async countQuestions(
     @Param('topicId') pathId: string,
-    @Query('type') type: 'ORIGINAL' | 'EXTERNAL',
     @CurrentUser() user: JwtAuthUser,
+    @Query('type') type?: 'ORIGINAL' | 'EXTERNAL',
   ): Promise<CountByPathAndTypeDto> {
-    if (!type || !['ORIGINAL', 'EXTERNAL'].includes(type)) {
-      throw new BadRequestException('Tipo de questão inválido');
-    }
-
     return this.subjectService.countByPathAndType(pathId, type, user.userId);
   }
 }

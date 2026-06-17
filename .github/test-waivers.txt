@@ -1,0 +1,2 @@
+# Approved test debt waivers.
+# One source file path per line. Requires tech lead approval in the PR.

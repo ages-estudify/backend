@@ -6,6 +6,7 @@ import { JwtAuthUser } from '../auth/security/jwt-auth-user';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { StreakService } from '../streak/streak.service';
+import { Purpose } from '../auth/security/jwt-claims';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -42,11 +43,16 @@ describe('UsersController', () => {
   });
 
   it('findOne delegates to users service', async () => {
-    const userRow = { id: '550e8400-e29b-41d4-a716-446655440000', email: 'a@b.com' };
+    const userRow = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      email: 'a@b.com',
+      plan_status: 'inactive',
+    };
     const viewer: JwtAuthUser = {
       userId: userRow.id,
       role: Role.USER,
       planExpirationDate: null,
+      purpose: Purpose.DEFAULT,
     };
     usersService.findOne.mockResolvedValue(userRow as never);
 

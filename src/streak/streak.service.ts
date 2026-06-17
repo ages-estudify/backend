@@ -14,12 +14,17 @@ export class StreakService {
       throw new NotFoundException('User not found');
     }
 
-    const today = this.startOfDay(new Date());
+    // Persistimos o instante real (now) em last_active, e nao o dia normalizado.
+    // startOfDay() retorna meia-noite UTC do dia BRT; reaplicar startOfDay sobre esse
+    // valor (UTC-3) o joga para o dia anterior, fazendo gapDays=1 a cada resposta no
+    // mesmo dia. Guardando o instante cru, startOfDay sempre devolve o dia BRT correto.
+    const now = new Date();
+    const today = this.startOfDay(now);
     const lastActive = user.last_active ? this.startOfDay(user.last_active) : null;
     const currentStreak = user.streak ?? 0;
 
     if (lastActive === null) {
-      await this.users.updateStreak(userId, { streak: 1, last_active: today });
+      await this.users.updateStreak(userId, { streak: 1, last_active: now });
       return { streakDays: 1, streakActive: true };
     }
 
@@ -31,11 +36,11 @@ export class StreakService {
 
     if (gapDays === 1) {
       const newStreak = currentStreak + 1;
-      await this.users.updateStreak(userId, { streak: newStreak, last_active: today });
+      await this.users.updateStreak(userId, { streak: newStreak, last_active: now });
       return { streakDays: newStreak, streakActive: true };
     }
 
-    await this.users.updateStreak(userId, { streak: 0, last_active: today });
+    await this.users.updateStreak(userId, { streak: 0, last_active: now });
     return { streakDays: 0, streakActive: false };
   }
 

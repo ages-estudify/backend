@@ -84,6 +84,9 @@ export class AdminQuestionsService {
     if (query.mockExamId) {
       where.exam_id = query.mockExamId;
     }
+    if (query.topicId) {
+      where.path_id = query.topicId;
+    }
     if (enable !== undefined) {
       where.enable = enable;
     }

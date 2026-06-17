@@ -28,8 +28,9 @@
 - [ ] A documentação do **Swagger** (`@ApiProperty`, `@ApiResponse`, etc.) foi atualizada (se aplicável).
 
 ## Testes
-- [ ] Testes unitários (`*.spec.ts`) foram criados/atualizados para cobrir as novas regras de negócio.
-- [ ] O comando `npm run test` passa com sucesso.
+- [ ] Testes unitários co-localizados (`*.spec.ts`) foram criados/atualizados para services, guards, utils e mappers alterados.
+- [ ] O comando `npm run test:ci` passa com sucesso (inclui cobertura mínima de 80%).
+- [ ] Se algum arquivo ficou sem teste, há waiver aprovado em `.github/test-waivers.txt` ou `[test-waiver:path]` na descrição do PR.
 
 ## Checklist Geral
 - [ ] O código passou pelo linter (`npm run lint`).

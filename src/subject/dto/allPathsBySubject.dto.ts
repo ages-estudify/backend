@@ -27,7 +27,7 @@ export class SubjectPathDto {
 
   @ApiProperty({ example: 'https://cdn.com/icon.png' })
   @IsUrl()
-  icon_url!: string;
+  icon_key!: string;
 
   @ApiProperty({ type: QuestionCountByTypeDto })
   @ValidateNested()
