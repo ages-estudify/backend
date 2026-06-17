@@ -27,27 +27,60 @@ const createUserBuilder = (overrides: Partial<any> = {}) => ({
   ...overrides,
 });
 
+const createAlternative = (
+  id: string = 'a1',
+  letter: string = 'A',
+  is_correct: boolean = true,
+) => ({
+  id,
+  letter,
+  is_correct,
+});
+
+const createQuestion = (
+  id: string = 'q1',
+  feedback: string = 'Explanation',
+  alternatives: any[] = [createAlternative('a1', 'A', true), createAlternative('a2', 'B', false)],
+) => ({
+  id,
+  feedback,
+  alternatives,
+});
+
+const createTrainingAnswer = (
+  questionId: string = 'q1',
+  isCorrect: boolean = true,
+  answerDate: Date = new Date('2026-06-15T10:00:00'),
+) => ({
+  question_id: questionId,
+  alternative: {
+    is_correct: isCorrect,
+  },
+  answer_date: answerDate,
+});
+
+const createMultipleTrainingAnswers = (
+  questionAnswers: Array<{
+    questionId: string;
+    isCorrect: boolean;
+    answerDate: Date;
+  }>,
+) => {
+  return questionAnswers.map((qa) =>
+    createTrainingAnswer(qa.questionId, qa.isCorrect, qa.answerDate),
+  );
+};
+
+const createQuestionIds = (count: number): string[] =>
+  Array.from({ length: count }, (_, i) => `q${i + 1}`);
+
+const createQuestionObjects = (questionIds: string[]): any[] => questionIds.map((id) => ({ id }));
+
 describe('QuestionsService', () => {
   let service: QuestionsService;
   let repository: any;
   let gamificationService: any;
   let usersRepository: any;
-
-  const createAlternative = (id: string, letter: string, is_correct: boolean) => ({
-    id,
-    letter,
-    is_correct,
-  });
-
-  const createQuestion = (
-    id: string = 'q1',
-    feedback: string = 'Explanation',
-    alternatives: any[] = [createAlternative('a1', 'A', true), createAlternative('a2', 'B', false)],
-  ) => ({
-    id,
-    feedback,
-    alternatives,
-  });
 
   beforeEach(async () => {
     const mockRepository = {
@@ -63,6 +96,8 @@ describe('QuestionsService', () => {
       findExistingAnswer: jest.fn(),
       updateAnswerAlternative: jest.fn(),
       updateAttemptProgress: jest.fn(),
+      findQuestionsByIds: jest.fn(),
+      getTrainingAnswersForQuestions: jest.fn(),
     };
 
     const mockGamificationService = {
@@ -115,6 +150,27 @@ describe('QuestionsService', () => {
     gamificationService = mockGamificationService;
     usersRepository = mockUsersRepository;
   });
+
+  const setupTrainingResultMocks = (
+    userId: string = 'u1',
+    questionIds: string[] = ['q1', 'q2', 'q3'],
+  ) => {
+    usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: userId }));
+    repository.findQuestionsByIds.mockResolvedValue(createQuestionObjects(questionIds));
+    return { userId, questionIds };
+  };
+
+  const setupTrainingAnswers = (
+    answers: Array<{ questionId: string; isCorrect: boolean; answerDate?: Date }>,
+  ) => {
+    const answersWithDates = answers.map((a, i) => ({
+      ...a,
+      answerDate: a.answerDate || new Date(`2026-06-15T${String(10 + i).padStart(2, '0')}:00:00`),
+    }));
+    repository.getTrainingAnswersForQuestions.mockResolvedValue(
+      createMultipleTrainingAnswers(answersWithDates),
+    );
+  };
 
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -303,6 +359,121 @@ describe('QuestionsService', () => {
       await expect(service.questionFeedback('q1', 'u1', SelectedAnswer.A)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('trainingResult', () => {
+    it('should calculate correct training result', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1', 'q2', 'q3']);
+
+      setupTrainingAnswers([
+        { questionId: 'q1', isCorrect: true },
+        { questionId: 'q2', isCorrect: false },
+        { questionId: 'q3', isCorrect: true },
+      ]);
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result).toEqual({
+        success: true,
+        data: { totalQuestions: 3, correctAnswers: 2, wrongAnswers: 1 },
+      });
+    });
+
+    it('should use latest answer when question is answered multiple times', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1', 'q2']);
+
+      repository.getTrainingAnswersForQuestions.mockResolvedValue(
+        createMultipleTrainingAnswers([
+          { questionId: 'q1', isCorrect: true, answerDate: new Date('2026-06-15T10:05:00') },
+          { questionId: 'q1', isCorrect: false, answerDate: new Date('2026-06-15T10:00:00') },
+          { questionId: 'q2', isCorrect: true, answerDate: new Date('2026-06-15T10:10:00') },
+        ]),
+      );
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result.data).toEqual({ totalQuestions: 2, correctAnswers: 2, wrongAnswers: 0 });
+    });
+
+    it('should ignore training answers and only count training responses', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1', 'q2']);
+
+      setupTrainingAnswers([
+        { questionId: 'q1', isCorrect: true },
+        { questionId: 'q2', isCorrect: false },
+      ]);
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result.data!.correctAnswers).toBe(1);
+      expect(repository.getTrainingAnswersForQuestions).toHaveBeenCalledWith(userId, questionIds);
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      usersRepository.findUniqueById.mockResolvedValue(null);
+
+      await expect(service.trainingResult('u1', ['q1'])).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when some questions do not exist', async () => {
+      usersRepository.findUniqueById.mockResolvedValue(createUserBuilder({ id: 'u1' }));
+      repository.findQuestionsByIds.mockResolvedValue([{ id: 'q1' }]);
+
+      await expect(service.trainingResult('u1', ['q1', 'q2', 'q3'])).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException when session is incomplete', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1', 'q2', 'q3']);
+
+      setupTrainingAnswers([
+        { questionId: 'q1', isCorrect: true },
+        { questionId: 'q2', isCorrect: false },
+      ]);
+
+      await expect(service.trainingResult(userId, questionIds)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should handle null alternative gracefully', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1']);
+
+      repository.getTrainingAnswersForQuestions.mockResolvedValue([
+        { question_id: 'q1', alternative: null, answer_date: new Date() },
+      ]);
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result.data!.correctAnswers).toBe(0);
+      expect(result.data!.wrongAnswers).toBe(1);
+    });
+
+    it('should return correct calculation for all correct answers', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', createQuestionIds(5));
+
+      setupTrainingAnswers(questionIds.map((id) => ({ questionId: id, isCorrect: true })));
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result.data!.correctAnswers).toBe(5);
+      expect(result.data!.wrongAnswers).toBe(0);
+    });
+
+    it('should return correct calculation for all wrong answers', async () => {
+      const { userId, questionIds } = setupTrainingResultMocks('u1', ['q1', 'q2']);
+
+      setupTrainingAnswers([
+        { questionId: 'q1', isCorrect: false },
+        { questionId: 'q2', isCorrect: false },
+      ]);
+
+      const result = await service.trainingResult(userId, questionIds);
+
+      expect(result.data!.correctAnswers).toBe(0);
+      expect(result.data!.wrongAnswers).toBe(2);
     });
   });
 });

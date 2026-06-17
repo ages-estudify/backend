@@ -29,6 +29,8 @@ import { QuestionBatchDataDto } from './dto/question-batch.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { AnswerSuccessResponseDto } from './dto/answer-response.dto';
 import { SubscriptionGuard } from '../auth/guards/subscription.guard';
+import { TrainingResultRequest } from './dto/training-result-request.dto';
+import { TrainingResultSuccessResponse } from './dto/training-result-response.dto';
 
 @ApiTags('questions')
 @ApiBearerAuth('JWT-auth')
@@ -104,6 +106,36 @@ export class QuestionsController {
       body.attemptId,
       body.timeSpentSeconds,
     );
+    return result;
+  }
+
+  @Post('training/result')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get training session result with performance metrics' })
+  @ApiOkResponse({ type: TrainingResultSuccessResponse })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body or incomplete training session',
+    schema: {
+      example: {
+        success: false,
+        message: 'Sessão incompleta: nem todas as questões foram respondidas',
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'User or one or more questions not found',
+    schema: {
+      example: {
+        success: false,
+        message: 'Uma ou mais questões não foram encontradas',
+      },
+    },
+  })
+  async trainingResult(
+    @Body() body: TrainingResultRequest,
+    @CurrentUser() user: JwtAuthUser,
+  ): Promise<TrainingResultSuccessResponse> {
+    const result = await this.questionsService.trainingResult(user.userId, body.questionsIds);
     return result;
   }
 }
