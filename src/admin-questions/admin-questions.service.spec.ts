@@ -21,6 +21,8 @@ type RepoMock = jest.Mocked<
     | 'pathExists'
     | 'examExists'
     | 'getFallbackPathId'
+    | 'pathByNameAndSubject'
+    | 'findExamByIdOrName'
   >
 >;
 
@@ -90,6 +92,8 @@ describe('AdminQuestionsService', () => {
       pathExists: jest.fn(),
       examExists: jest.fn(),
       getFallbackPathId: jest.fn(),
+      pathByNameAndSubject: jest.fn(),
+      findExamByIdOrName: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -269,6 +273,7 @@ describe('AdminQuestionsService', () => {
     it('imports successfully when row is valid', async () => {
       repository.pathExists.mockResolvedValue(true);
       repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
       repository.create.mockResolvedValue(mockAdminQuestion() as never);
 
       const csv = [
@@ -285,6 +290,7 @@ describe('AdminQuestionsService', () => {
 
     it('accepts subject column instead of discipline', async () => {
       repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
       repository.create.mockResolvedValue(mockAdminQuestion() as never);
 
       const csv = [
@@ -298,6 +304,7 @@ describe('AdminQuestionsService', () => {
 
     it('reports errors per row without stopping the import', async () => {
       repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
 
       const csv = [
         'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
@@ -314,6 +321,7 @@ describe('AdminQuestionsService', () => {
 
     it('reports error when correct_answer is invalid', async () => {
       repository.getFallbackPathId.mockResolvedValue('p1');
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
       repository.create.mockResolvedValue(mockAdminQuestion() as never);
 
       const csv = [
@@ -325,6 +333,58 @@ describe('AdminQuestionsService', () => {
 
       expect(result.errorCount).toBe(1);
       expect(result.results[0].error).toContain('correct_answer');
+    });
+
+    it('should report error when topic not found by name and discipline', async () => {
+      repository.pathExists.mockResolvedValue(false);
+      repository.pathByNameAndSubject.mockResolvedValue(null);
+
+      const csv = [
+        'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Matemática,Geometria Avançada,Texto?,a,b,c,d,e,A,Exp,ORIGINAL,2024',
+      ].join('\n');
+
+      const result = await service.importCsv(Buffer.from(csv));
+
+      expect(result.errorCount).toBe(1);
+      expect(result.successCount).toBe(0);
+      expect(result.results[0].error).toContain("Tópico 'Geometria Avançada' na disciplina 'Matemática' não encontrado.");
+    });
+
+    it('should link exam when exam_title is given and found in db', async () => {
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
+      repository.findExamByIdOrName.mockResolvedValue({ id: 'uuid-do-exame-123' });
+      repository.create.mockResolvedValue(mockAdminQuestion() as never);
+
+      const csv = [
+        'exam_title,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Simulado ENEM 2026,Mat,Geo,Texto?,a,b,c,d,e,A,Exp,ORIGINAL,2024',
+      ].join('\n');
+
+      const result = await service.importCsv(Buffer.from(csv));
+
+      expect(result.successCount).toBe(1);
+      expect(repository.findExamByIdOrName).toHaveBeenCalledWith('Simulado ENEM 2026');
+      
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ exam_id: 'uuid-do-exame-123' })
+      );
+    });
+
+    it('should result in error when exam_title is given but not found in database', async () => {
+      repository.pathByNameAndSubject.mockResolvedValue('p1');
+      repository.findExamByIdOrName.mockResolvedValue(null);
+
+      const csv = [
+        'exam_title,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year',
+        'Simulado FAKE,Mat,Geo,Texto?,a,b,c,d,e,A,Exp,ORIGINAL,2024',
+      ].join('\n');
+
+      const result = await service.importCsv(Buffer.from(csv));
+
+      expect(result.errorCount).toBe(1);
+      expect(result.successCount).toBe(0);
+      expect(result.results[0].error).toContain("Simulado 'Simulado FAKE' não encontrado.");
     });
   });
 });
