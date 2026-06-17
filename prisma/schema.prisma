@@ -115,6 +115,7 @@ model Path {
   icon_key          String
   schedule_position Int    @unique
   trail_position    Int
+  enable            Boolean @default(true)
 
   subject_id String     @db.Uuid
   subject    Subject    @relation(fields: [subject_id], references: [id])
