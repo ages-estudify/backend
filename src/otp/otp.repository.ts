@@ -21,8 +21,7 @@ export class OtpRepository {
   }
 
   async saveOtp(otpHash: string, user: User) {
-    if (await this.hasValidOtp(user)) return;
-
+  
     const expireAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await this.prisma.otp.upsert({
