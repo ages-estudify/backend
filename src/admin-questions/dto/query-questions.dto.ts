@@ -33,6 +33,11 @@ export class QueryQuestionsDto {
   @IsUUID()
   mockExamId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by topic/path id' })
+  @IsOptional()
+  @IsUUID()
+  topicId?: string;
+
   @ApiPropertyOptional({
     description:
       'String "true" or "false" to filter by enabled; omit to return both active and soft-deleted',
