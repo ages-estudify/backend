@@ -113,7 +113,7 @@ export class QuestionsRepository {
   }
 
   private getOrigin(type: string): 'EXTERNAL' | 'ORIGINAL' {
-    return type === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL';
+    return type === 'SIMPLIFIED' ? 'ORIGINAL' : 'EXTERNAL';
   }
 
   private getQuestionInclude() {
@@ -220,6 +220,49 @@ export class QuestionsRepository {
     return this.prisma.attempt.update({
       where: { id: attemptId },
       data: { time_spent_seconds: timeSpentSeconds, current_question: currentQuestion },
+    });
+  }
+
+  async countCorrectAnswers(userId: string, questionIds: string[]): Promise<number> {
+    const correctAnswers = await this.prisma.answer.count({
+      where: {
+        user_id: userId,
+        question_id: {
+          in: questionIds,
+        },
+        alternative: {
+          is_correct: true,
+        },
+      },
+    });
+    return correctAnswers;
+  }
+
+  async getTrainingAnswersForQuestions(userId: string, questionIds: string[]): Promise<any[]> {
+    return this.prisma.answer.findMany({
+      where: {
+        user_id: userId,
+        question_id: {
+          in: questionIds,
+        },
+        attempt_day_id: null,
+      },
+      include: {
+        alternative: true,
+      },
+      orderBy: {
+        answer_date: 'desc',
+      },
+    });
+  }
+
+  async findQuestionsByIds(questionIds: string[]): Promise<Question[]> {
+    return this.prisma.question.findMany({
+      where: {
+        id: {
+          in: questionIds,
+        },
+      },
     });
   }
 }

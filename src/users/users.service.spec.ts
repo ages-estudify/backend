@@ -556,4 +556,46 @@ describe('UsersService', () => {
       );
     });
   });
+
+  describe('getMe', () => {
+    const userId = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('throws NotFoundException when user does not exist', async () => {
+      usersRepo.findUniqueById.mockResolvedValue(null);
+
+      await expect(service.getMe(userId)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('returns plan_end_date, onboarding_completed and profile_picture_url', async () => {
+      const planEndDate = new Date('2027-01-01');
+      usersRepo.findUniqueById.mockResolvedValue(
+        createUserBuilder({
+          plan_end_date: planEndDate,
+          onboarding_completed: true,
+          profile_picture_key: 'profile-pictures/uuid/pic.jpg',
+        }),
+      );
+      profilePictureService.resolveSignedUrl.mockResolvedValue('https://signed.url/pic.jpg');
+
+      const result = await service.getMe(userId);
+
+      expect(result).toEqual({
+        plan_end_date: planEndDate,
+        onboarding_completed: true,
+        profile_picture_url: 'https://signed.url/pic.jpg',
+      });
+      expect(profilePictureService.resolveSignedUrl).toHaveBeenCalledWith(
+        'profile-pictures/uuid/pic.jpg',
+      );
+    });
+
+    it('returns null profile_picture_url when user has no picture', async () => {
+      usersRepo.findUniqueById.mockResolvedValue(createUserBuilder({ profile_picture_key: null }));
+      profilePictureService.resolveSignedUrl.mockResolvedValue(null);
+
+      const result = await service.getMe(userId);
+
+      expect(result.profile_picture_url).toBeNull();
+    });
+  });
 });

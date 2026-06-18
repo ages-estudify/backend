@@ -49,5 +49,5 @@ export class AnswerSuccessResponseDto {
   success!: boolean;
 
   @ApiProperty({ type: AnswerResponseDto, required: false })
-  data?: AnswerResponseDto;
+  data?: AnswerResponseDto | { saved: boolean };
 }
