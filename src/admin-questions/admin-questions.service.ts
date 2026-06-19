@@ -192,14 +192,29 @@ export class AdminQuestionsService {
       try {
         this.validateCsvRow(row, i + 2);
 
-        const pathId = await this.resolvePathId(row['path_id'] || undefined);
-        const examId = row['mock_exam_id']?.trim() || undefined;
-        if (examId) {
-          const examExists = await this.repository.examExists(examId);
-          if (!examExists) throw new Error(`Exam '${examId}' not found`);
+        const discipline = row['discipline'] || row['subject'];
+        const content = row['content'];
+
+        let pathId: string | null | undefined = row['path_id']?.trim();
+        if (pathId) {
+          const exists = await this.repository.pathExists(pathId);
+          if (!exists) throw new Error(`Tópico com ID '${pathId}' não encontrado.`);
+        } else {
+          pathId = await this.repository.pathByNameAndSubject(content, discipline);
+          if (!pathId)
+            throw new Error(`Tópico '${content}' na disciplina '${discipline}' não encontrado.`);
         }
 
-        const persistence = this.csvRowToPersistence(row, pathId);
+        let examId: string | null | undefined = undefined;
+        const examInput =
+          row['mock_exam_id']?.trim() || row['exam_title']?.trim() || row['exam_name']?.trim();
+        if (examInput) {
+          const exam = await this.repository.findExamByIdOrName(examInput);
+          if (!exam) throw new Error(`Simulado '${examInput}' não encontrado.`);
+          examId = exam.id;
+        }
+
+        const persistence = this.csvRowToPersistence(row, pathId, examId);
         const question = await this.repository.create(persistence);
         if (!question) {
           throw new Error('Failed to create question');
@@ -324,6 +339,7 @@ export class AdminQuestionsService {
   private csvRowToPersistence(
     row: Record<string, string>,
     pathId: string,
+    examId?: string | null,
   ): CreateQuestionPersistenceInput {
     const discipline = row['discipline'] || row['subject'] || '';
     const correctAnswer = row['correct_answer'].toUpperCase();
@@ -338,7 +354,7 @@ export class AdminQuestionsService {
       year: parseInt(row['year'], 10),
       origin: this.adminTypeToOrigin(type),
       path_id: pathId,
-      exam_id: row['mock_exam_id']?.trim() || null,
+      exam_id: examId ?? null,
       number: row['number']?.trim() ? parseInt(row['number'], 10) : null,
       alternatives: VALID_LETTERS.map((L) => ({
         letter: L,

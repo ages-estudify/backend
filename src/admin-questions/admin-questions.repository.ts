@@ -133,4 +133,34 @@ export class AdminQuestionsRepository {
     const exam = await this.prisma.exam.findUnique({ where: { id } });
     return !!exam;
   }
+
+  async pathByNameAndSubject(pathName: string, subjectName: string): Promise<string | null> {
+    const subject = await this.prisma.subject.findFirst({
+      where: { name: { equals: subjectName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    if (!subject) return null;
+
+    const path = await this.prisma.path.findFirst({
+      where: {
+        name: { equals: pathName, mode: 'insensitive' },
+        subject_id: subject.id,
+      },
+      select: { id: true },
+    });
+
+    return path?.id ?? null;
+  }
+
+  async findExamByIdOrName(query: string): Promise<{ id: string } | null> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query);
+    if (isUuid) {
+      return this.prisma.exam.findUnique({ where: { id: query }, select: { id: true } });
+    }
+    return this.prisma.exam.findFirst({
+      where: { name: { equals: query, mode: 'insensitive' } },
+      select: { id: true },
+    });
+  }
 }
