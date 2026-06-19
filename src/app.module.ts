@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from './health/health.module';
@@ -17,6 +17,7 @@ import { AdminTopicsModule } from './admin-topics/admin-topics.module';
 import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { StreakModule } from './streak/streak.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { OtpModule } from './otp/otp.module';
 
 @Module({
@@ -41,6 +42,7 @@ import { OtpModule } from './otp/otp.module';
     AdminTopicsModule,
     StorageModule,
     StreakModule,
+    DashboardModule,
     OtpModule,
   ],
   controllers: [],
