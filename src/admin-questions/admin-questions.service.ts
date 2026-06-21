@@ -254,11 +254,11 @@ export class AdminQuestionsService {
   }
 
   private adminTypeToOrigin(type: AdminQuestionType): Origin {
-    return type === AdminQuestionType.SIMPLIFIED ? 'EXTERNAL' : 'ORIGINAL';
+    return type === AdminQuestionType.SIMPLIFIED ? 'ORIGINAL' : 'EXTERNAL';
   }
 
   private originToAdminType(origin: Origin): 'SIMPLIFIED' | 'ORIGINAL' {
-    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
+    return origin === 'EXTERNAL' ? 'ORIGINAL' : 'SIMPLIFIED';
   }
 
   private async toAdminResponse(

@@ -192,7 +192,7 @@ describe('AdminQuestionsService', () => {
 
       expect(repository.getFallbackPathId).toHaveBeenCalled();
       expect(repository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ path_id: 'fallback-path', origin: 'EXTERNAL' }),
+        expect.objectContaining({ path_id: 'fallback-path', origin: 'ORIGINAL' }),
       );
     });
 
