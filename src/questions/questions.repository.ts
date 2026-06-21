@@ -39,6 +39,7 @@ export class QuestionsRepository {
       //  exam_day_id: null,
       path_id: pathId,
       origin,
+      enable: true,
     };
 
     if (excludeAnswered || !userId) {
@@ -80,6 +81,7 @@ export class QuestionsRepository {
       where: {
         path_id: pathId,
         origin: this.getOrigin(type),
+        enable: true,
       },
     });
   }
@@ -100,6 +102,7 @@ export class QuestionsRepository {
         question: {
           path_id: pathId,
           origin: this.getOrigin(type),
+          enable: true,
         },
       },
     });

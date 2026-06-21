@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { parse } from 'csv-parse/sync';
 
 export interface CsvRow {
   exam_title?: string;
@@ -38,24 +39,29 @@ export interface ParsedRow {
 
 export class CsvUtils {
   static parseCsv(csv: string): ValidatedRow[] {
-    const lines = csv.trim().split(/\r?\n/);
+    let records: Record<string, string>[];
 
-    if (lines.length < 2) {
+    try {
+      records = parse(csv, {
+        columns: (header: string[]) => header.map((h) => h.trim().toLowerCase()),
+        skip_empty_lines: true,
+        bom: true,
+        relax_column_count: true,
+        relax_quotes: true,
+        trim: true,
+      });
+    } catch {
+      throw new BadRequestException('CSV is malformed and could not be parsed');
+    }
+
+    if (!records.length) {
       throw new BadRequestException('CSV must have header and at least one data row');
     }
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-
-    return lines.slice(1).map((line, index) => {
-      const values = line.split(',').map((v) => v.trim());
-      const row: ValidatedRow = { lineNumber: index + 2 };
-
-      headers.forEach((h, i) => {
-        row[h] = values[i];
-      });
-
-      return row;
-    });
+    return records.map((record, index) => ({
+      lineNumber: index + 2,
+      ...record,
+    }));
   }
 
   static validateStructure(

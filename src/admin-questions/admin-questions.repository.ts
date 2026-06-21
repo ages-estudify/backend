@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma.service';
 
 const QUESTION_INCLUDE = {
   alternatives: true,
-  path: true,
+  path: { include: { subject: true } },
   exam: true,
 } as const;
 
