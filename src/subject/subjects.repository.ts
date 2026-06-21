@@ -38,6 +38,7 @@ export class SubjectRepository {
             questions: {
               where: {
                 exam_day_id: null,
+                enable: true,
               },
               select: {
                 id: true,
@@ -93,6 +94,7 @@ export class SubjectRepository {
         questions: {
           where: {
             exam_day_id: null,
+            enable: true,
           },
           select: {
             origin: true,
@@ -155,6 +157,7 @@ export class SubjectRepository {
         questions: {
           where: {
             exam_day_id: null,
+            enable: true,
             ...(type && {
               origin: type as Origin,
             }),
