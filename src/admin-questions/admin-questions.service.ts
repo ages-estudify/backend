@@ -273,8 +273,8 @@ export class AdminQuestionsService {
 
     return {
       id: q.id,
-      discipline: q.discipline,
-      content: q.content,
+      discipline: q.discipline || q.path?.subject?.name || '',
+      content: q.content || q.path?.name || '',
       question: q.text,
       alternatives: {
         A: byLetter.A,
