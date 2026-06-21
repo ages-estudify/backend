@@ -27,6 +27,7 @@ import { ScheduleService } from '../schedule/schedule.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
+import { GetMeResponseDto } from './dto/get-me-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -257,5 +258,20 @@ export class UsersService {
 
   async removeProfilePicture(userId: string): Promise<void> {
     await this.users.updateProfilePicture(userId, null);
+  }
+
+  async getMe(userId: string): Promise<GetMeResponseDto> {
+    const user = await this.users.findUniqueById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const profile_picture_url = await this.profilePictureService.resolveSignedUrl(
+      user.profile_picture_key,
+    );
+
+    return {
+      plan_end_date: user.plan_end_date,
+      onboarding_completed: user.onboarding_completed,
+      profile_picture_url,
+    };
   }
 }

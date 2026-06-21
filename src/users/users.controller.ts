@@ -44,6 +44,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PasswordResetGuard } from '../auth/guards/password-reset.guard';
 import { UploadProfilePictureDto } from './dto/upload-profile-picture.dto';
 import { GetUserProfileResponseDto } from './dto/get-user-profile-response.dto';
+import { GetMeResponseDto } from './dto/get-me-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -95,6 +96,13 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'Não autorizado' })
   async getStats(@CurrentUser() user: JwtAuthUser): Promise<UserStatsDto> {
     return await this.usersService.getStats(user.userId);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user basic info' })
+  @ApiOkResponse({ type: GetMeResponseDto })
+  async getMe(@CurrentUser() user: JwtAuthUser): Promise<GetMeResponseDto> {
+    return this.usersService.getMe(user.userId);
   }
 
   @Get('me/coins')
