@@ -254,11 +254,11 @@ export class AdminQuestionsService {
   }
 
   private adminTypeToOrigin(type: AdminQuestionType): Origin {
-    return type === AdminQuestionType.SIMPLIFIED ? 'EXTERNAL' : 'ORIGINAL';
+    return type === AdminQuestionType.SIMPLIFIED ? 'ORIGINAL' : 'EXTERNAL';
   }
 
   private originToAdminType(origin: Origin): 'SIMPLIFIED' | 'ORIGINAL' {
-    return origin === 'EXTERNAL' ? 'SIMPLIFIED' : 'ORIGINAL';
+    return origin === 'EXTERNAL' ? 'ORIGINAL' : 'SIMPLIFIED';
   }
 
   private async toAdminResponse(
@@ -273,8 +273,8 @@ export class AdminQuestionsService {
 
     return {
       id: q.id,
-      discipline: q.discipline,
-      content: q.content,
+      discipline: q.discipline || q.path?.subject?.name || '',
+      content: q.content || q.path?.name || '',
       question: q.text,
       alternatives: {
         A: byLetter.A,

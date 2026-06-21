@@ -192,7 +192,7 @@ describe('AdminQuestionsService', () => {
 
       expect(repository.getFallbackPathId).toHaveBeenCalled();
       expect(repository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ path_id: 'fallback-path', origin: 'EXTERNAL' }),
+        expect.objectContaining({ path_id: 'fallback-path', origin: 'ORIGINAL' }),
       );
     });
 
@@ -267,6 +267,30 @@ describe('AdminQuestionsService', () => {
     it('throws NotFoundException when question does not exist', async () => {
       repository.findById.mockResolvedValue(null as never);
       await expect(service.findOne('qid')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('derives discipline/content from the path when columns are empty (exam-imported question)', async () => {
+      repository.findById.mockResolvedValue(
+        mockAdminQuestion({
+          discipline: '',
+          content: '',
+          path: {
+            id: 'path-id',
+            name: 'Gramática Avançada',
+            text: '',
+            icon_url: '',
+            schedule_position: 1,
+            trail_position: 1,
+            subject_id: 'sub',
+            subject: { id: 'sub', name: 'Português' },
+          },
+        }) as never,
+      );
+
+      await expect(service.findOne('qid')).resolves.toMatchObject({
+        discipline: 'Português',
+        content: 'Gramática Avançada',
+      });
     });
   });
 
