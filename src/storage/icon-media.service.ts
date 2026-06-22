@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { isLegacyLocalIconPath, toAbsoluteAssetUrl } from './asset-url.util';
+import { decodeBase64Image } from './base64-image.util';
 import { S3Service } from './s3.service';
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
@@ -10,6 +11,8 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   'image/webp': 'webp',
   'image/gif': 'gif',
 };
+
+const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 @Injectable()
 export class IconMediaService {
@@ -30,6 +33,16 @@ export class IconMediaService {
     const mediaKey = this.buildPathIconKey(pathId, extension);
     await this.s3.uploadObject(mediaKey, buffer, mimeType);
     return mediaKey;
+  }
+
+  async uploadPathIconFromBase64(pathId: string, imageBase64: string): Promise<string> {
+    const { buffer, mimeType } = decodeBase64Image(imageBase64);
+
+    if (buffer.length > MAX_SIZE_BYTES) {
+      throw new BadRequestException('Image too large. Max size: 5MB');
+    }
+
+    return this.uploadPathIcon(pathId, buffer, mimeType);
   }
 
   async resolveIconUrl(iconRef: string | null | undefined): Promise<string | null> {

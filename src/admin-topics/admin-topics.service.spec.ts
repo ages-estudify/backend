@@ -33,7 +33,11 @@ const buildPath = (overrides: Record<string, unknown> = {}) => ({
 describe('AdminTopicsService', () => {
   let service: AdminTopicsService;
   let repository: RepoMock;
-  let iconMedia: { resolveIconUrl: jest.Mock; resolveIconUrls: jest.Mock };
+  let iconMedia: {
+    resolveIconUrl: jest.Mock;
+    resolveIconUrls: jest.Mock;
+    uploadPathIconFromBase64: jest.Mock;
+  };
 
   beforeEach(async () => {
     repository = {
@@ -48,6 +52,7 @@ describe('AdminTopicsService', () => {
     iconMedia = {
       resolveIconUrl: jest.fn(),
       resolveIconUrls: jest.fn(),
+      uploadPathIconFromBase64: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -120,7 +125,7 @@ describe('AdminTopicsService', () => {
       });
     });
 
-    it('uses schedule_position = 1 when there are no paths yet and keeps provided text/icon', async () => {
+    it('uses schedule_position = 1 when there are no paths yet and keeps provided text', async () => {
       repository.subjectExists.mockResolvedValue(true);
       repository.getMaxSchedulePosition.mockResolvedValue(null);
       repository.create.mockResolvedValue(buildPath() as never);
@@ -130,12 +135,37 @@ describe('AdminTopicsService', () => {
         subjectId: 'subject-1',
         order: 1,
         text: 'corpo',
-        iconUrl: 'chave-s3',
       });
 
       expect(repository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ schedule_position: 1, text: 'corpo', icon_key: 'chave-s3' }),
+        expect.objectContaining({ schedule_position: 1, text: 'corpo', icon_key: '' }),
       );
+      expect(iconMedia.uploadPathIconFromBase64).not.toHaveBeenCalled();
+    });
+
+    it('uploads the icon to S3 and stores the returned key when a base64 image is provided', async () => {
+      repository.subjectExists.mockResolvedValue(true);
+      repository.getMaxSchedulePosition.mockResolvedValue(null);
+      repository.create.mockResolvedValue(buildPath({ id: 'new-id' }) as never);
+      repository.update.mockResolvedValue(buildPath() as never);
+      iconMedia.uploadPathIconFromBase64.mockResolvedValue('paths/new-id/abc.png');
+
+      const result = await service.create({
+        name: 'X',
+        subjectId: 'subject-1',
+        order: 1,
+        icon: 'data:image/png;base64,iVBORw0KGgo=',
+      });
+
+      expect(result).toEqual({ id: 'new-id', message: 'Topic created successfully' });
+      expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ icon_key: '' }));
+      expect(iconMedia.uploadPathIconFromBase64).toHaveBeenCalledWith(
+        'new-id',
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
+      expect(repository.update).toHaveBeenCalledWith('new-id', {
+        icon_key: 'paths/new-id/abc.png',
+      });
     });
 
     it('throws BadRequest when subject does not exist', async () => {
@@ -183,21 +213,26 @@ describe('AdminTopicsService', () => {
       expect(repository.update).not.toHaveBeenCalled();
     });
 
-    it('updates only provided fields and maps order -> trail_position', async () => {
+    it('updates only provided fields, maps order -> trail_position and uploads a new icon', async () => {
       repository.findById.mockResolvedValue(buildPath() as never);
       repository.update.mockResolvedValue(buildPath() as never);
+      iconMedia.uploadPathIconFromBase64.mockResolvedValue('paths/path-1/new.png');
 
       const result = await service.update('path-1', {
         name: 'Editado',
         order: 5,
-        iconUrl: 'novo',
+        icon: 'data:image/png;base64,iVBORw0KGgo=',
       });
 
       expect(result).toEqual({ message: 'Topic updated successfully' });
+      expect(iconMedia.uploadPathIconFromBase64).toHaveBeenCalledWith(
+        'path-1',
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
       expect(repository.update).toHaveBeenCalledWith('path-1', {
         name: 'Editado',
         trail_position: 5,
-        icon_key: 'novo',
+        icon_key: 'paths/path-1/new.png',
       });
     });
 

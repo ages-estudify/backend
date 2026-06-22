@@ -65,7 +65,6 @@ describe('AdminTopics (e2e)', () => {
       .send({
         name: 'Trilha e2e',
         text: 'Descrição',
-        iconUrl: 'https://cdn.example.com/icon.png',
         order,
         subjectId,
       })
@@ -84,7 +83,7 @@ describe('AdminTopics (e2e)', () => {
     expect(created).toMatchObject({
       name: 'Trilha e2e',
       text: 'Descrição',
-      iconUrl: 'https://cdn.example.com/icon.png',
+      iconUrl: null,
       order,
       subjectId,
     });
