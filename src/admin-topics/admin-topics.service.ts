@@ -31,19 +31,26 @@ export class AdminTopicsService {
     const maxSchedule = await this.repository.getMaxSchedulePosition();
     const schedulePosition = (maxSchedule ?? 0) + 1;
 
+    let created: Path;
     try {
-      const created = await this.repository.create({
+      created = await this.repository.create({
         name: dto.name,
         text: dto.text ?? '',
-        icon_key: dto.iconUrl ?? '',
+        icon_key: '',
         trail_position: dto.order,
         schedule_position: schedulePosition,
         subject: { connect: { id: dto.subjectId } },
       });
-      return { id: created.id, message: 'Topic created successfully' };
     } catch (error) {
       throw this.mapWriteError(error);
     }
+
+    if (dto.icon) {
+      const iconKey = await this.iconMedia.uploadPathIconFromBase64(created.id, dto.icon);
+      await this.repository.update(created.id, { icon_key: iconKey });
+    }
+
+    return { id: created.id, message: 'Topic created successfully' };
   }
 
   async update(id: string, dto: UpdateTopicDto) {
@@ -56,7 +63,9 @@ export class AdminTopicsService {
     const data: Prisma.PathUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.text !== undefined) data.text = dto.text;
-    if (dto.iconUrl !== undefined) data.icon_key = dto.iconUrl;
+    if (dto.icon !== undefined) {
+      data.icon_key = dto.icon ? await this.iconMedia.uploadPathIconFromBase64(id, dto.icon) : '';
+    }
     if (dto.order !== undefined) data.trail_position = dto.order;
     if (dto.enable !== undefined) data.enable = dto.enable;
     if (dto.subjectId !== undefined) data.subject = { connect: { id: dto.subjectId } };

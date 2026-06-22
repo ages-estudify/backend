@@ -22,10 +22,10 @@ export class CreateTopicDto {
   text?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.com/icon.png',
-    description: 'Icon URL or S3 object key',
+    example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
+    description: 'Ícone da trilha em base64 ou data URI (será enviado ao S3)',
   })
   @IsOptional()
   @IsString()
-  iconUrl?: string;
+  icon?: string;
 }
