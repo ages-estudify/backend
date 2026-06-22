@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AdminTopicsRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findMany(subjectId?: string) {
     return this.prisma.path.findMany({

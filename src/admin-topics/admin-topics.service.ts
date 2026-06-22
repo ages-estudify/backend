@@ -15,7 +15,7 @@ export class AdminTopicsService {
   constructor(
     private readonly repository: AdminTopicsRepository,
     private readonly iconMedia: IconMediaService,
-  ) { }
+  ) {}
 
   async findAll(subjectId?: string) {
     const paths = await this.repository.findMany(subjectId);
