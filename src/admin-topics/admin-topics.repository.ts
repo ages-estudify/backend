@@ -6,9 +6,12 @@ import { PrismaService } from '../prisma.service';
 export class AdminTopicsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMany(subjectId?: string) {
+  async findMany(enable?: boolean, subjectId?: string) {
     return this.prisma.path.findMany({
-      where: { enable: true, ...(subjectId ? { subject_id: subjectId } : {}) },
+      where: {
+        ...(enable !== undefined ? { enable } : {}),
+        ...(subjectId ? { subject_id: subjectId } : {}),
+      },
       orderBy: [{ subject_id: 'asc' }, { trail_position: 'asc' }],
     });
   }

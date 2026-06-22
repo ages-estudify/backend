@@ -17,8 +17,8 @@ export class AdminTopicsService {
     private readonly iconMedia: IconMediaService,
   ) {}
 
-  async findAll(subjectId?: string) {
-    const paths = await this.repository.findMany(subjectId);
+  async findAll(enable: boolean = true, subjectId?: string) {
+    const paths = await this.repository.findMany(enable, subjectId);
     const iconUrls = await this.iconMedia.resolveIconUrls(paths.map((p) => p.icon_key));
     return {
       data: paths.map((path, index) => this.toTopicResponse(path, iconUrls[index])),
