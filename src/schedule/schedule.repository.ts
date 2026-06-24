@@ -44,6 +44,7 @@ export class ScheduleRepository {
 
   async findPathsForSchedule() {
     return this.prisma.path.findMany({
+      where: { enable: true },
       orderBy: { schedule_position: 'asc' },
       select: { id: true, subject_id: true, schedule_position: true },
     });
