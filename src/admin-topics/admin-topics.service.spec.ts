@@ -75,9 +75,9 @@ describe('AdminTopicsService', () => {
       repository.findMany.mockResolvedValue([buildPath()] as never);
       iconMedia.resolveIconUrls.mockResolvedValue(['https://cdn/icon.png']);
 
-      const result = await service.findAll(true);
+      const result = await service.findAll(true, 'subject-1');
 
-      expect(repository.findMany).toHaveBeenCalledWith(true, undefined);
+      expect(repository.findMany).toHaveBeenCalledWith(true, 'subject-1');
       expect(result).toEqual({
         data: [
           {

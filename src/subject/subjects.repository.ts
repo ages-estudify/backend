@@ -85,6 +85,7 @@ export class SubjectRepository {
     const query = await this.prisma.path.findMany({
       where: {
         subject_id: id,
+        enable: true,
       },
       select: {
         id: true,
@@ -152,6 +153,7 @@ export class SubjectRepository {
     const query = await this.prisma.path.findMany({
       where: {
         id: pathId,
+        enable: true,
       },
       select: {
         questions: {
